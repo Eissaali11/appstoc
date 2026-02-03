@@ -394,6 +394,8 @@ class _DashboardContentState extends State<_DashboardContent> {
                 child: PendingTransfersSection(
                   transfers: widget.controller.pendingTransfers,
                   onViewAll: () => Get.toNamed('/notifications'),
+                  onAccept: (transferId) => widget.controller.acceptTransfer(transferId),
+                  onReject: (transferId) => widget.controller.rejectTransfer(transferId),
                 ),
               ),
             ),

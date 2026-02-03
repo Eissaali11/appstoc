@@ -322,7 +322,7 @@ class _TransferCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        transfer.warehouseName,
+                        transfer.warehouseName ?? 'مستودع غير محدد',
                         style: GoogleFonts.cairo(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,

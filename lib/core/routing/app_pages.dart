@@ -15,6 +15,7 @@ import '../../features/received_devices/presentation/pages/submit_device_page.da
 import '../../features/received_devices/presentation/bindings/devices_binding.dart';
 import '../../features/dashboard/presentation/pages/inventory_list_page.dart';
 import '../../features/dashboard/presentation/pages/request_inventory_page.dart';
+import '../../features/inventory_requests/presentation/bindings/inventory_request_binding.dart';
 
 class AppPages {
   static const initial = Routes.login;
@@ -63,7 +64,7 @@ class AppPages {
     GetPage(
       name: Routes.requestInventory,
       page: () => const RequestInventoryPage(),
-      binding: DashboardBinding(),
+      binding: InventoryRequestBinding(),
     ),
   ];
 }

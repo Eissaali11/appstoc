@@ -46,10 +46,7 @@ class PendingTransferCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.surfaceDark,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: AppColors.warning.withOpacity(0.3),
-          width: 1,
-        ),
+        border: Border.all(color: AppColors.warning.withOpacity(0.3), width: 1),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -77,7 +74,7 @@ class PendingTransferCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        transfer.warehouseName,
+                        transfer.warehouseName ?? 'مستودع غير محدد',
                         style: GoogleFonts.cairo(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
@@ -137,9 +134,7 @@ class PendingTransferCard extends StatelessWidget {
                     icon: const Icon(Icons.check, size: 18),
                     label: Text(
                       'قبول',
-                      style: GoogleFonts.cairo(
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: GoogleFonts.cairo(fontWeight: FontWeight.bold),
                     ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.success,
@@ -158,9 +153,7 @@ class PendingTransferCard extends StatelessWidget {
                     icon: const Icon(Icons.close, size: 18),
                     label: Text(
                       'رفض',
-                      style: GoogleFonts.cairo(
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: GoogleFonts.cairo(fontWeight: FontWeight.bold),
                     ),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppColors.error,
@@ -184,11 +177,15 @@ class PendingTransferCard extends StatelessWidget {
 class PendingTransfersSection extends StatelessWidget {
   final List<WarehouseTransfer> transfers;
   final VoidCallback? onViewAll;
+  final Function(String transferId)? onAccept;
+  final Function(String transferId)? onReject;
 
   const PendingTransfersSection({
     super.key,
     required this.transfers,
     this.onViewAll,
+    this.onAccept,
+    this.onReject,
   });
 
   @override
@@ -201,10 +198,7 @@ class PendingTransfersSection extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.surfaceDark,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: AppColors.warning.withOpacity(0.3),
-          width: 1,
-        ),
+        border: Border.all(color: AppColors.warning.withOpacity(0.3), width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -260,12 +254,12 @@ class PendingTransfersSection extends StatelessWidget {
               children: transfers.take(3).map((transfer) {
                 return PendingTransferCard(
                   transfer: transfer,
-                  onAccept: () {
-                    // TODO: Handle accept
-                  },
-                  onReject: () {
-                    // TODO: Handle reject
-                  },
+                  onAccept: onAccept != null
+                      ? () => onAccept!(transfer.id)
+                      : null,
+                  onReject: onReject != null
+                      ? () => onReject!(transfer.id)
+                      : null,
                 );
               }).toList(),
             ),

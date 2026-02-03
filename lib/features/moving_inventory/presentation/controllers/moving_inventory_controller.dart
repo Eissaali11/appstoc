@@ -126,4 +126,41 @@ class MovingInventoryController extends GetxController {
       _isLoading.value = false;
     }
   }
+
+  Future<void> updateInventory(List<InventoryEntry> entries) async {
+    try {
+      _isLoading.value = true;
+      _error.value = null;
+
+      final userId = authController.user?.id;
+      if (userId == null) {
+        throw Exception('المستخدم غير مسجل دخول');
+      }
+
+      // Update each entry individually using POST (as per new API)
+      await repository.updateMovingInventory(userId, entries);
+      
+      // Reload data to get updated values from server
+      await loadData();
+      
+      Get.snackbar(
+        'نجح',
+        'تم تحديث المخزون المتحرك بنجاح',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Get.theme.colorScheme.primary,
+        colorText: Colors.white,
+      );
+    } catch (e) {
+      _error.value = e.toString().replaceAll('Exception: ', '');
+      Get.snackbar(
+        'خطأ',
+        _error.value ?? 'فشل تحديث المخزون',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Get.theme.colorScheme.error,
+        colorText: Colors.white,
+      );
+    } finally {
+      _isLoading.value = false;
+    }
+  }
 }

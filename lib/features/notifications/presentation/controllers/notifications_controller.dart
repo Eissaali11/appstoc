@@ -126,4 +126,67 @@ class NotificationsController extends GetxController {
       _isLoading.value = false;
     }
   }
+
+  Future<void> acceptMultipleTransfers(List<String> transferIds) async {
+    try {
+      _isLoading.value = true;
+      final dioInstance = Get.find<dio.Dio>();
+      await dioInstance.post(
+        ApiEndpoints.acceptMultipleTransfers,
+        data: {'transferIds': transferIds},
+      );
+      await loadData();
+      
+      Get.snackbar(
+        'نجح',
+        'تم قبول ${transferIds.length} طلب نقل',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Get.theme.colorScheme.primary,
+        colorText: Colors.white,
+      );
+    } catch (e) {
+      Get.snackbar(
+        'خطأ',
+        e.toString().replaceAll('Exception: ', ''),
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Get.theme.colorScheme.error,
+        colorText: Colors.white,
+      );
+    } finally {
+      _isLoading.value = false;
+    }
+  }
+
+  Future<void> rejectMultipleTransfers(List<String> transferIds, {String? reason}) async {
+    try {
+      _isLoading.value = true;
+      final dioInstance = Get.find<dio.Dio>();
+      await dioInstance.post(
+        ApiEndpoints.rejectMultipleTransfers,
+        data: {
+          'transferIds': transferIds,
+          if (reason != null) 'reason': reason,
+        },
+      );
+      await loadData();
+      
+      Get.snackbar(
+        'نجح',
+        'تم رفض ${transferIds.length} طلب نقل',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Get.theme.colorScheme.primary,
+        colorText: Colors.white,
+      );
+    } catch (e) {
+      Get.snackbar(
+        'خطأ',
+        e.toString().replaceAll('Exception: ', ''),
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Get.theme.colorScheme.error,
+        colorText: Colors.white,
+      );
+    } finally {
+      _isLoading.value = false;
+    }
+  }
 }

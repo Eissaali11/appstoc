@@ -32,7 +32,7 @@ class PendingTransferCard extends StatelessWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    transfer.warehouseName,
+                    transfer.warehouseName ?? 'مستودع غير محدد',
                     style: AppTextStyles.heading3,
                   ),
                 ),

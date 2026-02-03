@@ -86,8 +86,11 @@ class FixedInventoryController extends GetxController {
         throw Exception('المستخدم غير مسجل دخول');
       }
 
+      // Update each entry individually using POST (as per new API)
       await updateFixedInventoryUseCase(userId, entries);
-      _inventory.value = entries;
+      
+      // Reload data to get updated values from server
+      await loadData();
       
       Get.snackbar(
         'نجح',

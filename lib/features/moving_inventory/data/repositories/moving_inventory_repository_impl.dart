@@ -68,14 +68,41 @@ class MovingInventoryRepositoryImpl implements MovingInventoryRepository {
   ) async {
     try {
       final dio = Get.find<Dio>();
-      await dio.put(
+      // Update each entry individually using POST
+      for (var entry in entries) {
+        await dio.post(
+          ApiEndpoints.movingInventoryEntries(technicianId),
+          data: {
+            'itemTypeId': entry.itemTypeId,
+            'boxes': entry.boxes,
+            'units': entry.units,
+          },
+        );
+      }
+    } catch (e) {
+      throw Exception('فشل تحديث المخزون المتحرك: ${e.toString()}');
+    }
+  }
+
+  /// Update a single inventory entry
+  Future<void> updateSingleEntry({
+    required String technicianId,
+    required String itemTypeId,
+    required int boxes,
+    required int units,
+  }) async {
+    try {
+      final dio = Get.find<Dio>();
+      await dio.post(
         ApiEndpoints.movingInventoryEntries(technicianId),
         data: {
-          'entries': entries.map((e) => e.toJson()).toList(),
+          'itemTypeId': itemTypeId,
+          'boxes': boxes,
+          'units': units,
         },
       );
     } catch (e) {
-      throw Exception('فشل تحديث المخزون المتحرك: ${e.toString()}');
+      throw Exception('فشل تحديث عنصر المخزون: ${e.toString()}');
     }
   }
 

@@ -8,6 +8,7 @@ import '../../../../shared/widgets/app_drawer.dart';
 import '../../../../shared/utils/icon_mapper.dart';
 import '../../data/models/warehouse_transfer.dart';
 import '../../../dashboard/presentation/widgets/shimmer_loading.dart';
+import '../../../dashboard/presentation/pages/update_inventory_page.dart';
 
 class MovingInventoryPage extends GetView<MovingInventoryController> {
   const MovingInventoryPage({super.key});
@@ -35,6 +36,16 @@ class MovingInventoryPage extends GetView<MovingInventoryController> {
             tooltip: 'تحديث',
           ),
         ],
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => _showUpdateInventoryDialog(),
+        icon: const Icon(Icons.edit),
+        label: Text(
+          'تحديث',
+          style: GoogleFonts.cairo(fontWeight: FontWeight.bold),
+        ),
+        backgroundColor: AppColors.purpleGradient.first,
+        foregroundColor: Colors.white,
       ),
       body: Obx(() {
         if (controller.isLoading && controller.inventory.isEmpty && controller.pendingTransfers.isEmpty) {
@@ -397,6 +408,17 @@ class MovingInventoryPage extends GetView<MovingInventoryController> {
       ),
     );
   }
+
+  void _showUpdateInventoryDialog() {
+    Get.to(
+      () => UpdateInventoryPage(
+        currentInventory: controller.inventory,
+        itemTypes: controller.itemTypes,
+        inventoryType: 'moving',
+        onSave: (entries) => controller.updateInventory(entries),
+      ),
+    );
+  }
 }
 
 class _PendingTransferCard extends StatelessWidget {
@@ -434,7 +456,7 @@ class _PendingTransferCard extends StatelessWidget {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  transfer.warehouseName,
+                  transfer.warehouseName ?? 'مستودع غير محدد',
                   style: GoogleFonts.cairo(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,

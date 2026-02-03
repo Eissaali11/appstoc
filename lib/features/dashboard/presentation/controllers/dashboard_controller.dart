@@ -1,9 +1,12 @@
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:dio/dio.dart';
 import '../../../auth/presentation/controllers/auth_controller.dart';
 import '../../domain/use_cases/get_dashboard_data_use_case.dart';
 import '../../../fixed_inventory/data/models/inventory_entry.dart';
 import '../../../moving_inventory/data/models/warehouse_transfer.dart';
 import '../../../../shared/models/item_type.dart';
+import '../../../../core/api/api_endpoints.dart';
 
 class DashboardController extends GetxController {
   final GetDashboardDataUseCase getDashboardDataUseCase;
@@ -124,5 +127,62 @@ class DashboardController extends GetxController {
   Future<void> refresh() async {
     _isInitialLoad.value = false;
     await loadDashboardData();
+  }
+
+  Future<void> acceptTransfer(String transferId) async {
+    try {
+      _isLoading.value = true;
+      final dio = Get.find<Dio>();
+      await dio.post(ApiEndpoints.acceptTransfer(transferId));
+      await loadDashboardData();
+      
+      Get.snackbar(
+        'نجح',
+        'تم قبول طلب النقل بنجاح',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Get.theme.colorScheme.primary,
+        colorText: Colors.white,
+      );
+    } catch (e) {
+      Get.snackbar(
+        'خطأ',
+        e.toString().replaceAll('Exception: ', ''),
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Get.theme.colorScheme.error,
+        colorText: Colors.white,
+      );
+    } finally {
+      _isLoading.value = false;
+    }
+  }
+
+  Future<void> rejectTransfer(String transferId, {String? reason}) async {
+    try {
+      _isLoading.value = true;
+      final dio = Get.find<Dio>();
+      await dio.post(
+        ApiEndpoints.rejectTransfer(transferId),
+        data: reason != null ? {'reason': reason} : null,
+      );
+      await loadDashboardData();
+      
+      Get.snackbar(
+        'نجح',
+        'تم رفض طلب النقل',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Get.theme.colorScheme.primary,
+        colorText: Colors.white,
+      );
+    } catch (e) {
+      Get.snackbar(
+        'خطأ',
+        e.toString().replaceAll('Exception: ', ''),
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Get.theme.colorScheme.error,
+        colorText: Colors.white,
+      );
+    } finally {
+      _isLoading.value = false;
+    }
   }
 }

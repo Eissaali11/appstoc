@@ -7,9 +7,21 @@ import '../../../../shared/models/item_type.dart';
 import '../../../../shared/widgets/app_drawer.dart';
 import '../../../../shared/utils/icon_mapper.dart';
 import '../../../dashboard/presentation/widgets/shimmer_loading.dart';
+import '../../../dashboard/presentation/pages/update_inventory_page.dart';
 
 class FixedInventoryPage extends GetView<FixedInventoryController> {
   const FixedInventoryPage({super.key});
+
+  void _showUpdateInventoryDialog() {
+    Get.to(
+      () => UpdateInventoryPage(
+        currentInventory: controller.inventory,
+        itemTypes: controller.itemTypes,
+        inventoryType: 'fixed',
+        onSave: (entries) => controller.updateInventory(entries),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -35,6 +47,16 @@ class FixedInventoryPage extends GetView<FixedInventoryController> {
           ),
         ],
       ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => _showUpdateInventoryDialog(),
+        icon: const Icon(Icons.edit),
+        label: Text(
+          'تحديث',
+          style: GoogleFonts.cairo(fontWeight: FontWeight.bold),
+        ),
+        backgroundColor: AppColors.primary,
+        foregroundColor: Colors.white,
+      ),
       body: Obx(() {
         if (controller.isLoading && controller.inventory.isEmpty) {
           return const DashboardShimmer();
@@ -42,10 +64,6 @@ class FixedInventoryPage extends GetView<FixedInventoryController> {
 
         if (controller.error != null && controller.inventory.isEmpty) {
           return _buildErrorView();
-        }
-
-        if (controller.inventory.isEmpty) {
-          return _buildEmptyState();
         }
 
         return RefreshIndicator(

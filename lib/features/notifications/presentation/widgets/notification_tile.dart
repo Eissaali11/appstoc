@@ -34,7 +34,7 @@ class NotificationTile extends StatelessWidget {
           ),
         ),
         title: Text(
-          transfer.warehouseName,
+          transfer.warehouseName ?? 'مستودع غير محدد',
           style: AppTextStyles.bodyLarge,
         ),
         subtitle: Column(
