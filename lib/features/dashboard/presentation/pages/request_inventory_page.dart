@@ -7,7 +7,6 @@ import '../../../../shared/utils/icon_mapper.dart';
 import '../../../inventory_requests/presentation/controllers/inventory_request_controller.dart';
 import '../../../inventory_requests/data/repositories/inventory_request_repository_impl.dart';
 import '../../../inventory_requests/domain/repositories/inventory_request_repository.dart';
-import '../../../fixed_inventory/data/models/inventory_entry.dart';
 import '../../../../shared/models/item_type.dart';
 
 class RequestInventoryPage extends StatefulWidget {
@@ -17,8 +16,10 @@ class RequestInventoryPage extends StatefulWidget {
   State<RequestInventoryPage> createState() => _RequestInventoryPageState();
 }
 
-class _RequestInventoryPageState extends State<RequestInventoryPage> {
+class _RequestInventoryPageState extends State<RequestInventoryPage>
+    with SingleTickerProviderStateMixin {
   late InventoryRequestController controller;
+  late TabController _tabController;
   
   // Dynamic controllers based on item types from API
   final Map<String, TextEditingController> _boxesControllers = {};
@@ -38,9 +39,17 @@ class _RequestInventoryPageState extends State<RequestInventoryPage> {
       ));
     }
     controller = Get.find<InventoryRequestController>();
-    
+    _tabController = TabController(length: 2, vsync: this);
+    _tabController.addListener(_onTabChanged);
+
     // Wait for item types to load, then initialize controllers
     _initializeControllers();
+  }
+
+  void _onTabChanged() {
+    if (!_tabController.indexIsChanging && _tabController.index == 1) {
+      controller.loadMyRequests();
+    }
   }
 
   void _initializeControllers() {
@@ -66,6 +75,8 @@ class _RequestInventoryPageState extends State<RequestInventoryPage> {
       controller.dispose();
     }
     _notesController.dispose();
+    _tabController.removeListener(_onTabChanged);
+    _tabController.dispose();
     super.dispose();
   }
 
@@ -74,9 +85,29 @@ class _RequestInventoryPageState extends State<RequestInventoryPage> {
   }
 
   Future<void> _submitRequest() async {
-    // Build entries from controllers
-    final entries = <InventoryEntry>[];
-    
+    // نبني الكميات لكل صنف، وسنحوّلها إلى الحقول الثابتة
+    // التي يتوقعها الـ API (n950Boxes, rollPaperUnits, ...).
+    int n950Boxes = 0,
+        n950Units = 0,
+        i9000sBoxes = 0,
+        i9000sUnits = 0,
+        i9100Boxes = 0,
+        i9100Units = 0,
+        rollPaperBoxes = 0,
+        rollPaperUnits = 0,
+        stickersBoxes = 0,
+        stickersUnits = 0,
+        newBatteriesBoxes = 0,
+        newBatteriesUnits = 0,
+        mobilySimBoxes = 0,
+        mobilySimUnits = 0,
+        stcSimBoxes = 0,
+        stcSimUnits = 0,
+        zainSimBoxes = 0,
+        zainSimUnits = 0;
+
+    bool hasAnyQuantity = false;
+
     for (var itemType in controller.itemTypes) {
       final boxesController = _boxesControllers[itemType.id];
       final unitsController = _unitsControllers[itemType.id];
@@ -84,18 +115,49 @@ class _RequestInventoryPageState extends State<RequestInventoryPage> {
       if (boxesController != null && unitsController != null) {
         final boxes = _parseInt(boxesController);
         final units = _parseInt(unitsController);
-        
         if (boxes > 0 || units > 0) {
-          entries.add(InventoryEntry(
-            itemTypeId: itemType.id,
-            boxes: boxes,
-            units: units,
-          ));
+          hasAnyQuantity = true;
+
+          final nameEn = itemType.nameEn.toLowerCase();
+          final nameAr = itemType.nameAr;
+
+          if (nameEn.contains('n950')) {
+            n950Boxes = boxes;
+            n950Units = units;
+          } else if (nameEn.contains('i9000s')) {
+            i9000sBoxes = boxes;
+            i9000sUnits = units;
+          } else if (nameEn.contains('i9100')) {
+            i9100Boxes = boxes;
+            i9100Units = units;
+          } else if (nameEn.contains('roll') ||
+              nameEn.contains('paper') ||
+              nameAr.contains('ورق')) {
+            rollPaperBoxes = boxes;
+            rollPaperUnits = units;
+          } else if (nameEn.contains('sticker') ||
+              nameAr.contains('ملصق')) {
+            stickersBoxes = boxes;
+            stickersUnits = units;
+          } else if (nameEn.contains('battery') ||
+              nameAr.contains('بطاري')) {
+            newBatteriesBoxes = boxes;
+            newBatteriesUnits = units;
+          } else if (nameEn.contains('mobily')) {
+            mobilySimBoxes = boxes;
+            mobilySimUnits = units;
+          } else if (nameEn.contains('stc')) {
+            stcSimBoxes = boxes;
+            stcSimUnits = units;
+          } else if (nameEn.contains('zain')) {
+            zainSimBoxes = boxes;
+            zainSimUnits = units;
+          }
         }
       }
     }
 
-    if (entries.isEmpty) {
+    if (!hasAnyQuantity) {
       Get.snackbar(
         'خطأ',
         'يرجى إدخال كمية لصنف واحد على الأقل',
@@ -106,10 +168,27 @@ class _RequestInventoryPageState extends State<RequestInventoryPage> {
       return;
     }
 
-    final success = await controller.createRequestWithEntries(
-      entries: entries,
-      notes: _notesController.text.trim().isEmpty 
-          ? null 
+    final success = await controller.createRequest(
+      n950Boxes: n950Boxes,
+      n950Units: n950Units,
+      i9000sBoxes: i9000sBoxes,
+      i9000sUnits: i9000sUnits,
+      i9100Boxes: i9100Boxes,
+      i9100Units: i9100Units,
+      rollPaperBoxes: rollPaperBoxes,
+      rollPaperUnits: rollPaperUnits,
+      stickersBoxes: stickersBoxes,
+      stickersUnits: stickersUnits,
+      newBatteriesBoxes: newBatteriesBoxes,
+      newBatteriesUnits: newBatteriesUnits,
+      mobilySimBoxes: mobilySimBoxes,
+      mobilySimUnits: mobilySimUnits,
+      stcSimBoxes: stcSimBoxes,
+      stcSimUnits: stcSimUnits,
+      zainSimBoxes: zainSimBoxes,
+      zainSimUnits: zainSimUnits,
+      notes: _notesController.text.trim().isEmpty
+          ? null
           : _notesController.text.trim(),
     );
 
@@ -227,13 +306,13 @@ class _RequestInventoryPageState extends State<RequestInventoryPage> {
     return TextField(
       controller: controller,
       keyboardType: TextInputType.number,
-      style: GoogleFonts.cairo(color: Colors.white),
+      style: GoogleFonts.cairo(color: AppColors.textPrimary),
       decoration: InputDecoration(
         labelText: label,
         labelStyle: GoogleFonts.cairo(color: AppColors.textSecondary),
         prefixIcon: Icon(icon, color: AppColors.primary, size: 20),
         filled: true,
-        fillColor: AppColors.backgroundDark,
+        fillColor: Colors.white,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
           borderSide: BorderSide(
@@ -270,177 +349,445 @@ class _RequestInventoryPageState extends State<RequestInventoryPage> {
         backgroundColor: AppColors.surfaceDark,
         foregroundColor: Colors.white,
         elevation: 0,
+        bottom: TabBar(
+          controller: _tabController,
+          tabs: const [
+            Tab(icon: Icon(Icons.add_shopping_cart), text: 'طلب جديد'),
+            Tab(icon: Icon(Icons.history), text: 'طلباتي'),
+          ],
+        ),
       ),
-      body: Obx(() {
-        if (controller.isLoading && controller.itemTypes.isEmpty) {
-          return const Center(
-            child: CircularProgressIndicator(
-              color: AppColors.primary,
-            ),
-          );
-        }
-
-        // Initialize controllers when item types are loaded
-        if (controller.itemTypes.isNotEmpty && 
-            _boxesControllers.isEmpty) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            setState(() {
-              for (var itemType in controller.itemTypes) {
-                _boxesControllers[itemType.id] = TextEditingController(text: '0');
-                _unitsControllers[itemType.id] = TextEditingController(text: '0');
-              }
-            });
-          });
-        }
-
-        return SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header Card
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: AppColors.orangeGradient,
-                    begin: Alignment.topRight,
-                    end: Alignment.bottomLeft,
-                  ),
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.warning.withOpacity(0.3),
-                      blurRadius: 15,
-                      offset: const Offset(0, 8),
-                    ),
-                  ],
+      body: TabBarView(
+        controller: _tabController,
+        children: [
+          // تبويب الطلب الجديد
+          Obx(() {
+            if (controller.isLoading && controller.itemTypes.isEmpty) {
+              return const Center(
+                child: CircularProgressIndicator(
+                  color: AppColors.primary,
                 ),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.request_quote,
-                      color: Colors.white,
-                      size: 32,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'طلب مخزون من المستودع',
-                            style: GoogleFonts.cairo(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            '${controller.itemTypes.length} نوع متاح',
-                            style: GoogleFonts.cairo(
-                              fontSize: 12,
-                              color: Colors.white.withOpacity(0.8),
-                            ),
-                          ),
-                        ],
+              );
+            }
+
+            // Initialize controllers when item types are loaded
+            if (controller.itemTypes.isNotEmpty && _boxesControllers.isEmpty) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                setState(() {
+                  for (var itemType in controller.itemTypes) {
+                    _boxesControllers[itemType.id] =
+                        TextEditingController(text: '0');
+                    _unitsControllers[itemType.id] =
+                        TextEditingController(text: '0');
+                  }
+                });
+              });
+            }
+
+            final totalItems = _boxesControllers.entries.fold<int>(
+                  0,
+                  (sum, e) =>
+                      sum + _parseInt(e.value),
+                ) +
+                _unitsControllers.entries.fold<int>(
+                  0,
+                  (sum, e) =>
+                      sum + _parseInt(e.value),
+                );
+
+            return SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Summary + Header Card
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: AppColors.orangeGradient,
+                        begin: Alignment.topRight,
+                        end: Alignment.bottomLeft,
                       ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              // Items List (Dynamic from API)
-              if (controller.itemTypes.isEmpty)
-                Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(32),
-                    child: Column(
-                      children: [
-                        const CircularProgressIndicator(
-                          color: AppColors.primary,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.warning.withOpacity(0.3),
+                          blurRadius: 15,
+                          offset: const Offset(0, 8),
                         ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'جاري تحميل الأصناف...',
-                          style: GoogleFonts.cairo(
-                            color: AppColors.textSecondary,
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.request_quote,
+                          color: Colors.white,
+                          size: 32,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'طلب مخزون من المستودع',
+                                style: GoogleFonts.cairo(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                '${controller.itemTypes.length} نوع متاح • إجمالي الكمية: $totalItems',
+                                style: GoogleFonts.cairo(
+                                  fontSize: 12,
+                                  color: Colors.white.withOpacity(0.9),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],
                     ),
                   ),
-                )
-              else
-                ...controller.itemTypes.map((itemType) => _buildItemRow(itemType)),
+                  const SizedBox(height: 24),
 
-              const SizedBox(height: 24),
+                  // Items List (Dynamic from API)
+                  if (controller.itemTypes.isEmpty)
+                    Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(32),
+                        child: Column(
+                          children: [
+                            const CircularProgressIndicator(
+                              color: AppColors.primary,
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'جاري تحميل الأصناف...',
+                              style: GoogleFonts.cairo(
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                  else
+                    ...controller.itemTypes
+                        .map((itemType) => _buildItemRow(itemType)),
 
-              // Notes
-              Text(
-                'ملاحظات (اختياري)',
-                style: GoogleFonts.cairo(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Container(
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceDark,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: AppColors.border.withOpacity(0.1),
-                    width: 1,
-                  ),
-                ),
-                child: TextField(
-                  controller: _notesController,
-                  maxLines: 3,
-                  style: GoogleFonts.cairo(color: Colors.white),
-                  decoration: InputDecoration(
-                    labelText: 'أضف ملاحظات',
-                    labelStyle: GoogleFonts.cairo(color: AppColors.textSecondary),
-                    prefixIcon: const Icon(Icons.note, color: AppColors.primary),
-                    border: InputBorder.none,
-                    contentPadding: const EdgeInsets.all(16),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 32),
+                  const SizedBox(height: 24),
 
-              // Submit Button
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: controller.isLoading ? null : _submitRequest,
-                  icon: const Icon(Icons.send),
-                  label: Text(
-                    'إرسال الطلب',
+                  // Notes
+                  Text(
+                    'ملاحظات (اختياري)',
                     style: GoogleFonts.cairo(
-                      fontWeight: FontWeight.bold,
                       fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
                     ),
                   ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
+                  const SizedBox(height: 12),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaceDark,
                       borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: AppColors.border.withOpacity(0.1),
+                        width: 1,
+                      ),
                     ),
-                    disabledBackgroundColor: AppColors.primary.withOpacity(0.5),
+                    child: TextField(
+                      controller: _notesController,
+                      maxLines: 3,
+                      style: GoogleFonts.cairo(color: Colors.white),
+                      decoration: InputDecoration(
+                        labelText: 'أضف ملاحظات',
+                        labelStyle: GoogleFonts.cairo(
+                            color: AppColors.textSecondary),
+                        prefixIcon: const Icon(Icons.note,
+                            color: AppColors.primary),
+                        border: InputBorder.none,
+                        contentPadding: const EdgeInsets.all(16),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+
+                  // Submit Button
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: controller.isLoading ? null : _submitRequest,
+                      icon: const Icon(Icons.send),
+                      label: Text(
+                        'إرسال الطلب',
+                        style: GoogleFonts.cairo(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        disabledBackgroundColor:
+                            AppColors.primary.withOpacity(0.5),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 100),
+                ],
+              ),
+            );
+          }),
+
+          // تبويب طلباتي
+          Obx(() {
+            if (controller.isLoading && controller.myRequests.isEmpty) {
+              return const Center(
+                child: CircularProgressIndicator(color: AppColors.primary),
+              );
+            }
+
+            if (controller.myRequests.isEmpty) {
+              return Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(32),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(
+                        Icons.inbox_outlined,
+                        size: 72,
+                        color: AppColors.textSecondary,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'لا توجد طلبات مخزون سابقة',
+                        style: GoogleFonts.cairo(
+                          fontSize: 16,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ),
-              const SizedBox(height: 100),
-            ],
+              );
+            }
+
+            final requests = controller.myRequests;
+
+            return RefreshIndicator(
+              onRefresh: () => controller.loadMyRequests(),
+              color: AppColors.primary,
+              child: ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: requests.length,
+                itemBuilder: (context, index) {
+                  final request = requests[index];
+                Color statusColor;
+                IconData statusIcon;
+                String statusText;
+
+                final status = request.status.toLowerCase();
+                switch (status) {
+                  case 'approved':
+                    statusColor = AppColors.success;
+                    statusIcon = Icons.check_circle;
+                    statusText = 'تمت الموافقة';
+                    break;
+                  case 'rejected':
+                    statusColor = AppColors.error;
+                    statusIcon = Icons.cancel;
+                    statusText = 'مرفوض';
+                    break;
+                  default:
+                    statusColor = AppColors.warning;
+                    statusIcon = Icons.hourglass_empty;
+                    statusText = 'قيد الانتظار';
+                }
+
+                return Card(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: ExpansionTile(
+                    leading: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: statusColor.withOpacity(0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        statusIcon,
+                        color: statusColor,
+                      ),
+                    ),
+                    title: Text(
+                      statusText,
+                      style: GoogleFonts.cairo(fontWeight: FontWeight.bold),
+                    ),
+                    subtitle: Text(
+                      request.createdAt.toLocal().toString().split('.').first,
+                      style: GoogleFonts.cairo(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                    trailing: Chip(
+                      label: Text(
+                        '${request.totalItems} عنصر',
+                        style: GoogleFonts.cairo(fontSize: 12),
+                      ),
+                      backgroundColor:
+                          AppColors.surfaceDark.withOpacity(0.9),
+                    ),
+                    children: [
+                      // تفاصيل الأصناف (صناديق / وحدات)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 8),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildRequestItemRow(
+                              'جهاز N950',
+                              request.n950Boxes,
+                              request.n950Units,
+                            ),
+                            _buildRequestItemRow(
+                              'جهاز I9000s',
+                              request.i9000sBoxes,
+                              request.i9000sUnits,
+                            ),
+                            _buildRequestItemRow(
+                              'جهاز I9100',
+                              request.i9100Boxes,
+                              request.i9100Units,
+                            ),
+                            _buildRequestItemRow(
+                              'ورق حراري',
+                              request.rollPaperBoxes,
+                              request.rollPaperUnits,
+                            ),
+                            _buildRequestItemRow(
+                              'ملصقات',
+                              request.stickersBoxes,
+                              request.stickersUnits,
+                            ),
+                            _buildRequestItemRow(
+                              'بطاريات جديدة',
+                              request.newBatteriesBoxes,
+                              request.newBatteriesUnits,
+                            ),
+                            _buildRequestItemRow(
+                              'شرائح موبايلي',
+                              request.mobilySimBoxes,
+                              request.mobilySimUnits,
+                            ),
+                            _buildRequestItemRow(
+                              'شرائح STC',
+                              request.stcSimBoxes,
+                              request.stcSimUnits,
+                            ),
+                            _buildRequestItemRow(
+                              'شرائح زين',
+                              request.zainSimBoxes,
+                              request.zainSimUnits,
+                            ),
+                          ].whereType<Widget>().toList(),
+                        ),
+                      ),
+                      if (request.notes != null &&
+                          request.notes!.trim().isNotEmpty)
+                        ListTile(
+                          leading: const Icon(Icons.note,
+                              size: 20, color: AppColors.primary),
+                          title: Text(
+                            'ملاحظات الفني',
+                            style: GoogleFonts.cairo(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          subtitle: Text(
+                            request.notes!,
+                            style: GoogleFonts.cairo(fontSize: 13),
+                          ),
+                        ),
+                      if (request.adminNotes != null &&
+                          request.adminNotes!.trim().isNotEmpty)
+                        ListTile(
+                          leading: Icon(Icons.admin_panel_settings,
+                              size: 20, color: statusColor),
+                          title: Text(
+                            'رد الإدارة',
+                            style: GoogleFonts.cairo(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          subtitle: Text(
+                            request.adminNotes!,
+                            style: GoogleFonts.cairo(fontSize: 13),
+                          ),
+                        ),
+                    ],
+                  ),
+                );
+              },
+            ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  /// يبني صفاً لعرض كميات صنف واحد (صناديق / وحدات) في بطاقة "طلباتي".
+  /// إذا كانت جميع القيم null أو 0 يرجع null حتى لا يظهر الصف.
+  Widget? _buildRequestItemRow(
+    String label,
+    int? boxes,
+    int? units,
+  ) {
+    final b = boxes ?? 0;
+    final u = units ?? 0;
+    if (b == 0 && u == 0) return null;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        children: [
+          Text(
+            label,
+            style: GoogleFonts.cairo(fontSize: 13),
           ),
-        );
-      }),
+          const Spacer(),
+          if (b > 0)
+            Text(
+              '$b صندوق${b > 1 ? '' : ''}  ',
+              style: GoogleFonts.cairo(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          if (u > 0)
+            Text(
+              '$u وحدة',
+              style: GoogleFonts.cairo(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+        ],
+      ),
     );
   }
 }

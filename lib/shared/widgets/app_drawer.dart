@@ -19,75 +19,113 @@ class AppDrawer extends StatelessWidget {
       child: SafeArea(
         child: Column(
           children: [
-            // Header with User Info
+            // Header with App Logo + User Info
             Obx(() {
               final user = authController.user;
               return Container(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [AppColors.primary, AppColors.primaryDark],
+                    colors: [AppColors.primaryDark, AppColors.primary],
                     begin: Alignment.topRight,
                     end: Alignment.bottomLeft,
                   ),
+                  borderRadius: const BorderRadius.vertical(
+                    bottom: Radius.circular(24),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primary.withOpacity(0.35),
+                      blurRadius: 18,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
                 ),
-                padding: const EdgeInsets.all(24),
-                child: Column(
+                padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
+                child: Row(
                   children: [
-                    // Avatar
+                    // App logo using ico1.png
                     Container(
-                      width: 80,
-                      height: 80,
+                      width: 64,
+                      height: 64,
                       decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: LinearGradient(
-                          colors: [
-                            Colors.white.withOpacity(0.3),
-                            Colors.white.withOpacity(0.1),
-                          ],
-                        ),
-                        border: Border.all(
-                          color: Colors.white,
-                          width: 3,
-                        ),
+                        borderRadius: BorderRadius.circular(18),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.2),
-                            blurRadius: 10,
-                            offset: const Offset(0, 5),
+                            color: Colors.black.withOpacity(0.35),
+                            blurRadius: 16,
+                            offset: const Offset(0, 8),
                           ),
                         ],
                       ),
-                      child: Center(
-                        child: Text(
-                          user?.fullName.isNotEmpty == true
-                              ? user!.fullName[0].toUpperCase()
-                              : 'U',
-                          style: GoogleFonts.cairo(
-                            fontSize: 32,
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(18),
+                        child: Image.asset(
+                          'assets/ico1.png',
+                          fit: BoxFit.cover,
                         ),
                       ),
                     ),
-                    const SizedBox(height: 16),
-                    // Name
-                    Text(
-                      user?.fullName ?? 'مستخدم',
-                      style: GoogleFonts.cairo(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 4),
-                    // Username
-                    Text(
-                      '@${user?.username ?? 'user'}',
-                      style: GoogleFonts.cairo(
-                        fontSize: 14,
-                        color: Colors.white.withOpacity(0.9),
+                    const SizedBox(width: 16),
+                    // User name and app name
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            user?.fullName ?? 'مستخدم نظام المخزون',
+                            style: GoogleFonts.cairo(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '@${user?.username ?? 'stockpro'}',
+                            style: GoogleFonts.cairo(
+                              fontSize: 13,
+                              color: Colors.white.withOpacity(0.9),
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.16),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: Colors.white.withOpacity(0.3),
+                                width: 0.8,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(
+                                  Icons.check_circle,
+                                  color: Colors.white,
+                                  size: 14,
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'StockPro المركز',
+                                  style: GoogleFonts.cairo(
+                                    fontSize: 11,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
@@ -135,6 +173,20 @@ class AppDrawer extends StatelessWidget {
                     isActive: currentRoute == Routes.submitDevice,
                     gradient: [AppColors.success, AppColors.success.withOpacity(0.8)],
                   ),
+                  _DrawerItem(
+                    icon: Icons.devices,
+                    title: 'الأجهزة المستلمة',
+                    route: Routes.receivedDevices,
+                    isActive: currentRoute == Routes.receivedDevices,
+                    gradient: [AppColors.primary, AppColors.primaryDark],
+                  ),
+                  _DrawerItem(
+                    icon: Icons.request_page,
+                    title: 'طلب مخزون',
+                    route: Routes.requestInventory,
+                    isActive: currentRoute == Routes.requestInventory,
+                    gradient: AppColors.orangeGradient,
+                  ),
                   Obx(() {
                     final dashboardController = Get.isRegistered<DashboardController>()
                         ? Get.find<DashboardController>()
@@ -155,6 +207,13 @@ class AppDrawer extends StatelessWidget {
                     thickness: 1,
                     indent: 16,
                     endIndent: 16,
+                  ),
+                  _DrawerItem(
+                    icon: Icons.business_rounded,
+                    title: 'من نحن',
+                    route: Routes.aboutUs,
+                    isActive: currentRoute == Routes.aboutUs,
+                    gradient: [AppColors.primary, AppColors.primaryDark],
                   ),
                   _DrawerItem(
                     icon: Icons.person,

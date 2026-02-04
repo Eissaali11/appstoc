@@ -31,22 +31,22 @@ class AuthController extends GetxController {
     checkAuth();
   }
 
-  Future<void> checkAuth() async {
+  /// Returns true if the user is authenticated (valid token + user loaded).
+  Future<bool> checkAuth() async {
     try {
       _isLoading.value = true;
       final token = await Get.find<SecureStorageService>().getToken();
       if (token == null) {
         _user.value = null;
-        return;
+        return false;
       }
 
       final currentUser = await getCurrentUserUseCase();
       _user.value = currentUser;
-      // Navigate to dashboard if user exists
-      Get.offAllNamed('/dashboard');
+      return true;
     } catch (e) {
       _user.value = null;
-      // Stay on login page if auth fails
+      return false;
     } finally {
       _isLoading.value = false;
     }

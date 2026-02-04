@@ -73,7 +73,7 @@ class _SubmitDevicePageState extends State<SubmitDevicePage> {
         foregroundColor: Colors.white,
         elevation: 0,
       ),
-      body: Obx(() => Form(
+      body: Form(
         key: _formKey,
         child: ListView(
           padding: const EdgeInsets.all(16),
@@ -245,7 +245,7 @@ class _SubmitDevicePageState extends State<SubmitDevicePage> {
             const SizedBox(height: 100),
           ],
         ),
-      )),
+      ),
     );
   }
 
@@ -258,16 +258,16 @@ class _SubmitDevicePageState extends State<SubmitDevicePage> {
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.surfaceDark,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: AppColors.border.withOpacity(0.1),
+          color: AppColors.border.withOpacity(0.3),
           width: 1,
         ),
       ),
       child: TextFormField(
         controller: controller,
-        style: GoogleFonts.cairo(color: Colors.white),
+        style: GoogleFonts.cairo(color: AppColors.textPrimary),
         maxLines: maxLines,
         validator: validator,
         decoration: InputDecoration(

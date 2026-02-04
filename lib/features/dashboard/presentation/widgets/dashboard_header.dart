@@ -28,7 +28,7 @@ class _DashboardHeaderState extends State<DashboardHeader>
     super.initState();
     _updateDateTime();
     _startTimer();
-    
+
     // Pulse animation for notification badge
     _pulseController = AnimationController(
       vsync: this,
@@ -62,51 +62,41 @@ class _DashboardHeaderState extends State<DashboardHeader>
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [AppColors.primary, AppColors.primaryDark],
-          begin: Alignment.topRight,
-          end: Alignment.bottomLeft,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withOpacity(0.3),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      padding: EdgeInsets.fromLTRB(
-        16,
-        MediaQuery.of(context).padding.top + 16,
-        16,
-        24,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Top Bar with Notifications and Profile
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final bool isNarrow = constraints.maxWidth < 400;
+
+        Widget buildTopBar() {
+          final logoWidget = SizedBox(
+            height: isNarrow ? 48 : 64,
+            child: FittedBox(
+              fit: BoxFit.contain,
+              child: Image.asset('assets/banr.png'),
+            ),
+          );
+
+          final controlsRow = Row(
             children: [
-              // Profile Icon with Ripple Effect
+              // Side menu button لفتح القائمة الجانبية
               _IconButton(
-                icon: Icons.person,
-                onTap: () => Get.toNamed('/profile'),
-                tooltip: 'الملف الشخصي',
+                icon: Icons.menu,
+                onTap: () {
+                  final scaffoldState = Scaffold.maybeOf(context);
+                  scaffoldState?.openDrawer();
+                },
+                tooltip: 'القائمة',
               ),
-              // Title
+              const SizedBox(width: 8),
               Text(
-                'نظام المخزون',
+                'المركز',
                 style: GoogleFonts.cairo(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
                   color: Colors.white,
-                  letterSpacing: 0.5,
                 ),
+                overflow: TextOverflow.ellipsis,
               ),
-              // Notifications Icon with Animated Badge
+              const SizedBox(width: 8),
+              // Notifications with badge
               Stack(
                 clipBehavior: Clip.none,
                 children: [
@@ -160,71 +150,136 @@ class _DashboardHeaderState extends State<DashboardHeader>
                     ),
                 ],
               ),
+              const SizedBox(width: 8),
+              _IconButton(
+                icon: Icons.person,
+                onTap: () => Get.toNamed('/profile'),
+                tooltip: 'الملف الشخصي',
+              ),
             ],
-          ),
-          const SizedBox(height: 24),
-          // Welcome Message with Fade Animation
-          TweenAnimationBuilder<double>(
-            tween: Tween(begin: 0.0, end: 1.0),
-            duration: const Duration(milliseconds: 800),
-            curve: Curves.easeOut,
-            builder: (context, value, child) {
-              return Opacity(
-                opacity: value,
-                child: Transform.translate(
-                  offset: Offset(0, 10 * (1 - value)),
-                  child: child,
-                ),
-              );
-            },
-            child: Column(
+          );
+
+          if (isNarrow) {
+            // على الشاشات الصغيرة نعرض الشعار فوق العناصر لنتجنب التداخل
+            return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'مرحباً،',
-                  style: GoogleFonts.cairo(
-                    fontSize: 18,
-                    color: Colors.white.withOpacity(0.9),
-                  ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(child: controlsRow),
+                  ],
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  widget.userName,
-                  style: GoogleFonts.cairo(
-                    fontSize: 26,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                    height: 1.2,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
+                const SizedBox(height: 16),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: logoWidget,
                 ),
               ],
-            ),
-          ),
-          const SizedBox(height: 12),
-          // Date and Time with Icon
-          Row(
-            children: [
-              Icon(
-                Icons.access_time,
-                size: 16,
-                color: Colors.white.withOpacity(0.8),
-              ),
-              const SizedBox(width: 8),
-              Flexible(
-                child: Text(
-                  _currentDateTime,
-                  style: GoogleFonts.cairo(
-                    fontSize: 14,
-                    color: Colors.white.withOpacity(0.9),
+            );
+          } else {
+            // على الشاشات الأوسع نستمر باستخدام صف واحد، مع توزيع مرن
+            return Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Flexible(
+                  flex: 3,
+                  child: controlsRow,
+                ),
+                const SizedBox(width: 12),
+                Flexible(
+                  flex: 2,
+                  child: Align(
+                    alignment: Alignment.centerRight,
+                    child: logoWidget,
                   ),
                 ),
+              ],
+            );
+          }
+        }
+
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(24),
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF111827), Color(0xFF020617)],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.25),
+                    blurRadius: 20,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
               ),
-            ],
+              padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  buildTopBar(),
+                  const SizedBox(height: 24),
+                  // Welcome and date section
+                  TweenAnimationBuilder<double>(
+                    tween: Tween(begin: 0.0, end: 1.0),
+                    duration: const Duration(milliseconds: 800),
+                    curve: Curves.easeOut,
+                    builder: (context, value, child) {
+                      return Opacity(
+                        opacity: value,
+                        child: Transform.translate(
+                          offset: Offset(0, 10 * (1 - value)),
+                          child: child,
+                        ),
+                      );
+                    },
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Welcome, ${widget.userName}!',
+                          style: GoogleFonts.poppins(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.access_time,
+                              size: 16,
+                              color: Colors.white.withOpacity(0.9),
+                            ),
+                            const SizedBox(width: 8),
+                            Flexible(
+                              child: Text(
+                                _currentDateTime,
+                                style: GoogleFonts.cairo(
+                                  fontSize: 14,
+                                  color: Colors.white.withOpacity(0.95),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
@@ -234,11 +289,7 @@ class _IconButton extends StatefulWidget {
   final VoidCallback onTap;
   final String? tooltip;
 
-  const _IconButton({
-    required this.icon,
-    required this.onTap,
-    this.tooltip,
-  });
+  const _IconButton({required this.icon, required this.onTap, this.tooltip});
 
   @override
   State<_IconButton> createState() => _IconButtonState();
@@ -296,9 +347,7 @@ class _IconButtonState extends State<_IconButton>
               child: Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(
-                    _isPressed ? 0.3 : 0.2,
-                  ),
+                  color: Colors.white.withOpacity(_isPressed ? 0.3 : 0.2),
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
@@ -308,11 +357,7 @@ class _IconButtonState extends State<_IconButton>
                     ),
                   ],
                 ),
-                child: Icon(
-                  widget.icon,
-                  color: Colors.white,
-                  size: 24,
-                ),
+                child: Icon(widget.icon, color: Colors.white, size: 24),
               ),
             );
           },

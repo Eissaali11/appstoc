@@ -47,13 +47,17 @@ class InventoryFilterBar extends StatelessWidget {
           // Search Bar
           Container(
             decoration: BoxDecoration(
-              color: AppColors.cardColor,
+              color: Colors.white,
               borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: AppColors.border.withOpacity(0.3),
+                width: 1,
+              ),
             ),
             child: TextField(
               controller: searchController,
               style: GoogleFonts.cairo(
-                color: Colors.white,
+                color: AppColors.textPrimary,
                 fontSize: 14,
               ),
               decoration: InputDecoration(

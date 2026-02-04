@@ -263,6 +263,11 @@ class _DashboardContentState extends State<_DashboardContent> {
 
   @override
   Widget build(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+    final bool isNarrow = width < 400;
+    final int crossAxisCount = isNarrow ? 1 : 2;
+    // كلما زاد الرقم، قلّ ارتفاع البطاقة
+    final double childAspectRatio = isNarrow ? 3.0 : 2.0;
     final filteredItems = _getFilteredItems();
 
     return RefreshIndicator(
@@ -283,11 +288,11 @@ class _DashboardContentState extends State<_DashboardContent> {
           SliverPadding(
             padding: const EdgeInsets.all(16),
             sliver: SliverGrid(
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: crossAxisCount,
                 mainAxisSpacing: 12,
                 crossAxisSpacing: 12,
-                childAspectRatio: 1.3,
+                childAspectRatio: childAspectRatio,
               ),
               delegate: SliverChildBuilderDelegate(
                 (context, index) {

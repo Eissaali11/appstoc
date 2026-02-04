@@ -84,58 +84,44 @@ class _LoginFormState extends State<LoginForm> {
     String? Function(String?)? validator,
     bool enabled = true,
   }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: AppColors.border.withOpacity(0.3),
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+    return TextFormField(
+      controller: controller,
+      obscureText: obscureText,
+      enabled: enabled,
+      textDirection: TextDirection.rtl,
+      textAlign: TextAlign.right,
+      style: GoogleFonts.tajawal(fontSize: 16, color: Colors.white),
+      decoration: InputDecoration(
+        hintText: label,
+        hintStyle: GoogleFonts.tajawal(fontSize: 15, color: Colors.white70),
+        prefixIcon: Icon(icon, color: Colors.white, size: 22),
+        suffixIcon: suffixIcon,
+        filled: false,
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(
+            color: Colors.white.withOpacity(0.8),
+            width: 1.2,
           ),
-        ],
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Colors.white, width: 1.4),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Colors.redAccent, width: 1.2),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Colors.redAccent, width: 1.4),
+        ),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 18,
+          vertical: 16,
+        ),
       ),
-      child: TextFormField(
-        controller: controller,
-        obscureText: obscureText,
-        enabled: enabled,
-        textDirection: TextDirection.rtl,
-        style: GoogleFonts.cairo(
-          fontSize: 16,
-          color: AppColors.textPrimary,
-        ),
-        decoration: InputDecoration(
-          labelText: label,
-          labelStyle: GoogleFonts.cairo(
-            fontSize: 14,
-            color: AppColors.textSecondary,
-          ),
-          prefixIcon: Padding(
-            padding: const EdgeInsets.only(right: 12),
-            child: Icon(
-              icon,
-              color: AppColors.loginBlue,
-              size: 22,
-            ),
-          ),
-          suffixIcon: suffixIcon,
-          border: InputBorder.none,
-          enabledBorder: InputBorder.none,
-          focusedBorder: InputBorder.none,
-          errorBorder: InputBorder.none,
-          disabledBorder: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 16,
-          ),
-        ),
-        validator: validator,
-      ),
+      validator: validator,
     );
   }
 
@@ -185,21 +171,17 @@ class _LoginFormState extends State<LoginForm> {
               : Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(
-                      Icons.check,
-                      color: Colors.white,
-                      size: 24,
-                    ),
-                    const SizedBox(width: 12),
                     Text(
                       'دخول',
-                      style: GoogleFonts.cairo(
+                      style: GoogleFonts.tajawal(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
                         letterSpacing: 1,
                       ),
                     ),
+                    const SizedBox(width: 8),
+                    const Icon(Icons.check, color: Colors.white, size: 22),
                   ],
                 ),
         ),

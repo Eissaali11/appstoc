@@ -1,5 +1,6 @@
 import 'package:get/get.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
+import '../../features/auth/presentation/pages/splash_page.dart';
 import '../../features/auth/presentation/bindings/auth_binding.dart';
 import '../../features/dashboard/presentation/pages/dashboard_page.dart';
 import '../../features/dashboard/presentation/bindings/dashboard_binding.dart';
@@ -12,15 +13,22 @@ import '../../features/notifications/presentation/bindings/notifications_binding
 import '../../features/profile/presentation/pages/profile_page.dart';
 import '../../features/profile/presentation/bindings/profile_binding.dart';
 import '../../features/received_devices/presentation/pages/submit_device_page.dart';
+import '../../features/received_devices/presentation/pages/received_devices_page.dart';
 import '../../features/received_devices/presentation/bindings/devices_binding.dart';
 import '../../features/dashboard/presentation/pages/inventory_list_page.dart';
 import '../../features/dashboard/presentation/pages/request_inventory_page.dart';
 import '../../features/inventory_requests/presentation/bindings/inventory_request_binding.dart';
+import '../../features/about/presentation/pages/about_us_page.dart';
 
 class AppPages {
-  static const initial = Routes.login;
+  static const initial = Routes.splash;
 
   static final routes = [
+    GetPage(
+      name: Routes.splash,
+      page: () => const SplashPage(),
+      binding: AuthBinding(),
+    ),
     GetPage(
       name: Routes.login,
       page: () => const LoginPage(),
@@ -57,6 +65,11 @@ class AppPages {
       binding: DevicesBinding(),
     ),
     GetPage(
+      name: Routes.receivedDevices,
+      page: () => const ReceivedDevicesPage(),
+      binding: DevicesBinding(),
+    ),
+    GetPage(
       name: Routes.inventoryList,
       page: () => const InventoryListPage(),
       binding: DashboardBinding(),
@@ -66,10 +79,15 @@ class AppPages {
       page: () => const RequestInventoryPage(),
       binding: InventoryRequestBinding(),
     ),
+    GetPage(
+      name: Routes.aboutUs,
+      page: () => const AboutUsPage(),
+    ),
   ];
 }
 
 class Routes {
+  static const splash = '/';
   static const login = '/login';
   static const dashboard = '/dashboard';
   static const fixedInventory = '/fixed-inventory';
@@ -77,6 +95,8 @@ class Routes {
   static const notifications = '/notifications';
   static const profile = '/profile';
   static const submitDevice = '/submit-device';
+  static const receivedDevices = '/received-devices';
   static const inventoryList = '/inventory-list';
   static const requestInventory = '/request-inventory';
+  static const aboutUs = '/about-us';
 }

@@ -43,6 +43,11 @@ class ApiEndpoints {
 
   // Received Devices
   static const String receivedDevices = '/api/received-devices';
+  static const String receivedDevicesPendingCount =
+      '/api/received-devices/pending/count';
+  static String receivedDevice(String id) => '/api/received-devices/$id';
+  static String updateReceivedDeviceStatus(String id) =>
+      '/api/received-devices/$id/status';
 
   // Item Types
   static const String activeItemTypes = '/api/item-types/active';
