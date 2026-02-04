@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import '../../../../core/utils/validators.dart';
 
 class DeviceForm extends StatefulWidget {
@@ -63,9 +64,9 @@ class _DeviceFormState extends State<DeviceForm> {
           children: [
             TextFormField(
               controller: _terminalIdController,
-              decoration: const InputDecoration(
-                labelText: 'رقم الجهاز',
-                prefixIcon: Icon(Icons.devices),
+              decoration: InputDecoration(
+                labelText: 'device_id_short'.tr,
+                prefixIcon: const Icon(Icons.devices),
               ),
               textDirection: TextDirection.rtl,
               validator: (value) => Validators.required(value),
@@ -76,9 +77,9 @@ class _DeviceFormState extends State<DeviceForm> {
                 Expanded(
                   child: TextFormField(
                     controller: _serialNumberController,
-                    decoration: const InputDecoration(
-                      labelText: 'الرقم التسلسلي',
-                      prefixIcon: Icon(Icons.qr_code),
+                    decoration: InputDecoration(
+                      labelText: 'serial_short'.tr,
+                      prefixIcon: const Icon(Icons.qr_code),
                     ),
                     textDirection: TextDirection.rtl,
                     validator: (value) => Validators.required(value),
@@ -90,28 +91,28 @@ class _DeviceFormState extends State<DeviceForm> {
                   onPressed: () {
                     // TODO: Open barcode scanner
                   },
-                  tooltip: 'مسح الباركود',
+                  tooltip: 'clear_barcode'.tr,
                 ),
               ],
             ),
             const SizedBox(height: 16),
             CheckboxListTile(
-              title: const Text('بطارية'),
+              title: Text('battery'.tr),
               value: _battery,
               onChanged: (value) => setState(() => _battery = value ?? false),
             ),
             CheckboxListTile(
-              title: const Text('كابل الشاحن'),
+              title: Text('charger_cable'.tr),
               value: _chargerCable,
               onChanged: (value) => setState(() => _chargerCable = value ?? false),
             ),
             CheckboxListTile(
-              title: const Text('رأس الشاحن'),
+              title: Text('charger_head'.tr),
               value: _chargerHead,
               onChanged: (value) => setState(() => _chargerHead = value ?? false),
             ),
             CheckboxListTile(
-              title: const Text('يحتوي شريحة'),
+              title: Text('has_sim'.tr),
               value: _hasSim,
               onChanged: (value) {
                 setState(() {
@@ -125,9 +126,9 @@ class _DeviceFormState extends State<DeviceForm> {
             if (_hasSim) ...[
               const SizedBox(height: 8),
               DropdownButtonFormField<String>(
-                decoration: const InputDecoration(
-                  labelText: 'نوع الشريحة',
-                  prefixIcon: Icon(Icons.sim_card),
+                decoration: InputDecoration(
+                  labelText: 'sim_type'.tr,
+                  prefixIcon: const Icon(Icons.sim_card),
                 ),
                 value: _simCardType,
                 items: _simTypes.map((type) {
@@ -138,16 +139,16 @@ class _DeviceFormState extends State<DeviceForm> {
                 }).toList(),
                 onChanged: (value) => setState(() => _simCardType = value),
                 validator: (value) => _hasSim && value == null
-                    ? 'يجب اختيار نوع الشريحة'
+                    ? 'sim_type_required'.tr
                     : null,
               ),
             ],
             const SizedBox(height: 16),
             TextFormField(
               controller: _damagePartController,
-              decoration: const InputDecoration(
-                labelText: 'الجزء المتضرر',
-                prefixIcon: Icon(Icons.warning),
+              decoration: InputDecoration(
+                labelText: 'damage_part'.tr,
+                prefixIcon: const Icon(Icons.warning),
               ),
               textDirection: TextDirection.rtl,
               maxLines: 3,
@@ -156,7 +157,7 @@ class _DeviceFormState extends State<DeviceForm> {
             const SizedBox(height: 24),
             ElevatedButton(
               onPressed: _handleSubmit,
-              child: const Text('إرسال'),
+              child: Text('submit'.tr),
             ),
           ],
         ),

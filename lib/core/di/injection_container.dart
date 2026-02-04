@@ -7,10 +7,16 @@ import '../api/interceptors/error_interceptor.dart';
 import '../storage/secure_storage.dart';
 import '../storage/local_cache.dart';
 
+import '../api/api_config.dart';
+
 class InjectionContainer {
   static Future<void> init() async {
     // Initialize Hive
     await LocalCache.init();
+
+    // جلب عنوان الـ API ديناميكياً (من خادم الإعداد أو الكاش أو الافتراضي)
+    final baseUrl = await ApiConfig.getBaseUrl();
+    ApiEndpoints.baseUrl = baseUrl;
 
     // Secure Storage
     Get.put<SecureStorageService>(
@@ -21,7 +27,7 @@ class InjectionContainer {
     // Dio Client
     final dio = Dio(
       BaseOptions(
-        baseUrl: ApiEndpoints.baseUrl,
+        baseUrl: baseUrl,
         connectTimeout: const Duration(seconds: 30),
         receiveTimeout: const Duration(seconds: 30),
         headers: {

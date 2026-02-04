@@ -6,6 +6,7 @@ import 'app.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await LocalCache.init();
+  final savedLang = await LocalCache.getAppLanguage();
   await InjectionContainer.init();
-  runApp(const App());
+  runApp(App(initialLocaleCode: savedLang ?? 'ar'));
 }

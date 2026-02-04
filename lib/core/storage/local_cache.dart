@@ -3,6 +3,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 class LocalCache {
   static const String _inventoryBox = 'inventory_cache';
   static const String _userBox = 'user_cache';
+  static const String _keyAppLanguage = 'app_language';
 
   static Future<void> init() async {
     await Hive.initFlutter();
@@ -20,6 +21,17 @@ class LocalCache {
       return await Hive.openBox(_userBox);
     }
     return Hive.box(_userBox);
+  }
+
+  /// لغة التطبيق: 'ar' أو 'en'
+  static Future<String?> getAppLanguage() async {
+    final box = await getUserBox();
+    return box.get(_keyAppLanguage) as String?;
+  }
+
+  static Future<void> setAppLanguage(String languageCode) async {
+    final box = await getUserBox();
+    await box.put(_keyAppLanguage, languageCode);
   }
 
   static Future<void> clearCache() async {

@@ -1,7 +1,13 @@
+import 'api_config.dart';
+
 class ApiEndpoints {
-  // Base URL للخادم على Replit
-  static const String baseUrl =
-      'https://fcf0121e-0593-4710-ad11-105d54ba692e-00-3cyb0wsnu78xa.janeway.replit.dev';
+  /// عنوان الـ API (يُعيَّن عند بدء التطبيق من ApiConfig، ولا يُعدّل في الكود عند تغيير الدومين)
+  static String _baseUrl = ApiConfig.defaultBaseUrl;
+
+  static String get baseUrl => _baseUrl;
+  static set baseUrl(String value) {
+    _baseUrl = value.endsWith('/') ? value.substring(0, value.length - 1) : value;
+  }
 
   // Authentication
   static const String login = '/api/auth/login';

@@ -98,8 +98,8 @@ class _UpdateInventoryPageState extends State<UpdateInventoryPage> {
       if (mounted) {
         Get.back();
         Get.snackbar(
-          'نجح',
-          'تم تحديث المخزون بنجاح',
+          'success'.tr,
+          'update_success'.tr,
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: AppColors.success,
           colorText: Colors.white,
@@ -108,7 +108,7 @@ class _UpdateInventoryPageState extends State<UpdateInventoryPage> {
     } catch (e) {
       if (mounted) {
         Get.snackbar(
-          'خطأ',
+          'error'.tr,
           e.toString().replaceAll('Exception: ', ''),
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: AppColors.error,
@@ -149,8 +149,8 @@ class _UpdateInventoryPageState extends State<UpdateInventoryPage> {
       appBar: AppBar(
         title: Text(
           widget.inventoryType == 'fixed' 
-              ? 'تحديث المخزون الثابت'
-              : 'تحديث المخزون المتحرك',
+              ? 'update_fixed_title'.tr
+              : 'update_moving_title'.tr,
           style: GoogleFonts.cairo(
             fontWeight: FontWeight.bold,
             color: Colors.white,
@@ -163,7 +163,7 @@ class _UpdateInventoryPageState extends State<UpdateInventoryPage> {
           IconButton(
             icon: const Icon(Icons.swap_horiz),
             onPressed: _showTransferDialog,
-            tooltip: 'نقل مخزون',
+            tooltip: 'transfer_stock_tooltip'.tr,
           ),
         ],
       ),
@@ -209,8 +209,8 @@ class _UpdateInventoryPageState extends State<UpdateInventoryPage> {
                     children: [
                       Text(
                         widget.inventoryType == 'fixed'
-                            ? 'تحديث المخزون الثابت'
-                            : 'تحديث المخزون المتحرك',
+                            ? 'update_fixed_title'.tr
+                            : 'update_moving_title'.tr,
                         style: GoogleFonts.cairo(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -219,7 +219,7 @@ class _UpdateInventoryPageState extends State<UpdateInventoryPage> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        '${widget.itemTypes.length} نوع متاح',
+                        '${widget.itemTypes.length} ${'types_available'.tr}',
                         style: GoogleFonts.cairo(
                           fontSize: 12,
                           color: Colors.white.withOpacity(0.8),
@@ -279,7 +279,7 @@ class _UpdateInventoryPageState extends State<UpdateInventoryPage> {
                       )
                     : const Icon(Icons.save),
                 label: Text(
-                  _isSaving ? 'جاري الحفظ...' : 'حفظ التغييرات',
+                  _isSaving ? 'saving'.tr : 'save_changes'.tr,
                   style: GoogleFonts.cairo(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
@@ -381,7 +381,7 @@ class _UpdateInventoryPageState extends State<UpdateInventoryPage> {
               const SizedBox(width: 12),
               Expanded(
                 child: _buildQuantityField(
-                  'وحدات',
+                  'units'.tr,
                   unitsController,
                   Icons.circle,
                   itemColor,
@@ -509,8 +509,8 @@ class _TransferBottomSheetState extends State<_TransferBottomSheet> {
         );
       } else if (mounted) {
         Get.snackbar(
-          'خطأ',
-          stockTransferController.error ?? 'فشل نقل المخزون',
+          'error'.tr,
+          stockTransferController.error ?? 'transfer_fail'.tr,
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: AppColors.error,
           colorText: Colors.white,
@@ -519,7 +519,7 @@ class _TransferBottomSheetState extends State<_TransferBottomSheet> {
     } catch (e) {
       if (mounted) {
         Get.snackbar(
-          'خطأ',
+          'error'.tr,
           e.toString().replaceAll('Exception: ', ''),
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: AppColors.error,
@@ -547,7 +547,7 @@ class _TransferBottomSheetState extends State<_TransferBottomSheet> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            'نقل المخزون',
+            'transfer_stock_tooltip'.tr,
             style: GoogleFonts.cairo(
               fontSize: 20,
               fontWeight: FontWeight.bold,
@@ -561,7 +561,7 @@ class _TransferBottomSheetState extends State<_TransferBottomSheet> {
           DropdownButtonFormField<String>(
             value: _selectedItemType,
             decoration: InputDecoration(
-              labelText: 'نوع الصنف',
+              labelText: 'item_type_label'.tr,
               labelStyle: GoogleFonts.cairo(color: AppColors.textSecondary),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -606,14 +606,14 @@ class _TransferBottomSheetState extends State<_TransferBottomSheet> {
               ButtonSegment(
                 value: 'fixed',
                 label: Text(
-                  'من الثابت للمتحرك',
+                  'from_fixed_to_moving'.tr,
                   style: GoogleFonts.cairo(fontSize: 12),
                 ),
               ),
               ButtonSegment(
                 value: 'moving',
                 label: Text(
-                  'من المتحرك للثابت',
+                  'from_moving_to_fixed'.tr,
                   style: GoogleFonts.cairo(fontSize: 12),
                 ),
               ),
@@ -628,11 +628,11 @@ class _TransferBottomSheetState extends State<_TransferBottomSheet> {
             segments: [
               ButtonSegment(
                 value: 'unit',
-                label: Text('وحدات', style: GoogleFonts.cairo(fontSize: 12)),
+                label: Text('units'.tr, style: GoogleFonts.cairo(fontSize: 12)),
               ),
               ButtonSegment(
                 value: 'box',
-                label: Text('كراتين', style: GoogleFonts.cairo(fontSize: 12)),
+                label: Text('boxes'.tr, style: GoogleFonts.cairo(fontSize: 12)),
               ),
             ],
             selected: {_packagingType},
@@ -644,7 +644,7 @@ class _TransferBottomSheetState extends State<_TransferBottomSheet> {
           Row(
             children: [
               Text(
-                'الكمية:',
+                '${'quantity'.tr}:',
                 style: GoogleFonts.cairo(
                   fontSize: 16,
                   color: Colors.white,
@@ -718,7 +718,7 @@ class _TransferBottomSheetState extends State<_TransferBottomSheet> {
                       ),
                     )
                   : Text(
-                      'تنفيذ النقل',
+                      'execute_transfer'.tr,
                       style: GoogleFonts.cairo(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,

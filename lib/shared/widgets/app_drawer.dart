@@ -73,7 +73,7 @@ class AppDrawer extends StatelessWidget {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
-                            user?.fullName ?? 'مستخدم نظام المخزون',
+                            user?.fullName ?? 'drawer_user_default'.tr,
                             style: GoogleFonts.cairo(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
@@ -116,7 +116,7 @@ class AppDrawer extends StatelessWidget {
                                 ),
                                 const SizedBox(width: 6),
                                 Text(
-                                  'StockPro المركز',
+                                  'drawer_badge'.tr,
                                   style: GoogleFonts.cairo(
                                     fontSize: 11,
                                     color: Colors.white,
@@ -140,49 +140,49 @@ class AppDrawer extends StatelessWidget {
                 children: [
                   _DrawerItem(
                     icon: Icons.dashboard,
-                    title: 'لوحة التحكم',
+                    title: 'drawer_dashboard'.tr,
                     route: Routes.dashboard,
                     isActive: currentRoute == Routes.dashboard,
                     gradient: [AppColors.primary, AppColors.primaryDark],
                   ),
                   _DrawerItem(
                     icon: Icons.inventory_2,
-                    title: 'المخزون الثابت',
+                    title: 'drawer_fixed_inventory'.tr,
                     route: Routes.fixedInventory,
                     isActive: currentRoute == Routes.fixedInventory,
                     gradient: [AppColors.primary, AppColors.primaryDark],
                   ),
                   _DrawerItem(
                     icon: Icons.local_shipping,
-                    title: 'المخزون المتحرك',
+                    title: 'drawer_moving_inventory'.tr,
                     route: Routes.movingInventory,
                     isActive: currentRoute == Routes.movingInventory,
                     gradient: AppColors.purpleGradient,
                   ),
                   _DrawerItem(
                     icon: Icons.list_alt,
-                    title: 'قائمة الأصناف',
+                    title: 'drawer_inventory_list'.tr,
                     route: Routes.inventoryList,
                     isActive: currentRoute == Routes.inventoryList,
                     gradient: AppColors.greenGradient,
                   ),
                   _DrawerItem(
                     icon: Icons.smartphone,
-                    title: 'إدخال جهاز',
+                    title: 'drawer_submit_device'.tr,
                     route: Routes.submitDevice,
                     isActive: currentRoute == Routes.submitDevice,
                     gradient: [AppColors.success, AppColors.success.withOpacity(0.8)],
                   ),
                   _DrawerItem(
                     icon: Icons.devices,
-                    title: 'الأجهزة المستلمة',
+                    title: 'drawer_received_devices'.tr,
                     route: Routes.receivedDevices,
                     isActive: currentRoute == Routes.receivedDevices,
                     gradient: [AppColors.primary, AppColors.primaryDark],
                   ),
                   _DrawerItem(
                     icon: Icons.request_page,
-                    title: 'طلب مخزون',
+                    title: 'drawer_request_inventory'.tr,
                     route: Routes.requestInventory,
                     isActive: currentRoute == Routes.requestInventory,
                     gradient: AppColors.orangeGradient,
@@ -210,14 +210,14 @@ class AppDrawer extends StatelessWidget {
                   ),
                   _DrawerItem(
                     icon: Icons.business_rounded,
-                    title: 'من نحن',
+                    title: 'drawer_about_us'.tr,
                     route: Routes.aboutUs,
                     isActive: currentRoute == Routes.aboutUs,
                     gradient: [AppColors.primary, AppColors.primaryDark],
                   ),
                   _DrawerItem(
                     icon: Icons.person,
-                    title: 'الملف الشخصي',
+                    title: 'drawer_profile'.tr,
                     route: Routes.profile,
                     isActive: currentRoute == Routes.profile,
                     gradient: [AppColors.primary, AppColors.primaryDark],
@@ -258,21 +258,21 @@ class AppDrawer extends StatelessWidget {
                           AlertDialog(
                             backgroundColor: AppColors.surfaceDark,
                             title: Text(
-                              'تأكيد',
+                              'confirm'.tr,
                               style: GoogleFonts.cairo(
                                 fontWeight: FontWeight.bold,
                                 color: Colors.white,
                               ),
                             ),
                             content: Text(
-                              'هل أنت متأكد من تسجيل الخروج؟',
+                              'logout_confirm'.tr,
                               style: GoogleFonts.cairo(color: Colors.white),
                             ),
                             actions: [
                               TextButton(
                                 onPressed: () => Get.back(result: false),
                                 child: Text(
-                                  'إلغاء',
+                                  'cancel'.tr,
                                   style: GoogleFonts.cairo(
                                     color: AppColors.textSecondary,
                                   ),
@@ -315,7 +315,7 @@ class AppDrawer extends StatelessWidget {
                             ),
                             const SizedBox(width: 12),
                             Text(
-                              'تسجيل الخروج',
+                              'logout'.tr,
                               style: GoogleFonts.cairo(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,

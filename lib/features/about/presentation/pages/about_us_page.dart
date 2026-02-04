@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/widgets/app_drawer.dart';
 
+/// ألوان النص داخل البطاقات (واضحة على الخلفية الداكنة)
+const _cardTextPrimary = Color(0xFFE2E8F0);
+const _cardTextSecondary = Color(0xFF94A3B8);
+
 /// صفحة "من نحن" - نُظم شركة بناء الأنظمة والتطبيقات
-/// [نُظم - نُظم للحلول التقنية](https://nuzum.life/)
 class AboutUsPage extends StatelessWidget {
   const AboutUsPage({super.key});
 
@@ -13,9 +17,27 @@ class AboutUsPage extends StatelessWidget {
 
   Future<void> _openWebsite(BuildContext context) async {
     final uri = Uri.parse(_websiteUrl);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    try {
+      final launched = await launchUrl(
+        uri,
+        mode: LaunchMode.externalApplication,
+      );
+      if (!launched && context.mounted) {
+        _showOpenError(context);
+      }
+    } catch (_) {
+      if (context.mounted) _showOpenError(context);
     }
+  }
+
+  void _showOpenError(BuildContext context) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('open_link_error'.tr),
+        backgroundColor: AppColors.error,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   @override
@@ -27,7 +49,7 @@ class AboutUsPage extends StatelessWidget {
         drawer: const AppDrawer(),
         appBar: AppBar(
           title: Text(
-            'من نحن',
+            'about_title'.tr,
             style: GoogleFonts.cairo(
               fontWeight: FontWeight.bold,
               color: Colors.white,
@@ -53,7 +75,6 @@ class AboutUsPage extends StatelessWidget {
                     _buildServices(context),
                     _buildWhyNuzum(),
                     _buildStats(context),
-                    _buildClients(),
                     _buildCta(context),
                   ],
                 ),
@@ -147,7 +168,7 @@ class AboutUsPage extends StatelessWidget {
         style: GoogleFonts.cairo(
           fontSize: 15,
           height: 1.7,
-          color: AppColors.textPrimary,
+          color: _cardTextPrimary,
         ),
       ),
     );
@@ -166,7 +187,7 @@ class AboutUsPage extends StatelessWidget {
             style: GoogleFonts.cairo(
               fontSize: 15,
               height: 1.7,
-              color: AppColors.textPrimary,
+              color: _cardTextPrimary,
             ),
           ),
           const SizedBox(height: 12),
@@ -175,7 +196,7 @@ class AboutUsPage extends StatelessWidget {
             style: GoogleFonts.cairo(
               fontSize: 14,
               height: 1.6,
-              color: AppColors.textSecondary,
+              color: _cardTextSecondary,
             ),
           ),
         ],
@@ -325,7 +346,7 @@ class AboutUsPage extends StatelessWidget {
                           style: GoogleFonts.cairo(
                             fontWeight: FontWeight.bold,
                             fontSize: 14,
-                            color: AppColors.textPrimary,
+                            color: _cardTextPrimary,
                           ),
                         ),
                         const SizedBox(height: 2),
@@ -333,7 +354,7 @@ class AboutUsPage extends StatelessWidget {
                           item.$2,
                           style: GoogleFonts.cairo(
                             fontSize: 13,
-                            color: AppColors.textSecondary,
+                            color: _cardTextSecondary,
                             height: 1.4,
                           ),
                         ),
@@ -404,57 +425,6 @@ class AboutUsPage extends StatelessWidget {
     );
   }
 
-  Widget _buildClients() {
-    final clients = [
-      'المؤسسات الحكومية',
-      'الشركات الكبرى والمتوسطة',
-      'الشركات الناشئة والريادية',
-      'المؤسسات التعليمية والصحية',
-      'قطاع التجزئة واللوجستيات',
-    ];
-
-    return _SectionCard(
-      icon: Icons.handshake_rounded,
-      title: 'عملاؤنا',
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'نفتخر بخدمة مجموعة متنوعة من العملاء تشمل:',
-            style: GoogleFonts.cairo(
-              fontSize: 14,
-              color: AppColors.textSecondary,
-              height: 1.5,
-            ),
-          ),
-          const SizedBox(height: 12),
-          ...clients.map(
-            (c) => Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.check_rounded,
-                    size: 18,
-                    color: AppColors.success,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    c,
-                    style: GoogleFonts.cairo(
-                      fontSize: 14,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildCta(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(top: 8, bottom: 32),
@@ -484,7 +454,7 @@ class AboutUsPage extends StatelessWidget {
                   style: GoogleFonts.cairo(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
+                    color: _cardTextPrimary,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -527,7 +497,7 @@ class AboutUsPage extends StatelessWidget {
                   style: GoogleFonts.cairo(
                     fontSize: 13,
                     fontStyle: FontStyle.italic,
-                    color: AppColors.textSecondary,
+                    color: _cardTextSecondary,
                   ),
                 ),
               ],
@@ -632,7 +602,7 @@ class _BulletItem extends StatelessWidget {
               text,
               style: GoogleFonts.cairo(
                 fontSize: 14,
-                color: AppColors.textPrimary,
+                color: _cardTextPrimary,
                 height: 1.5,
               ),
             ),
@@ -686,7 +656,7 @@ class _ServiceItem extends StatelessWidget {
                   style: GoogleFonts.cairo(
                     fontWeight: FontWeight.bold,
                     fontSize: 14,
-                    color: AppColors.textPrimary,
+                    color: _cardTextPrimary,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -694,7 +664,7 @@ class _ServiceItem extends StatelessWidget {
                   desc,
                   style: GoogleFonts.cairo(
                     fontSize: 13,
-                    color: AppColors.textSecondary,
+                    color: _cardTextSecondary,
                     height: 1.45,
                   ),
                 ),

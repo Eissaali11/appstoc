@@ -322,17 +322,7 @@ class _DashboardContentState extends State<_DashboardContent> {
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: QuickActionsSection(
-                onRequestInventory: () {
-                  Get.snackbar(
-                    'قريباً',
-                    'ميزة طلب المخزون قيد التطوير',
-                    snackPosition: SnackPosition.BOTTOM,
-                    backgroundColor: AppColors.surfaceDark,
-                    colorText: Colors.white,
-                    borderRadius: 12,
-                    margin: const EdgeInsets.all(16),
-                  );
-                },
+                onRequestInventory: () => Get.toNamed('/request-inventory'),
               ),
             ),
           ),

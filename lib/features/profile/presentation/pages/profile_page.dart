@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../auth/presentation/controllers/auth_controller.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/storage/local_cache.dart';
 import '../../../../shared/widgets/app_drawer.dart';
 
 class ProfilePage extends StatelessWidget {
@@ -29,7 +30,7 @@ class ProfilePage extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'المستخدم غير مسجل دخول',
+                  'user_not_logged_in'.tr,
                   style: GoogleFonts.cairo(
                     fontSize: 18,
                     color: AppColors.textSecondary,
@@ -47,7 +48,7 @@ class ProfilePage extends StatelessWidget {
                     ),
                   ),
                   child: Text(
-                    'تسجيل الدخول',
+                    'login'.tr,
                     style: GoogleFonts.cairo(
                       fontWeight: FontWeight.bold,
                     ),
@@ -146,15 +147,15 @@ class ProfilePage extends StatelessWidget {
                 delegate: SliverChildListDelegate([
                   _InfoCard(
                     icon: Icons.person,
-                    title: 'الدور',
-                    value: user.role == 'technician' ? 'فني' : user.role,
+                    title: 'role'.tr,
+                    value: user.role == 'technician' ? 'role_technician'.tr : user.role,
                     color: AppColors.primary,
                   ),
                   const SizedBox(height: 12),
                   if (user.city != null)
                     _InfoCard(
                       icon: Icons.location_city,
-                      title: 'المدينة',
+                      title: 'city'.tr,
                       value: user.city!,
                       color: AppColors.success,
                     ),
@@ -162,12 +163,78 @@ class ProfilePage extends StatelessWidget {
                   if (user.regionId != null)
                     _InfoCard(
                       icon: Icons.map,
-                      title: 'المنطقة',
+                      title: 'region'.tr,
                       value: user.regionId!,
                       color: AppColors.warning,
                     ),
                   if (user.regionId != null) const SizedBox(height: 12),
                 ]),
+              ),
+            ),
+
+            // Language switcher
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceDark,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: AppColors.primary.withOpacity(0.3),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.language_rounded,
+                            color: AppColors.primary,
+                            size: 22,
+                          ),
+                          const SizedBox(width: 10),
+                          Text(
+                            'change_language'.tr,
+                            style: GoogleFonts.cairo(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 14),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _LanguageChip(
+                              label: 'language_ar'.tr,
+                              isSelected: Get.locale?.languageCode == 'ar',
+                              onTap: () async {
+                                await LocalCache.setAppLanguage('ar');
+                                Get.updateLocale(const Locale('ar'));
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _LanguageChip(
+                              label: 'language_en'.tr,
+                              isSelected: Get.locale?.languageCode == 'en',
+                              onTap: () async {
+                                await LocalCache.setAppLanguage('en');
+                                Get.updateLocale(const Locale('en'));
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
 
@@ -181,21 +248,21 @@ class ProfilePage extends StatelessWidget {
                       AlertDialog(
                         backgroundColor: AppColors.surfaceDark,
                         title: Text(
-                          'تأكيد',
+                          'confirm'.tr,
                           style: GoogleFonts.cairo(
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
                           ),
                         ),
                         content: Text(
-                          'هل أنت متأكد من تسجيل الخروج؟',
+                          'logout_confirm'.tr,
                           style: GoogleFonts.cairo(color: Colors.white),
                         ),
                         actions: [
                           TextButton(
                             onPressed: () => Get.back(result: false),
                             child: Text(
-                              'إلغاء',
+                              'cancel'.tr,
                               style: GoogleFonts.cairo(
                                 color: AppColors.textSecondary,
                               ),
@@ -208,7 +275,7 @@ class ProfilePage extends StatelessWidget {
                               foregroundColor: Colors.white,
                             ),
                             child: Text(
-                              'تسجيل الخروج',
+                              'logout'.tr,
                               style: GoogleFonts.cairo(
                                 fontWeight: FontWeight.bold,
                               ),
@@ -224,7 +291,7 @@ class ProfilePage extends StatelessWidget {
                   },
                   icon: const Icon(Icons.logout),
                   label: Text(
-                    'تسجيل الخروج',
+                    'logout'.tr,
                     style: GoogleFonts.cairo(
                       fontWeight: FontWeight.bold,
                     ),
@@ -332,6 +399,54 @@ class _InfoCard extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _LanguageChip extends StatelessWidget {
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _LanguageChip({
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? AppColors.primary.withOpacity(0.25)
+                : AppColors.surfaceDark.withOpacity(0.6),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: isSelected
+                  ? AppColors.primary
+                  : AppColors.border.withOpacity(0.3),
+              width: isSelected ? 2 : 1,
+            ),
+          ),
+          child: Center(
+            child: Text(
+              label,
+              style: GoogleFonts.cairo(
+                fontSize: 15,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                color: isSelected ? AppColors.primary : Colors.white70,
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }

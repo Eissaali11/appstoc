@@ -592,157 +592,275 @@ class _RequestInventoryPageState extends State<RequestInventoryPage>
                 itemCount: requests.length,
                 itemBuilder: (context, index) {
                   final request = requests[index];
-                Color statusColor;
-                IconData statusIcon;
-                String statusText;
+                  Color statusColor;
+                  IconData statusIcon;
+                  String statusText;
 
-                final status = request.status.toLowerCase();
-                switch (status) {
-                  case 'approved':
-                    statusColor = AppColors.success;
-                    statusIcon = Icons.check_circle;
-                    statusText = 'تمت الموافقة';
-                    break;
-                  case 'rejected':
-                    statusColor = AppColors.error;
-                    statusIcon = Icons.cancel;
-                    statusText = 'مرفوض';
-                    break;
-                  default:
-                    statusColor = AppColors.warning;
-                    statusIcon = Icons.hourglass_empty;
-                    statusText = 'قيد الانتظار';
-                }
+                  final status = request.status.toLowerCase();
+                  switch (status) {
+                    case 'approved':
+                      statusColor = AppColors.success;
+                      statusIcon = Icons.check_circle_rounded;
+                      statusText = 'تمت الموافقة';
+                      break;
+                    case 'rejected':
+                      statusColor = AppColors.error;
+                      statusIcon = Icons.cancel_rounded;
+                      statusText = 'مرفوض';
+                      break;
+                    default:
+                      statusColor = AppColors.warning;
+                      statusIcon = Icons.schedule_rounded;
+                      statusText = 'قيد الانتظار';
+                  }
 
-                return Card(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: ExpansionTile(
-                    leading: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: statusColor.withOpacity(0.1),
-                        shape: BoxShape.circle,
+                  final dateStr = request.createdAt.toLocal();
+                  final dateFormatted =
+                      '${dateStr.day}/${dateStr.month}/${dateStr.year}';
+                  final timeFormatted =
+                      '${dateStr.hour.toString().padLeft(2, '0')}:${dateStr.minute.toString().padLeft(2, '0')}';
+
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 16),
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaceDark,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: statusColor.withOpacity(0.35),
+                        width: 1.5,
                       ),
-                      child: Icon(
-                        statusIcon,
-                        color: statusColor,
-                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: statusColor.withOpacity(0.08),
+                          blurRadius: 16,
+                          offset: const Offset(0, 6),
+                        ),
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.12),
+                          blurRadius: 10,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
                     ),
-                    title: Text(
-                      statusText,
-                      style: GoogleFonts.cairo(fontWeight: FontWeight.bold),
-                    ),
-                    subtitle: Text(
-                      request.createdAt.toLocal().toString().split('.').first,
-                      style: GoogleFonts.cairo(
-                        fontSize: 12,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                    trailing: Chip(
-                      label: Text(
-                        '${request.totalItems} عنصر',
-                        style: GoogleFonts.cairo(fontSize: 12),
-                      ),
-                      backgroundColor:
-                          AppColors.surfaceDark.withOpacity(0.9),
-                    ),
-                    children: [
-                      // تفاصيل الأصناف (صناديق / وحدات)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 8),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                    clipBehavior: Clip.antiAlias,
+                    child: Material(
+                      color: Colors.transparent,
+                      child: ExpansionTile(
+                        tilePadding: const EdgeInsets.fromLTRB(20, 16, 16, 16),
+                        childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+                        leading: Container(
+                          width: 52,
+                          height: 52,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                statusColor,
+                                statusColor.withOpacity(0.85),
+                              ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: statusColor.withOpacity(0.35),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Icon(
+                            statusIcon,
+                            color: Colors.white,
+                            size: 28,
+                          ),
+                        ),
+                        title: Row(
                           children: [
-                            _buildRequestItemRow(
-                              'جهاز N950',
-                              request.n950Boxes,
-                              request.n950Units,
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    statusText,
+                                    style: GoogleFonts.cairo(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 17,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        Icons.calendar_today_rounded,
+                                        size: 14,
+                                        color: AppColors.textSecondary,
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        dateFormatted,
+                                        style: GoogleFonts.cairo(
+                                          fontSize: 13,
+                                          color: AppColors.textSecondary,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Icon(
+                                        Icons.access_time_rounded,
+                                        size: 14,
+                                        color: AppColors.textSecondary,
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        timeFormatted,
+                                        style: GoogleFonts.cairo(
+                                          fontSize: 13,
+                                          color: AppColors.textSecondary,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
                             ),
-                            _buildRequestItemRow(
-                              'جهاز I9000s',
-                              request.i9000sBoxes,
-                              request.i9000sUnits,
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: statusColor.withOpacity(0.15),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: statusColor.withOpacity(0.3),
+                                ),
+                              ),
+                              child: Text(
+                                '${request.totalItems}',
+                                style: GoogleFonts.cairo(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                  color: statusColor,
+                                ),
+                              ),
                             ),
-                            _buildRequestItemRow(
-                              'جهاز I9100',
-                              request.i9100Boxes,
-                              request.i9100Units,
-                            ),
-                            _buildRequestItemRow(
-                              'ورق حراري',
-                              request.rollPaperBoxes,
-                              request.rollPaperUnits,
-                            ),
-                            _buildRequestItemRow(
-                              'ملصقات',
-                              request.stickersBoxes,
-                              request.stickersUnits,
-                            ),
-                            _buildRequestItemRow(
-                              'بطاريات جديدة',
-                              request.newBatteriesBoxes,
-                              request.newBatteriesUnits,
-                            ),
-                            _buildRequestItemRow(
-                              'شرائح موبايلي',
-                              request.mobilySimBoxes,
-                              request.mobilySimUnits,
-                            ),
-                            _buildRequestItemRow(
-                              'شرائح STC',
-                              request.stcSimBoxes,
-                              request.stcSimUnits,
-                            ),
-                            _buildRequestItemRow(
-                              'شرائح زين',
-                              request.zainSimBoxes,
-                              request.zainSimUnits,
-                            ),
-                          ].whereType<Widget>().toList(),
+                          ],
                         ),
+                        trailing: Icon(
+                          Icons.keyboard_arrow_down_rounded,
+                          color: AppColors.textSecondary,
+                          size: 28,
+                        ),
+                        iconColor: AppColors.textSecondary,
+                        collapsedIconColor: AppColors.textSecondary,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: AppColors.backgroundDark
+                                  .withOpacity(0.5),
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(
+                                color: AppColors.border.withOpacity(0.2),
+                              ),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.inventory_2_rounded,
+                                      size: 20,
+                                      color: statusColor,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'تفاصيل الطلب',
+                                      style: GoogleFonts.cairo(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 14,
+                                        color: AppColors.textSecondary,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 12),
+                                ...[
+                                  _buildRequestItemRow(
+                                    'جهاز N950',
+                                    request.n950Boxes,
+                                    request.n950Units,
+                                  ),
+                                  _buildRequestItemRow(
+                                    'جهاز I9000s',
+                                    request.i9000sBoxes,
+                                    request.i9000sUnits,
+                                  ),
+                                  _buildRequestItemRow(
+                                    'جهاز I9100',
+                                    request.i9100Boxes,
+                                    request.i9100Units,
+                                  ),
+                                  _buildRequestItemRow(
+                                    'ورق حراري',
+                                    request.rollPaperBoxes,
+                                    request.rollPaperUnits,
+                                  ),
+                                  _buildRequestItemRow(
+                                    'ملصقات',
+                                    request.stickersBoxes,
+                                    request.stickersUnits,
+                                  ),
+                                  _buildRequestItemRow(
+                                    'بطاريات جديدة',
+                                    request.newBatteriesBoxes,
+                                    request.newBatteriesUnits,
+                                  ),
+                                  _buildRequestItemRow(
+                                    'شرائح موبايلي',
+                                    request.mobilySimBoxes,
+                                    request.mobilySimUnits,
+                                  ),
+                                  _buildRequestItemRow(
+                                    'شرائح STC',
+                                    request.stcSimBoxes,
+                                    request.stcSimUnits,
+                                  ),
+                                  _buildRequestItemRow(
+                                    'شرائح زين',
+                                    request.zainSimBoxes,
+                                    request.zainSimUnits,
+                                  ),
+                                ].whereType<Widget>().toList(),
+                              ],
+                            ),
+                          ),
+                          if (request.notes != null &&
+                              request.notes!.trim().isNotEmpty) ...[
+                            const SizedBox(height: 12),
+                            _buildNoteCard(
+                              icon: Icons.note_alt_rounded,
+                              title: 'ملاحظات الفني',
+                              content: request.notes!,
+                              color: AppColors.primary,
+                            ),
+                          ],
+                          if (request.adminNotes != null &&
+                              request.adminNotes!.trim().isNotEmpty) ...[
+                            const SizedBox(height: 12),
+                            _buildNoteCard(
+                              icon: Icons.admin_panel_settings_rounded,
+                              title: 'رد الإدارة',
+                              content: request.adminNotes!,
+                              color: statusColor,
+                            ),
+                          ],
+                        ],
                       ),
-                      if (request.notes != null &&
-                          request.notes!.trim().isNotEmpty)
-                        ListTile(
-                          leading: const Icon(Icons.note,
-                              size: 20, color: AppColors.primary),
-                          title: Text(
-                            'ملاحظات الفني',
-                            style: GoogleFonts.cairo(
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          subtitle: Text(
-                            request.notes!,
-                            style: GoogleFonts.cairo(fontSize: 13),
-                          ),
-                        ),
-                      if (request.adminNotes != null &&
-                          request.adminNotes!.trim().isNotEmpty)
-                        ListTile(
-                          leading: Icon(Icons.admin_panel_settings,
-                              size: 20, color: statusColor),
-                          title: Text(
-                            'رد الإدارة',
-                            style: GoogleFonts.cairo(
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          subtitle: Text(
-                            request.adminNotes!,
-                            style: GoogleFonts.cairo(fontSize: 13),
-                          ),
-                        ),
-                    ],
-                  ),
-                );
-              },
-            ),
+                    ),
+                  );
+                },
+              ),
             );
           }),
         ],
@@ -751,7 +869,6 @@ class _RequestInventoryPageState extends State<RequestInventoryPage>
   }
 
   /// يبني صفاً لعرض كميات صنف واحد (صناديق / وحدات) في بطاقة "طلباتي".
-  /// إذا كانت جميع القيم null أو 0 يرجع null حتى لا يظهر الصف.
   Widget? _buildRequestItemRow(
     String label,
     int? boxes,
@@ -761,31 +878,121 @@ class _RequestInventoryPageState extends State<RequestInventoryPage>
     final u = units ?? 0;
     if (b == 0 && u == 0) return null;
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceDark.withOpacity(0.6),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: AppColors.border.withOpacity(0.15),
+        ),
+      ),
       child: Row(
         children: [
-          Text(
-            label,
-            style: GoogleFonts.cairo(fontSize: 13),
+          Container(
+            width: 4,
+            height: 24,
+            decoration: BoxDecoration(
+              color: AppColors.primary.withOpacity(0.6),
+              borderRadius: BorderRadius.circular(2),
+            ),
           ),
-          const Spacer(),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              label,
+              style: GoogleFonts.cairo(
+                fontSize: 14,
+                color: Colors.white.withOpacity(0.95),
+              ),
+            ),
+          ),
           if (b > 0)
-            Text(
-              '$b صندوق${b > 1 ? '' : ''}  ',
-              style: GoogleFonts.cairo(
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                '$b كرتون',
+                style: GoogleFonts.cairo(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primary,
+                ),
               ),
             ),
+          if (b > 0 && u > 0) const SizedBox(width: 8),
           if (u > 0)
-            Text(
-              '$u وحدة',
-              style: GoogleFonts.cairo(
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: AppColors.success.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                '$u وحدة',
+                style: GoogleFonts.cairo(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.success,
+                ),
               ),
             ),
+        ],
+      ),
+    );
+  }
+
+  /// بطاقة عرض ملاحظة (فني أو إدارة)
+  Widget _buildNoteCard({
+    required IconData icon,
+    required String title,
+    required String content,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: color.withOpacity(0.25)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, size: 20, color: color),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                title,
+                style: GoogleFonts.cairo(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                  color: color,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            content,
+            style: GoogleFonts.cairo(
+              fontSize: 13,
+              height: 1.5,
+              color: Colors.white.withOpacity(0.9),
+            ),
+          ),
         ],
       ),
     );

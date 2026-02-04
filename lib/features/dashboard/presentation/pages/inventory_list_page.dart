@@ -217,7 +217,7 @@ class _InventoryListPageState extends State<InventoryListPage> {
                                 color: AppColors.primary,
                               ),
                               const SizedBox(width: 8),
-                              Text('حسب الاسم'),
+                              Text('sort_by_name'.tr),
                             ],
                           ),
                         ),
@@ -231,7 +231,7 @@ class _InventoryListPageState extends State<InventoryListPage> {
                                 color: AppColors.primary,
                               ),
                               const SizedBox(width: 8),
-                              Text('حسب الإجمالي'),
+                              Text('sort_by_total'.tr),
                             ],
                           ),
                         ),
@@ -245,7 +245,7 @@ class _InventoryListPageState extends State<InventoryListPage> {
                                 color: AppColors.primary,
                               ),
                               const SizedBox(width: 8),
-                              Text('حسب الثابت'),
+                              Text('sort_by_fixed'.tr),
                             ],
                           ),
                         ),
@@ -259,7 +259,7 @@ class _InventoryListPageState extends State<InventoryListPage> {
                                 color: AppColors.primary,
                               ),
                               const SizedBox(width: 8),
-                              Text('حسب المتحرك'),
+                              Text('sort_by_moving'.tr),
                             ],
                           ),
                         ),
@@ -328,7 +328,7 @@ class _InventoryListPageState extends State<InventoryListPage> {
             ),
             const SizedBox(height: 24),
             Text(
-              'لا توجد أصناف',
+              'no_items'.tr,
               style: GoogleFonts.cairo(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
@@ -358,7 +358,7 @@ class _InventoryListPageState extends State<InventoryListPage> {
                 },
                 icon: const Icon(Icons.clear_all),
                 label: Text(
-                  'إعادة تعيين الفلاتر',
+                  'reset_filters'.tr,
                   style: GoogleFonts.cairo(
                     fontWeight: FontWeight.bold,
                   ),

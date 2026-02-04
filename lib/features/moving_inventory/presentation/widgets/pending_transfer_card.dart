@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/text_styles.dart';
 import '../../../../core/utils/date_utils.dart' as app_date_utils;
@@ -32,7 +33,7 @@ class PendingTransferCard extends StatelessWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    transfer.warehouseName ?? 'مستودع غير محدد',
+                    transfer.warehouseName ?? 'warehouse_unspecified'.tr,
                     style: AppTextStyles.heading3,
                   ),
                 ),
@@ -40,12 +41,12 @@ class PendingTransferCard extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'نوع العنصر: ${transfer.itemType}',
+              '${'item_type'.tr}: ${transfer.itemType}',
               style: AppTextStyles.bodyMedium,
             ),
             const SizedBox(height: 4),
             Text(
-              'الكمية: ${transfer.quantity} ${transfer.packagingType == 'boxes' ? 'كراتين' : 'وحدات'}',
+              '${'quantity'.tr}: ${transfer.quantity} ${transfer.packagingType == 'boxes' ? 'boxes'.tr : 'units'.tr}',
               style: AppTextStyles.bodyMedium,
             ),
             const SizedBox(height: 4),
@@ -56,7 +57,7 @@ class PendingTransferCard extends StatelessWidget {
             if (transfer.notes != null) ...[
               const SizedBox(height: 8),
               Text(
-                'ملاحظات: ${transfer.notes}',
+                '${'notes'.tr}: ${transfer.notes}',
                 style: AppTextStyles.bodySmall,
               ),
             ],
@@ -67,7 +68,7 @@ class PendingTransferCard extends StatelessWidget {
                   child: OutlinedButton.icon(
                     onPressed: onReject,
                     icon: const Icon(Icons.close),
-                    label: const Text('رفض'),
+                    label: Text('reject'.tr),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppColors.error,
                     ),
@@ -78,7 +79,7 @@ class PendingTransferCard extends StatelessWidget {
                   child: ElevatedButton.icon(
                     onPressed: onAccept,
                     icon: const Icon(Icons.check),
-                    label: const Text('قبول'),
+                    label: Text('accept'.tr),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.success,
                     ),

@@ -2,8 +2,9 @@ import 'package:dio/dio.dart';
 import 'api_endpoints.dart';
 
 class ApiClient {
-  static const String baseUrl = ApiEndpoints.baseUrl;
-  
+  /// عنوان الـ API الحالي (يُقرأ من ApiEndpoints بعد تهيئة التطبيق)
+  static String get baseUrl => ApiEndpoints.baseUrl;
+
   final Dio dio;
 
   ApiClient(this.dio);

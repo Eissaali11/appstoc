@@ -38,7 +38,7 @@ class QuickActionsSection extends StatelessWidget {
                 ),
                 const SizedBox(width: 12),
                 Text(
-                  'الإجراءات السريعة',
+                  'quick_actions'.tr,
                   style: GoogleFonts.cairo(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -59,13 +59,13 @@ class QuickActionsSection extends StatelessWidget {
             children: [
               QuickActionButton(
                 icon: Icons.inventory_2,
-                label: 'الثابت',
+                label: 'fixed'.tr,
                 color: AppColors.primary,
                 onTap: () => Get.toNamed('/fixed-inventory'),
               ),
               QuickActionButton(
                 icon: Icons.local_shipping,
-                label: 'المتحرك',
+                label: 'moving'.tr,
                 color: AppColors.purpleGradient.first,
                 onTap: () => Get.toNamed('/moving-inventory'),
               ),
@@ -77,7 +77,7 @@ class QuickActionsSection extends StatelessWidget {
               ),
               QuickActionButton(
                 icon: Icons.request_quote,
-                label: 'طلب مخزون',
+                label: 'request_stock'.tr,
                 color: AppColors.warning,
                 onTap: onRequestInventory ?? () => Get.toNamed('/request-inventory'),
               ),
