@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import '../../../../core/api/api_client.dart';
 import '../../../../core/api/api_endpoints.dart';
@@ -23,18 +24,17 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
           ApiEndpoints.baseUrl.contains('your-replit-app') ||
           ApiEndpoints.baseUrl.contains('example.com')) {
         throw Exception(
-          '⚠️ يجب تحديث baseUrl في lib/core/api/api_endpoints.dart إلى عنوان الخادم الفعلي',
+          '⚠️ يجب تحديث defaultBaseUrl في lib/core/api/api_config.dart إلى عنوان الخادم الفعلي',
         );
       }
 
       final dio = Get.find<Dio>();
       final url = '${ApiEndpoints.baseUrl}${ApiEndpoints.login}';
-      
-      print('🔐 محاولة تسجيل الدخول...');
-      print('📍 URL: $url');
-      print('👤 Username: $username');
-      print('📤 Request Body: {username: $username, password: ***}');
-      
+
+      if (kDebugMode) {
+        debugPrint('🔐 محاولة تسجيل الدخول: $url');
+      }
+
       // إرسال الطلب مع options لتجنب إضافة Authorization header
       final response = await dio.post(
         ApiEndpoints.login,
@@ -46,11 +46,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
           },
         ),
       );
-      
-      print('✅ Status Code: ${response.statusCode}');
-      print('📦 Response Data: ${response.data}');
-      print('📦 Response Type: ${response.data.runtimeType}');
-      
+
       if (response.statusCode == 200 || response.statusCode == 201) {
         final data = response.data;
         
@@ -73,17 +69,13 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         // التحقق من أن الاستجابة تحتوي على البيانات المطلوبة
         if (responseData['success'] == true) {
           if (responseData['user'] != null && responseData['token'] != null) {
-            print('✅ تسجيل الدخول ناجح!');
             return responseData;
           } else {
-            print('⚠️ الاستجابة لا تحتوي على user أو token');
-            print('📦 Response keys: ${responseData.keys}');
             throw Exception(responseData['message'] ?? 'تنسيق الاستجابة غير صحيح: لا يوجد user أو token');
           }
         } else {
           // قد تكون الاستجابة ناجحة لكن بدون success field
           if (responseData['user'] != null && responseData['token'] != null) {
-            print('✅ تسجيل الدخول ناجح (بدون success field)');
             return responseData;
           } else {
             throw Exception(responseData['message'] ?? 'فشل تسجيل الدخول');
@@ -94,12 +86,11 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       }
     } on DioException catch (e) {
       String errorMessage = 'فشل تسجيل الدخول';
-      
-      print('❌ DioException Type: ${e.type}');
-      print('❌ Status Code: ${e.response?.statusCode}');
-      print('❌ Response Data: ${e.response?.data}');
-      print('❌ Error: ${e.message}');
-      
+
+      if (kDebugMode) {
+        debugPrint('❌ Login DioException: ${e.type} ${e.response?.statusCode} ${e.message}');
+      }
+
       if (e.response != null) {
         // Server responded with error
         final statusCode = e.response!.statusCode;
@@ -112,7 +103,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         } else if (statusCode == 401) {
           errorMessage = 'اسم المستخدم أو كلمة المرور غير صحيحة';
         } else if (statusCode == 404) {
-          errorMessage = 'الخادم غير متاح. يرجى التحقق من URL الخادم في api_endpoints.dart';
+          errorMessage = 'الخادم غير متاح. يرجى التحقق من عنوان الخادم في api_config.dart';
         } else if (statusCode == 500) {
           errorMessage = 'خطأ في الخادم. يرجى المحاولة لاحقاً';
         } else {
@@ -127,7 +118,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         if (errorMsg.contains('Failed host lookup') == true ||
             errorMsg.contains('SocketException') == true ||
             errorMsg.contains('Network is unreachable') == true) {
-          errorMessage = '⚠️ لا يمكن الوصول إلى الخادم.\nيرجى التحقق من:\n1. الاتصال بالإنترنت\n2. أن الخادم يعمل\n3. Base URL في api_endpoints.dart';
+          errorMessage = '⚠️ لا يمكن الوصول إلى الخادم.\nيرجى التحقق من:\n1. الاتصال بالإنترنت\n2. أن الخادم يعمل\n3. عنوان الخادم في api_config.dart';
         } else if (errorMsg.contains('CERTIFICATE_VERIFY_FAILED') == true ||
                    errorMsg.contains('HandshakeException') == true) {
           errorMessage = '⚠️ خطأ في شهادة SSL.\nيرجى التحقق من إعدادات الخادم';
@@ -140,7 +131,9 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       
       throw Exception(errorMessage);
     } catch (e) {
-      print('❌ Exception: $e');
+      if (kDebugMode) {
+        debugPrint('❌ Login Exception: $e');
+      }
       if (e is Exception) {
         rethrow;
       }

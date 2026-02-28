@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:dio/dio.dart' as dio;
 import '../../../auth/presentation/controllers/auth_controller.dart';
+import '../../../dashboard/presentation/controllers/dashboard_controller.dart';
+import '../../../fixed_inventory/presentation/controllers/fixed_inventory_controller.dart';
+import '../../../moving_inventory/presentation/controllers/moving_inventory_controller.dart';
 import '../../domain/repositories/notifications_repository.dart';
 import '../../../moving_inventory/data/models/warehouse_transfer.dart';
 import '../../../../shared/models/item_type.dart';
@@ -20,11 +23,35 @@ class NotificationsController extends GetxController {
   final _error = Rxn<String>();
   final _transfers = <WarehouseTransfer>[].obs;
   final _itemTypes = <ItemType>[].obs;
+  final _selectedIds = <String>[].obs;
 
   bool get isLoading => _isLoading.value;
   String? get error => _error.value;
   List<WarehouseTransfer> get transfers => _transfers;
   List<ItemType> get itemTypes => _itemTypes;
+  List<String> get selectedIds => List.unmodifiable(_selectedIds);
+  bool get hasSelection => _selectedIds.isNotEmpty;
+  bool get isAllSelected =>
+      _transfers.isNotEmpty && _selectedIds.length == _transfers.length;
+  bool isSelected(String id) => _selectedIds.contains(id);
+
+  void toggleSelection(String id) {
+    if (_selectedIds.contains(id)) {
+      _selectedIds.remove(id);
+    } else {
+      _selectedIds.add(id);
+    }
+  }
+
+  void selectAll() {
+    _selectedIds
+      ..clear()
+      ..addAll(_transfers.map((t) => t.id));
+  }
+
+  void clearSelection() {
+    _selectedIds.clear();
+  }
 
   Map<String, ItemType> get itemTypesMap {
     final map = <String, ItemType>{};
@@ -44,6 +71,7 @@ class NotificationsController extends GetxController {
     try {
       _isLoading.value = true;
       _error.value = null;
+      clearSelection();
 
       final userId = authController.user?.id;
       if (userId == null) {
@@ -75,11 +103,25 @@ class NotificationsController extends GetxController {
     await loadData();
   }
 
+  /// تحديث بيانات لوحة التحكم والمخزون بعد قبول أو رفض الطلبات
+  Future<void> _refreshInventoryData() async {
+    if (Get.isRegistered<DashboardController>()) {
+      await Get.find<DashboardController>().refresh();
+    }
+    if (Get.isRegistered<FixedInventoryController>()) {
+      await Get.find<FixedInventoryController>().loadData();
+    }
+    if (Get.isRegistered<MovingInventoryController>()) {
+      await Get.find<MovingInventoryController>().loadData();
+    }
+  }
+
   Future<void> acceptTransfer(String transferId) async {
     try {
       _isLoading.value = true;
       await repository.acceptTransfer(transferId);
       await loadData();
+      await _refreshInventoryData();
       
       Get.snackbar(
         'نجح',
@@ -106,6 +148,7 @@ class NotificationsController extends GetxController {
       _isLoading.value = true;
       await repository.rejectTransfer(transferId, reason: reason);
       await loadData();
+      await _refreshInventoryData();
       
       Get.snackbar(
         'نجح',
@@ -136,6 +179,7 @@ class NotificationsController extends GetxController {
         data: {'transferIds': transferIds},
       );
       await loadData();
+      await _refreshInventoryData();
       
       Get.snackbar(
         'نجح',
@@ -169,6 +213,7 @@ class NotificationsController extends GetxController {
         },
       );
       await loadData();
+      await _refreshInventoryData();
       
       Get.snackbar(
         'نجح',

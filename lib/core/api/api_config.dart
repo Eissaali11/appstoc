@@ -16,8 +16,7 @@ import '../storage/local_cache.dart';
 /// - التطبيق عند التشغيل التالي سيجلبه تلقائياً ولن تحتاج لتعديل الكود
 class ApiConfig {
   /// القيمة الافتراضية عند أول تشغيل أو عند فشل جلب الإعداد
-  static const String defaultBaseUrl =
-      'https://fcf0121e-0593-4710-ad11-105d54ba692e-00-3cyb0wsnu78xa.janeway.replit.dev';
+  static const String defaultBaseUrl = 'https://www.stc1.fun';
 
   /// إن وُضع هنا عنوان ثابت (مثل https://config.example.com/app.json) فالتطبيق سيجلب منه عنوان الـ API،
   /// وعند تغيير الاستضافة تكفي تحديث محتوى ذلك الملف دون أي تعديل في التطبيق.

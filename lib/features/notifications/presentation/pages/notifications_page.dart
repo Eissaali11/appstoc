@@ -49,43 +49,190 @@ class NotificationsPage extends GetView<NotificationsController> {
           return _buildEmptyState();
         }
 
-        return RefreshIndicator(
-          onRefresh: () => controller.refresh(),
-          color: AppColors.primary,
-          child: ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: controller.transfers.length,
-            itemBuilder: (context, index) {
-              final transfer = controller.transfers[index];
-              final itemType = controller.itemTypesMap[transfer.itemType];
-              
-              return TweenAnimationBuilder<double>(
-                tween: Tween(begin: 0.0, end: 1.0),
-                duration: Duration(milliseconds: 300 + (index * 50)),
-                curve: Curves.easeOut,
-                builder: (context, value, child) {
-                  return Opacity(
-                    opacity: value,
-                    child: Transform.translate(
-                      offset: Offset(0, 20 * (1 - value)),
-                      child: child,
+        return Column(
+          children: [
+            // شريط تحديد الكل + قبول/رفض المحدد
+            Obx(() {
+              return Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                color: AppColors.surfaceDark,
+                child: Row(
+                  children: [
+                    Checkbox(
+                      value: controller.isAllSelected
+                          ? true
+                          : (controller.hasSelection ? null : false),
+                      tristate: true,
+                      activeColor: AppColors.primary,
+                      onChanged: (_) {
+                        if (controller.isAllSelected) {
+                          controller.clearSelection();
+                        } else {
+                          controller.selectAll();
+                        }
+                      },
                     ),
-                  );
-                },
-                child: Padding(
-                  padding: const EdgeInsets.only(bottom: 16),
-                  child: _TransferCard(
-                    transfer: transfer,
-                    itemType: itemType,
-                    onAccept: () => controller.acceptTransfer(transfer.id),
-                    onReject: () => _showRejectDialog(transfer.id),
-                  ),
+                    Text(
+                      'تحديد الكل',
+                      style: GoogleFonts.cairo(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    if (controller.hasSelection) ...[
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: controller.isLoading
+                              ? null
+                              : () => _acceptSelected(controller),
+                          icon: const Icon(Icons.check, size: 18),
+                          label: Text(
+                            'قبول (${controller.selectedIds.length})',
+                            style: GoogleFonts.cairo(fontWeight: FontWeight.bold),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.success,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 10),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: controller.isLoading
+                              ? null
+                              : () => _showRejectMultipleDialog(controller),
+                          icon: const Icon(Icons.close, size: 18),
+                          label: Text(
+                            'رفض (${controller.selectedIds.length})',
+                            style: GoogleFonts.cairo(fontWeight: FontWeight.bold),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.error,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 10),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
               );
-            },
-          ),
+            }),
+            Expanded(
+              child: RefreshIndicator(
+                onRefresh: () => controller.refresh(),
+                color: AppColors.primary,
+                child: ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: controller.transfers.length,
+                  itemBuilder: (context, index) {
+                    final transfer = controller.transfers[index];
+                    final itemType = controller.itemTypesMap[transfer.itemType];
+                    return TweenAnimationBuilder<double>(
+                      tween: Tween(begin: 0.0, end: 1.0),
+                      duration: Duration(milliseconds: 300 + (index * 50)),
+                      curve: Curves.easeOut,
+                      builder: (context, value, child) {
+                        return Opacity(
+                          opacity: value,
+                          child: Transform.translate(
+                            offset: Offset(0, 20 * (1 - value)),
+                            child: child,
+                          ),
+                        );
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.only(bottom: 16),
+                        child: _TransferCard(
+                          transfer: transfer,
+                          itemType: itemType,
+                          isSelected: controller.isSelected(transfer.id),
+                          onToggleSelection: () => controller.toggleSelection(transfer.id),
+                          onAccept: () => controller.acceptTransfer(transfer.id),
+                          onReject: () => _showRejectDialog(transfer.id),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+          ],
         );
       }),
+    );
+  }
+
+  void _acceptSelected(NotificationsController ctrl) {
+    if (ctrl.selectedIds.isEmpty) return;
+    ctrl.acceptMultipleTransfers(ctrl.selectedIds);
+  }
+
+  void _showRejectMultipleDialog(NotificationsController ctrl) {
+    if (ctrl.selectedIds.isEmpty) return;
+    final reasonController = TextEditingController();
+    Get.dialog(
+      AlertDialog(
+        backgroundColor: AppColors.surfaceDark,
+        title: Text(
+          'رفض الطلبات المحددة (${ctrl.selectedIds.length})',
+          style: GoogleFonts.cairo(
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+        content: TextField(
+          controller: reasonController,
+          style: GoogleFonts.cairo(color: Colors.white),
+          decoration: InputDecoration(
+            labelText: 'سبب الرفض (اختياري)',
+            labelStyle: GoogleFonts.cairo(color: AppColors.textSecondary),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppColors.primary),
+            ),
+          ),
+          maxLines: 3,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            child: Text(
+              'إلغاء',
+              style: GoogleFonts.cairo(color: AppColors.textSecondary),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Get.back();
+              ctrl.rejectMultipleTransfers(
+                ctrl.selectedIds,
+                reason: reasonController.text.isEmpty ? null : reasonController.text,
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.error,
+              foregroundColor: Colors.white,
+            ),
+            child: Text(
+              'رفض المحدد',
+              style: GoogleFonts.cairo(fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -254,12 +401,16 @@ class NotificationsPage extends GetView<NotificationsController> {
 class _TransferCard extends StatelessWidget {
   final WarehouseTransfer transfer;
   final ItemType? itemType;
+  final bool isSelected;
+  final VoidCallback onToggleSelection;
   final VoidCallback onAccept;
   final VoidCallback onReject;
 
   const _TransferCard({
     required this.transfer,
     this.itemType,
+    required this.isSelected,
+    required this.onToggleSelection,
     required this.onAccept,
     required this.onReject,
   });
@@ -299,9 +450,15 @@ class _TransferCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header
+            // Header: checkbox + icon + title
             Row(
               children: [
+                Checkbox(
+                  value: isSelected,
+                  activeColor: AppColors.primary,
+                  onChanged: (_) => onToggleSelection(),
+                ),
+                const SizedBox(width: 8),
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(

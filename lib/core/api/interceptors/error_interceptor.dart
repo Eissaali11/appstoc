@@ -13,24 +13,27 @@ class ErrorInterceptor extends Interceptor {
         break;
       case DioExceptionType.badResponse:
         final statusCode = err.response?.statusCode;
+        final body = err.response?.data;
+        final serverMessage = body is Map ? body['message'] as String? : null;
+
         switch (statusCode) {
           case 400:
-            message = 'طلب غير صحيح';
+            message = serverMessage ?? 'طلب غير صحيح';
             break;
           case 401:
-            message = 'غير مصرح. يرجى تسجيل الدخول مرة أخرى';
+            message = serverMessage ?? 'غير مصرح. يرجى تسجيل الدخول مرة أخرى';
             break;
           case 403:
-            message = 'غير مسموح';
+            message = serverMessage ?? 'غير مسموح';
             break;
           case 404:
-            message = 'غير موجود';
+            message = serverMessage ?? 'غير موجود';
             break;
           case 500:
-            message = 'خطأ في الخادم';
+            message = serverMessage ?? 'خطأ في الخادم';
             break;
           default:
-            message = err.response?.data?['message'] ?? 'حدث خطأ';
+            message = serverMessage ?? 'حدث خطأ';
         }
         break;
       case DioExceptionType.cancel:
