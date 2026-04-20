@@ -16,7 +16,7 @@ import '../storage/local_cache.dart';
 /// - التطبيق عند التشغيل التالي سيجلبه تلقائياً ولن تحتاج لتعديل الكود
 class ApiConfig {
   /// القيمة الافتراضية عند أول تشغيل أو عند فشل جلب الإعداد
-  static const String defaultBaseUrl = 'https://www.stc1.fun';
+  static const String defaultBaseUrl = 'https://nuzum.fun';
 
   /// إن وُضع هنا عنوان ثابت (مثل https://config.example.com/app.json) فالتطبيق سيجلب منه عنوان الـ API،
   /// وعند تغيير الاستضافة تكفي تحديث محتوى ذلك الملف دون أي تعديل في التطبيق.
