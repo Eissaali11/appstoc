@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/routing/app_pages.dart';
 import '../../../../shared/models/item_type.dart';
 import '../../../../shared/utils/icon_mapper.dart';
 import '../../../fixed_inventory/data/models/inventory_entry.dart';
@@ -96,7 +97,7 @@ class _UpdateInventoryPageState extends State<UpdateInventoryPage> {
       await widget.onSave(entries);
       
       if (mounted) {
-        Get.back();
+        Get.offAllNamed(Routes.dashboard);
         Get.snackbar(
           'success'.tr,
           'update_success'.tr,
