@@ -1,4 +1,5 @@
 import 'package:get/get.dart';
+import '../../../../core/api/api_client.dart';
 import '../../../auth/presentation/controllers/auth_controller.dart';
 import '../../domain/repositories/notifications_repository.dart';
 import '../../data/repositories/notifications_repository_impl.dart';
@@ -10,7 +11,7 @@ class NotificationsBinding extends Bindings {
     // Repository
     if (!Get.isRegistered<NotificationsRepository>()) {
       Get.lazyPut<NotificationsRepository>(
-        () => NotificationsRepositoryImpl(),
+        () => NotificationsRepositoryImpl(Get.find<ApiClient>()),
       );
     }
 

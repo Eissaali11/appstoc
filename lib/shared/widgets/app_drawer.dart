@@ -34,7 +34,7 @@ class AppDrawer extends StatelessWidget {
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.primary.withOpacity(0.35),
+                      color: AppColors.primary.withValues(alpha: 0.35),
                       blurRadius: 18,
                       offset: const Offset(0, 8),
                     ),
@@ -51,7 +51,7 @@ class AppDrawer extends StatelessWidget {
                         borderRadius: BorderRadius.circular(18),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.35),
+                            color: Colors.black.withValues(alpha: 0.35),
                             blurRadius: 16,
                             offset: const Offset(0, 8),
                           ),
@@ -87,7 +87,7 @@ class AppDrawer extends StatelessWidget {
                             '@${user?.username ?? 'stockpro'}',
                             style: GoogleFonts.cairo(
                               fontSize: 13,
-                              color: Colors.white.withOpacity(0.9),
+                              color: Colors.white.withValues(alpha: 0.9),
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -99,10 +99,10 @@ class AppDrawer extends StatelessWidget {
                               vertical: 4,
                             ),
                             decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.16),
+                              color: Colors.white.withValues(alpha: 0.16),
                               borderRadius: BorderRadius.circular(20),
                               border: Border.all(
-                                color: Colors.white.withOpacity(0.3),
+                                color: Colors.white.withValues(alpha: 0.3),
                                 width: 0.8,
                               ),
                             ),
@@ -138,54 +138,117 @@ class AppDrawer extends StatelessWidget {
               child: ListView(
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 children: [
+                  // --- 1. الرئيسية والزيارات ---
+                  _buildSectionHeader('drawer_sec_home_orders'.tr),
                   _DrawerItem(
-                    icon: Icons.dashboard,
+                    icon: Icons.dashboard_outlined,
                     title: 'drawer_dashboard'.tr,
                     route: Routes.dashboard,
                     isActive: currentRoute == Routes.dashboard,
                     gradient: [AppColors.primary, AppColors.primaryDark],
                   ),
                   _DrawerItem(
-                    icon: Icons.inventory_2,
+                    icon: Icons.assignment_outlined,
+                    title: 'drawer_courier_requests'.tr,
+                    route: Routes.courierRequests,
+                    isActive: currentRoute == Routes.courierRequests,
+                    gradient: [AppColors.primary, AppColors.primaryDark],
+                  ),
+
+                  // --- 2. إدارة العهدة والمخزون ---
+                  _buildSectionHeader('drawer_sec_custody'.tr),
+                  _DrawerItem(
+                    icon: Icons.account_balance_wallet_outlined,
+                    title: 'drawer_serialized_custody'.tr,
+                    route: Routes.serializedCustody,
+                    isActive: currentRoute == Routes.serializedCustody,
+                    gradient: AppColors.purpleGradient,
+                  ),
+                  _DrawerItem(
+                    icon: Icons.inventory_2_outlined,
                     title: 'drawer_fixed_inventory'.tr,
                     route: Routes.fixedInventory,
                     isActive: currentRoute == Routes.fixedInventory,
                     gradient: [AppColors.primary, AppColors.primaryDark],
                   ),
                   _DrawerItem(
-                    icon: Icons.local_shipping,
+                    icon: Icons.local_shipping_outlined,
                     title: 'drawer_moving_inventory'.tr,
                     route: Routes.movingInventory,
                     isActive: currentRoute == Routes.movingInventory,
                     gradient: AppColors.purpleGradient,
                   ),
                   _DrawerItem(
-                    icon: Icons.list_alt,
+                    icon: Icons.list_alt_outlined,
                     title: 'drawer_inventory_list'.tr,
                     route: Routes.inventoryList,
                     isActive: currentRoute == Routes.inventoryList,
                     gradient: AppColors.greenGradient,
                   ),
+
+                  // --- 3. العمليات والمسح ---
+                  _buildSectionHeader('drawer_sec_operations'.tr),
                   _DrawerItem(
-                    icon: Icons.smartphone,
+                    icon: Icons.qr_code_scanner,
+                    title: 'drawer_shipment_scan'.tr,
+                    route: Routes.shipmentScan,
+                    isActive: currentRoute == Routes.shipmentScan,
+                    gradient: AppColors.greenGradient,
+                  ),
+                  _DrawerItem(
+                    icon: Icons.add_to_photos_outlined,
                     title: 'drawer_submit_device'.tr,
                     route: Routes.submitDevice,
                     isActive: currentRoute == Routes.submitDevice,
-                    gradient: [AppColors.success, AppColors.success.withOpacity(0.8)],
+                    gradient: [AppColors.success, AppColors.success.withValues(alpha: 0.8)],
                   ),
                   _DrawerItem(
-                    icon: Icons.devices,
+                    icon: Icons.move_to_inbox_outlined,
+                    title: 'drawer_device_handover'.tr,
+                    route: Routes.deviceHandover,
+                    isActive: currentRoute == Routes.deviceHandover,
+                    gradient: [AppColors.primary, AppColors.primaryDark],
+                  ),
+                  _DrawerItem(
+                    icon: Icons.remove_circle_outline,
+                    title: 'drawer_withdraw_device'.tr,
+                    route: Routes.withdrawDevice,
+                    isActive: currentRoute == Routes.withdrawDevice,
+                    gradient: [AppColors.error, AppColors.error.withValues(alpha: 0.8)],
+                  ),
+                  _DrawerItem(
+                    icon: Icons.history_outlined,
                     title: 'drawer_received_devices'.tr,
                     route: Routes.receivedDevices,
                     isActive: currentRoute == Routes.receivedDevices,
                     gradient: [AppColors.primary, AppColors.primaryDark],
                   ),
+
+                  // --- 4. خدمات وأدوات ---
+                  _buildSectionHeader('drawer_sec_services'.tr),
                   _DrawerItem(
-                    icon: Icons.request_page,
+                    icon: Icons.request_page_outlined,
                     title: 'drawer_request_inventory'.tr,
                     route: Routes.requestInventory,
                     isActive: currentRoute == Routes.requestInventory,
                     gradient: AppColors.orangeGradient,
+                  ),
+                  _DrawerItem(
+                    icon: Icons.business_rounded,
+                    title: 'drawer_neoleap_leads'.tr,
+                    route: Routes.neoleapLeads,
+                    isActive: currentRoute == Routes.neoleapLeads,
+                    gradient: [AppColors.primary, AppColors.primaryDark],
+                  ),
+
+                  // --- 5. النظام والحساب ---
+                  _buildSectionHeader('drawer_sec_system'.tr),
+                  _DrawerItem(
+                    icon: Icons.person_outline,
+                    title: 'drawer_profile'.tr,
+                    route: Routes.profile,
+                    isActive: currentRoute == Routes.profile,
+                    gradient: [AppColors.primary, AppColors.primaryDark],
                   ),
                   Obx(() {
                     final dashboardController = Get.isRegistered<DashboardController>()
@@ -193,33 +256,19 @@ class AppDrawer extends StatelessWidget {
                         : null;
                     final count = dashboardController?.pendingTransfersCount ?? 0;
                     return _DrawerItem(
-                      icon: Icons.notifications,
-                      title: 'الإشعارات',
+                      icon: Icons.notifications_none_outlined,
+                      title: 'drawer_notifications'.tr,
                       route: Routes.notifications,
                       isActive: currentRoute == Routes.notifications,
                       gradient: AppColors.orangeGradient,
                       badge: count > 0 ? count : null,
                     );
                   }),
-                  const Divider(
-                    color: AppColors.border,
-                    height: 32,
-                    thickness: 1,
-                    indent: 16,
-                    endIndent: 16,
-                  ),
                   _DrawerItem(
-                    icon: Icons.business_rounded,
+                    icon: Icons.info_outline,
                     title: 'drawer_about_us'.tr,
                     route: Routes.aboutUs,
                     isActive: currentRoute == Routes.aboutUs,
-                    gradient: [AppColors.primary, AppColors.primaryDark],
-                  ),
-                  _DrawerItem(
-                    icon: Icons.person,
-                    title: 'drawer_profile'.tr,
-                    route: Routes.profile,
-                    isActive: currentRoute == Routes.profile,
                     gradient: [AppColors.primary, AppColors.primaryDark],
                   ),
                 ],
@@ -238,12 +287,12 @@ class AppDrawer extends StatelessWidget {
                 return Container(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      colors: [AppColors.error, AppColors.error.withOpacity(0.8)],
+                      colors: [AppColors.error, AppColors.error.withValues(alpha: 0.8)],
                     ),
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: [
                       BoxShadow(
-                        color: AppColors.error.withOpacity(0.3),
+                        color: AppColors.error.withValues(alpha: 0.3),
                         blurRadius: 10,
                         offset: const Offset(0, 5),
                       ),
@@ -254,7 +303,7 @@ class AppDrawer extends StatelessWidget {
                     child: InkWell(
                       borderRadius: BorderRadius.circular(12),
                       onTap: () async {
-                        final confirmed = await Get.dialog<bool>(
+                        Get.dialog(
                           AlertDialog(
                             backgroundColor: AppColors.surfaceDark,
                             title: Text(
@@ -270,7 +319,7 @@ class AppDrawer extends StatelessWidget {
                             ),
                             actions: [
                               TextButton(
-                                onPressed: () => Get.back(result: false),
+                                onPressed: () => Get.back(),
                                 child: Text(
                                   'cancel'.tr,
                                   style: GoogleFonts.cairo(
@@ -279,7 +328,11 @@ class AppDrawer extends StatelessWidget {
                                 ),
                               ),
                               ElevatedButton(
-                                onPressed: () => Get.back(result: true),
+                                onPressed: () async {
+                                  Get.back(); // close dialog
+                                  Get.back(); // close drawer
+                                  await authController.logout();
+                                },
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: AppColors.error,
                                   foregroundColor: Colors.white,
@@ -294,11 +347,6 @@ class AppDrawer extends StatelessWidget {
                             ],
                           ),
                         );
-
-                        if (confirmed == true) {
-                          Get.back(); // Close drawer
-                          await authController.logout();
-                        }
                       },
                       child: Padding(
                         padding: const EdgeInsets.symmetric(
@@ -332,6 +380,34 @@ class AppDrawer extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 18, bottom: 8, left: 16, right: 16),
+      child: Row(
+        children: [
+          Container(
+            width: 4,
+            height: 12,
+            decoration: BoxDecoration(
+              color: AppColors.primary,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            title,
+            style: GoogleFonts.cairo(
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              color: AppColors.textSecondary,
+              letterSpacing: 0.5,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -371,7 +447,7 @@ class _DrawerItem extends StatelessWidget {
         boxShadow: isActive
             ? [
                 BoxShadow(
-                  color: gradient.first.withOpacity(0.3),
+                  color: gradient.first.withValues(alpha: 0.3),
                   blurRadius: 8,
                   offset: const Offset(0, 4),
                 ),
@@ -397,8 +473,8 @@ class _DrawerItem extends StatelessWidget {
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
                     color: isActive
-                        ? Colors.white.withOpacity(0.2)
-                        : AppColors.textSecondary.withOpacity(0.1),
+                        ? Colors.white.withValues(alpha: 0.2)
+                        : AppColors.textSecondary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Icon(
@@ -425,7 +501,7 @@ class _DrawerItem extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
                       color: isActive
-                          ? Colors.white.withOpacity(0.3)
+                          ? Colors.white.withValues(alpha: 0.3)
                           : AppColors.error,
                       borderRadius: BorderRadius.circular(12),
                     ),

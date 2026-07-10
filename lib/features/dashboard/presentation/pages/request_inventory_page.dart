@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/api/api_client.dart';
 import '../../../../shared/widgets/app_drawer.dart';
 import '../../../../shared/utils/icon_mapper.dart';
 import '../../../inventory_requests/presentation/controllers/inventory_request_controller.dart';
@@ -31,7 +32,9 @@ class _RequestInventoryPageState extends State<RequestInventoryPage>
     super.initState();
     // Ensure binding is initialized
     if (!Get.isRegistered<InventoryRequestRepository>()) {
-      Get.put<InventoryRequestRepository>(InventoryRequestRepositoryImpl());
+      Get.put<InventoryRequestRepository>(
+        InventoryRequestRepositoryImpl(Get.find<ApiClient>()),
+      );
     }
     if (!Get.isRegistered<InventoryRequestController>()) {
       Get.put(InventoryRequestController(

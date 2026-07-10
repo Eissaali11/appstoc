@@ -1,16 +1,18 @@
-import 'package:dio/dio.dart';
-import 'package:get/get.dart';
+import '../../../../core/api/api_client.dart';
 import '../../../../core/api/api_endpoints.dart';
 import '../../domain/repositories/stock_transfer_repository.dart';
 import '../../../../shared/models/stock_movement.dart';
 import '../../../../shared/models/technician_inventory.dart';
 
 class StockTransferRepositoryImpl implements StockTransferRepository {
+  final ApiClient apiClient;
+
+  StockTransferRepositoryImpl(this.apiClient);
+
   @override
   Future<TechnicianInventory?> getMyFixedInventory() async {
     try {
-      final dio = Get.find<Dio>();
-      final response = await dio.get(ApiEndpoints.myFixedInventory);
+      final response = await apiClient.get(ApiEndpoints.myFixedInventory);
       if (response.data == null) return null;
       return TechnicianInventory.fromJson(response.data as Map<String, dynamic>);
     } catch (e) {
@@ -21,8 +23,7 @@ class StockTransferRepositoryImpl implements StockTransferRepository {
   @override
   Future<TechnicianInventory?> getMyMovingInventory() async {
     try {
-      final dio = Get.find<Dio>();
-      final response = await dio.get(ApiEndpoints.myMovingInventory);
+      final response = await apiClient.get(ApiEndpoints.myMovingInventory);
       if (response.data == null) return null;
       return TechnicianInventory.fromJson(response.data as Map<String, dynamic>);
     } catch (e) {
@@ -42,8 +43,7 @@ class StockTransferRepositoryImpl implements StockTransferRepository {
     String? notes,
   }) async {
     try {
-      final dio = Get.find<Dio>();
-      await dio.post(
+      await apiClient.post(
         ApiEndpoints.stockTransfer,
         data: {
           'technicianId': technicianId,
@@ -64,8 +64,7 @@ class StockTransferRepositoryImpl implements StockTransferRepository {
   @override
   Future<List<StockMovement>> getStockMovements() async {
     try {
-      final dio = Get.find<Dio>();
-      final response = await dio.get(ApiEndpoints.stockMovements);
+      final response = await apiClient.get(ApiEndpoints.stockMovements);
       if (response.data is List) {
         return (response.data as List)
             .map((json) => StockMovement.fromJson(json as Map<String, dynamic>))

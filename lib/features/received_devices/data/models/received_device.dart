@@ -9,8 +9,14 @@ class ReceivedDevice {
   final String? technicianId;
   final String? supervisorId;
 
+  @JsonKey(name: 'itemTypeId')
+  final String? itemTypeId;
+
+  @JsonKey(name: 'inventoryType')
+  final String inventoryType;
+
   @JsonKey(name: 'terminalId')
-  final String terminalId;
+  final String? terminalId;
 
   @JsonKey(name: 'serialNumber')
   final String serialNumber;
@@ -32,7 +38,7 @@ class ReceivedDevice {
   @JsonKey(name: 'damagePart')
   final String? damagePart;
 
-  final String? status; // pending | approved | rejected
+  final String? status; // pending | approved | rejected | delivered
   final String? adminNotes;
   final String? approvedBy;
   final DateTime? approvedAt;
@@ -42,7 +48,9 @@ class ReceivedDevice {
     this.id,
     this.technicianId,
     this.supervisorId,
-    required this.terminalId,
+    this.itemTypeId,
+    this.inventoryType = 'fixed',
+    this.terminalId,
     required this.serialNumber,
     required this.battery,
     required this.chargerCable,
@@ -62,7 +70,9 @@ class ReceivedDevice {
       id: json['id'] as String?,
       technicianId: json['technicianId'] as String?,
       supervisorId: json['supervisorId'] as String?,
-      terminalId: json['terminalId'] as String? ?? '',
+      itemTypeId: json['itemTypeId'] as String?,
+      inventoryType: json['inventoryType'] as String? ?? 'fixed',
+      terminalId: json['terminalId'] as String?,
       serialNumber: json['serialNumber'] as String? ?? '',
       battery: json['battery'] as bool? ?? false,
       chargerCable: json['chargerCable'] as bool? ?? false,
@@ -84,7 +94,9 @@ class ReceivedDevice {
 
   /// Only send fields needed for creating a received device.
   Map<String, dynamic> toJson() => <String, dynamic>{
-        'terminalId': terminalId,
+        if (itemTypeId != null) 'itemTypeId': itemTypeId,
+        'inventoryType': inventoryType,
+        if (terminalId != null) 'terminalId': terminalId,
         'serialNumber': serialNumber,
         'battery': battery,
         'chargerCable': chargerCable,
@@ -111,6 +123,8 @@ class ReceivedDevice {
         return 'تمت الموافقة';
       case 'rejected':
         return 'مرفوض';
+      case 'delivered':
+        return 'تم التسليم';
       case 'pending':
       default:
         return 'قيد الانتظار';
@@ -125,6 +139,8 @@ class ReceivedDevice {
         return 2;
       case 'rejected':
         return 3;
+      case 'delivered':
+        return 4;
       case 'pending':
       default:
         return 1;
@@ -132,7 +148,7 @@ class ReceivedDevice {
   }
 
   // Map status index to color
-  // 1: pending (orange), 2: approved (green), 3: rejected (red)
+  // 1: pending (orange), 2: approved (green), 3: rejected (red), 4: delivered (emerald)
   // If status null -> grey
   get statusColor {
     switch (_statusIndex) {
@@ -142,6 +158,8 @@ class ReceivedDevice {
         return const Color(0xFF22C55E);
       case 3:
         return const Color(0xFFEF4444);
+      case 4:
+        return const Color(0xFF10B981);
       default:
         return const Color(0xFF9CA3AF);
     }

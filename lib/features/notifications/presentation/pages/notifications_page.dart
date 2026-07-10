@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:intl/intl.dart';
+import 'package:intl/intl.dart' hide TextDirection;
 import '../controllers/notifications_controller.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/widgets/app_drawer.dart';
+
+import '../../../../shared/widgets/barcode_scanner_widget.dart';
 import '../../../moving_inventory/data/models/warehouse_transfer.dart';
 import '../../../../shared/models/item_type.dart';
 import '../../../dashboard/presentation/widgets/shimmer_loading.dart';
@@ -157,7 +160,29 @@ class NotificationsPage extends GetView<NotificationsController> {
                           itemType: itemType,
                           isSelected: controller.isSelected(transfer.id),
                           onToggleSelection: () => controller.toggleSelection(transfer.id),
-                          onAccept: () => controller.acceptTransfer(transfer.id),
+                          onAccept: () {
+                            final isSerialized = itemType != null
+                                ? (itemType.category == 'devices' || itemType.category == 'sim')
+                                : (transfer.itemType.toLowerCase().contains('pos') ||
+                                   transfer.itemType.toLowerCase().contains('sim') ||
+                                   transfer.itemType.toLowerCase().contains('n950') ||
+                                   transfer.itemType.toLowerCase().contains('i9000') ||
+                                   transfer.itemType.toLowerCase().contains('i9100'));
+                            if (isSerialized) {
+                              final actualItemType = itemType ?? ItemType(
+                                id: transfer.itemType,
+                                nameAr: transfer.itemType,
+                                nameEn: transfer.itemType,
+                                category: transfer.itemType.toLowerCase().contains('sim') ? 'sim' : 'devices',
+                                sortOrder: 0,
+                                isActive: true,
+                                isVisible: true,
+                              );
+                              _showSerializedScanSheet(context, transfer, actualItemType);
+                            } else {
+                              controller.acceptTransfer(transfer.id);
+                            }
+                          },
                           onReject: () => _showRejectDialog(transfer.id),
                         ),
                       ),
@@ -174,6 +199,31 @@ class NotificationsPage extends GetView<NotificationsController> {
 
   void _acceptSelected(NotificationsController ctrl) {
     if (ctrl.selectedIds.isEmpty) return;
+    
+    // Check if any selected transfer is serialized (devices or sim)
+    final hasSerialized = ctrl.transfers.any((t) {
+      if (ctrl.isSelected(t.id)) {
+        final itemType = ctrl.itemTypesMap[t.itemType];
+        final id = t.itemType.toLowerCase();
+        final isSer = itemType != null
+            ? (itemType.category == 'devices' || itemType.category == 'sim')
+            : (id.contains('pos') || id.contains('sim') || id.contains('n950') || id.contains('i9000') || id.contains('i9100'));
+        return isSer;
+      }
+      return false;
+    });
+
+    if (hasSerialized) {
+      Get.snackbar(
+        'تنبيه لمسح الأرقام',
+        'يرجى قبول طلبات الأجهزة والشرائح بشكل منفرد لمسح الأرقام التسلسلية',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: AppColors.warning,
+        colorText: Colors.white,
+      );
+      return;
+    }
+    
     ctrl.acceptMultipleTransfers(ctrl.selectedIds);
   }
 
@@ -393,6 +443,19 @@ class NotificationsPage extends GetView<NotificationsController> {
             textAlign: TextAlign.center,
           ),
         ],
+      ),
+    );
+  }
+
+  void _showSerializedScanSheet(BuildContext context, WarehouseTransfer transfer, ItemType itemType) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _SerializedScanBottomSheet(
+        transfer: transfer,
+        itemType: itemType,
+        controller: controller,
       ),
     );
   }
@@ -619,6 +682,556 @@ class _TransferCard extends StatelessWidget {
               ],
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SerializedScanBottomSheet extends StatefulWidget {
+  final WarehouseTransfer transfer;
+  final ItemType itemType;
+  final NotificationsController controller;
+
+  const _SerializedScanBottomSheet({
+    required this.transfer,
+    required this.itemType,
+    required this.controller,
+  });
+
+  @override
+  State<_SerializedScanBottomSheet> createState() => _SerializedScanBottomSheetState();
+}
+
+class _SerializedScanBottomSheetState extends State<_SerializedScanBottomSheet> {
+  final List<String> _scannedSerials = [];
+  final _serialController = TextEditingController();
+  final _focusNode = FocusNode();
+  String? _error;
+  bool _isSaving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _scannedSerials.addAll(widget.controller.getScannedSerials(widget.transfer.id));
+  }
+
+  @override
+  void dispose() {
+    _serialController.dispose();
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  void _addSerial() {
+    var serial = _serialController.text.trim();
+    if (serial.startsWith(']C1')) {
+      serial = serial.substring(3);
+    } else if (serial.toLowerCase().startsWith('c1')) {
+      serial = serial.substring(2);
+    }
+
+    if (serial.isEmpty) {
+      setState(() {
+        _error = 'الرجاء إدخال أو مسح رقم تسلسلي';
+      });
+      return;
+    }
+
+    if (_scannedSerials.contains(serial)) {
+      HapticFeedback.vibrate();
+      setState(() {
+        _error = 'هذا الرقم التسلسلي مضاف بالفعل';
+      });
+      return;
+    }
+
+    // Validation rules from database (ItemType)
+    final itemType = widget.itemType;
+    
+    // 1. Prefix Validation
+    if (itemType.serialPrefix != null && itemType.serialPrefix!.isNotEmpty) {
+      final prefixes = itemType.serialPrefix!.split(',').map((p) => p.trim()).toList();
+      final hasValidPrefix = prefixes.any((prefix) => serial.startsWith(prefix));
+      if (!hasValidPrefix) {
+        HapticFeedback.vibrate();
+        setState(() {
+          _error = '❌ الرقم التسلسلي غير صحيح. يجب أن يبدأ بـ: ${prefixes.join(' أو ')}';
+        });
+        return;
+      }
+    }
+
+    // 2. Length Validation
+    if (itemType.serialLength != null && itemType.serialLength! > 0) {
+      if (serial.length != itemType.serialLength) {
+        int digitsAfterPrefix = itemType.serialLength!;
+        if (itemType.serialPrefix != null) {
+          final prefixes = itemType.serialPrefix!.split(',').map((p) => p.trim()).toList();
+          final matchedPrefix = prefixes.firstWhere((p) => serial.startsWith(p), orElse: () => '');
+          if (matchedPrefix.isNotEmpty) {
+            digitsAfterPrefix = itemType.serialLength! - matchedPrefix.length;
+          }
+        }
+        HapticFeedback.vibrate();
+        setState(() {
+          _error = '❌ طول الرقم التسلسلي غير صحيح. المطلوب: $digitsAfterPrefix أرقام بعد البادئة.';
+        });
+        return;
+      }
+    }
+
+    // 3. Regex Pattern Validation
+    if (itemType.serialRegex != null && itemType.serialRegex!.isNotEmpty) {
+      final regex = RegExp(itemType.serialRegex!);
+      if (!regex.hasMatch(serial)) {
+        HapticFeedback.vibrate();
+        setState(() {
+          _error = '❌ الرقم التسلسلي غير صحيح. الرقم لا يطابق الصيغة المعتمدة لـ ${itemType.nameAr}.';
+        });
+        return;
+      }
+    }
+
+    if (widget.controller.isSerialScannedAnywhere(serial)) {
+      HapticFeedback.vibrate();
+      setState(() {
+        _error = 'هذا الرقم التسلسلي تم مسحه بالفعل في طلب آخر';
+      });
+      return;
+    }
+
+    if (_scannedSerials.length >= widget.transfer.quantity) {
+      HapticFeedback.vibrate();
+      setState(() {
+        _error = 'تم مسح الكمية المطلوبة بالكامل بالفعل';
+      });
+      return;
+    }
+
+    setState(() {
+      _scannedSerials.add(serial);
+      widget.controller.addScannedSerial(widget.transfer.id, serial);
+      _serialController.clear();
+      _error = null;
+    });
+    HapticFeedback.lightImpact();
+    _focusNode.requestFocus();
+  }
+
+  Future<void> _submit() async {
+    if (_scannedSerials.length != widget.transfer.quantity) {
+      setState(() {
+        _error = 'الرجاء مسح كافة الأرقام التسلسلية (${widget.transfer.quantity}) المطلوبة';
+      });
+      return;
+    }
+
+    setState(() {
+      _isSaving = true;
+      _error = null;
+    });
+
+    final success = await widget.controller.acceptSerializedTransfer(
+      transferId: widget.transfer.id,
+      serials: _scannedSerials,
+      itemType: widget.itemType,
+    );
+
+    if (success) {
+      widget.controller.clearScannedSerials(widget.transfer.id);
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+    } else {
+      setState(() {
+        _isSaving = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final remains = widget.transfer.quantity - _scannedSerials.length;
+    final isDone = remains == 0;
+    final isSim = widget.itemType.category == 'sim';
+
+    return Padding(
+      padding: MediaQuery.of(context).viewInsets,
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.backgroundDark,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          border: Border.all(
+            color: AppColors.primary.withValues(alpha: 0.15),
+            width: 1.5,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.5),
+              blurRadius: 20,
+              offset: const Offset(0, -5),
+            ),
+          ],
+        ),
+        padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
+        child: Directionality(
+          textDirection: TextDirection.rtl,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Header
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'مسح الأرقام التسلسلية المستلمة',
+                          style: GoogleFonts.cairo(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'الصنف: ${widget.itemType.nameAr} | الكمية المطلوبة: ${widget.transfer.quantity}',
+                          style: GoogleFonts.cairo(
+                            fontSize: 13,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close, color: Colors.white70),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                ],
+              ),
+              const Divider(color: Colors.white10, height: 24),
+
+              // Progress bar
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceDark,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.white10),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      isDone ? Icons.check_circle : Icons.qr_code_scanner,
+                      color: isDone ? AppColors.success : AppColors.primary,
+                      size: 24,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'حالة المسح',
+                                style: GoogleFonts.cairo(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              Text(
+                                '${_scannedSerials.length} / ${widget.transfer.quantity}',
+                                style: GoogleFonts.robotoMono(
+                                  color: isDone ? AppColors.success : AppColors.primary,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(10),
+                            child: LinearProgressIndicator(
+                              value: widget.transfer.quantity > 0
+                                  ? (_scannedSerials.length / widget.transfer.quantity)
+                                  : 0,
+                              backgroundColor: Colors.white10,
+                              color: isDone ? AppColors.success : AppColors.primary,
+                              minHeight: 8,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Manual input field
+              TextFormField(
+                controller: _serialController,
+                focusNode: _focusNode,
+                style: GoogleFonts.robotoMono(color: Colors.white, fontSize: 16),
+                textAlign: TextAlign.center,
+                onFieldSubmitted: (_) => _addSerial(),
+                decoration: InputDecoration(
+                  hintText: isSim ? 'أدخل ICCID للشريحة' : 'أدخل الرقم التسلسلي للجهاز',
+                  hintStyle: GoogleFonts.cairo(color: AppColors.textSecondary, fontSize: 14),
+                  filled: true,
+                  fillColor: AppColors.surfaceDark,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide.none,
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide(color: AppColors.primary, width: 2),
+                  ),
+                  prefixIcon: Icon(
+                    isSim ? Icons.sim_card : Icons.phone_android,
+                    color: AppColors.primary,
+                  ),
+                  suffixIcon: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.qr_code_scanner, color: AppColors.primary),
+                        onPressed: () async {
+                          final result = await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => BarcodeScannerWidget(
+                                title: 'مسح باركود الأجهزة والشرائح',
+                                isMultiScan: true,
+                                itemTypes: [widget.itemType],
+                                selectedItemTypeId: widget.itemType.id,
+                              ),
+                            ),
+                          );
+                          if (result != null) {
+                            List<String> codes = [];
+                            if (result is Map<String, dynamic>) {
+                              codes = List<String>.from(result['codes'] ?? []);
+                            } else if (result is List<String>) {
+                              codes = result;
+                            } else if (result is String && result.trim().isNotEmpty) {
+                              codes = [result.trim()];
+                            }
+                            
+                            if (codes.isNotEmpty) {
+                              setState(() {
+                                for (var code in codes) {
+                                  var serial = code.trim();
+                                  if (serial.startsWith(']C1')) {
+                                    serial = serial.substring(3);
+                                  } else if (serial.toLowerCase().startsWith('c1')) {
+                                    serial = serial.substring(2);
+                                  }
+                                  if (serial.isNotEmpty && !_scannedSerials.contains(serial)) {
+                                    // Validation rules from database (ItemType)
+                                    final itemType = widget.itemType;
+                                    bool isValid = true;
+
+                                    // 1. Prefix Validation
+                                    if (itemType.serialPrefix != null && itemType.serialPrefix!.isNotEmpty) {
+                                      final prefixes = itemType.serialPrefix!.split(',').map((p) => p.trim()).toList();
+                                      isValid = prefixes.any((prefix) => serial.startsWith(prefix));
+                                    }
+
+                                    // 2. Length Validation
+                                    if (isValid && itemType.serialLength != null && itemType.serialLength! > 0) {
+                                      isValid = serial.length == itemType.serialLength;
+                                    }
+
+                                    // 3. Regex Pattern Validation
+                                    if (isValid && itemType.serialRegex != null && itemType.serialRegex!.isNotEmpty) {
+                                      final regex = RegExp(itemType.serialRegex!);
+                                      isValid = regex.hasMatch(serial);
+                                    }
+
+                                    if (!isValid) {
+                                      _error = 'تم تخطي بعض الأرقام غير المطابقة للمواصفات';
+                                    } else if (widget.controller.isSerialScannedAnywhere(serial)) {
+                                      _error = 'تم تخطي بعض الأرقام التسلسلية المكررة في طلبات أخرى';
+                                    } else if (_scannedSerials.length < widget.transfer.quantity) {
+                                      _scannedSerials.add(serial);
+                                      widget.controller.addScannedSerial(widget.transfer.id, serial);
+                                    }
+                                  }
+                                }
+                                _error = null;
+                              });
+                            }
+                          }
+                        },
+                        tooltip: 'مسح بالكاميرا',
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.add_circle, color: AppColors.primary),
+                        onPressed: _addSerial,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              if (_error != null) ...[
+                const SizedBox(height: 8),
+                Text(
+                  _error!,
+                  style: GoogleFonts.cairo(color: AppColors.error, fontSize: 13, fontWeight: FontWeight.w600),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+              const SizedBox(height: 16),
+
+              // Scanned list header
+              if (_scannedSerials.isNotEmpty) ...[
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'الأرقام الممسوحة مؤخراً:',
+                      style: GoogleFonts.cairo(
+                        color: AppColors.textSecondary,
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        setState(() {
+                          _scannedSerials.clear();
+                          widget.controller.clearScannedSerials(widget.transfer.id);
+                          _error = null;
+                        });
+                      },
+                      child: Text(
+                        'حذف الكل',
+                        style: GoogleFonts.cairo(color: AppColors.error, fontSize: 12),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  constraints: const BoxConstraints(maxHeight: 180),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceDark,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.white10),
+                  ),
+                  child: ListView.separated(
+                    shrinkWrap: true,
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    itemCount: _scannedSerials.length,
+                    separatorBuilder: (_, __) => const Divider(color: Colors.white10, height: 1),
+                    itemBuilder: (context, index) {
+                      final item = _scannedSerials[index];
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(
+                                color: AppColors.primary.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Icon(
+                                isSim ? Icons.sim_card : Icons.phone_android,
+                                color: AppColors.primary,
+                                size: 16,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                item,
+                                style: GoogleFonts.robotoMono(
+                                  color: Colors.white,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.delete_outline, color: AppColors.error, size: 18),
+                              onPressed: () {
+                                setState(() {
+                                  widget.controller.removeScannedSerial(widget.transfer.id, item);
+                                  _scannedSerials.removeAt(index);
+                                  _error = null;
+                                });
+                              },
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 20),
+              ],
+
+              // Action buttons
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: _isSaving || !isDone ? null : _submit,
+                      icon: _isSaving
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Icon(Icons.check, size: 20),
+                      label: Text(
+                        _isSaving ? 'جاري الحفظ...' : 'حفظ وتأكيد الاستلام',
+                        style: GoogleFonts.cairo(fontWeight: FontWeight.bold),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.success,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        disabledBackgroundColor: Colors.white10,
+                        disabledForegroundColor: Colors.white30,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  TextButton(
+                    onPressed: _isSaving ? null : () => Navigator.of(context).pop(),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
+                      foregroundColor: AppColors.textSecondary,
+                    ),
+                    child: Text(
+                      'إلغاء',
+                      style: GoogleFonts.cairo(fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );

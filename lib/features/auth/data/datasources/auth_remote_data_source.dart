@@ -1,6 +1,5 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
-import 'package:get/get.dart';
 import '../../../../core/api/api_client.dart';
 import '../../../../core/api/api_endpoints.dart';
 import '../models/user_model.dart';
@@ -28,7 +27,6 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         );
       }
 
-      final dio = Get.find<Dio>();
       final url = '${ApiEndpoints.baseUrl}${ApiEndpoints.login}';
 
       if (kDebugMode) {
@@ -36,7 +34,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       }
 
       // إرسال الطلب مع options لتجنب إضافة Authorization header
-      final response = await dio.post(
+      final response = await apiClient.post(
         ApiEndpoints.login,
         data: {'username': username, 'password': password},
         options: Options(
@@ -144,8 +142,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   @override
   Future<void> logout() async {
     try {
-      final dio = Get.find<Dio>();
-      await dio.post(ApiEndpoints.logout);
+      await apiClient.post(ApiEndpoints.logout);
     } on DioException {
       // Ignore errors on logout
     }
@@ -154,9 +151,12 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   @override
   Future<UserModel> getCurrentUser() async {
     try {
-      final dio = Get.find<Dio>();
-      final response = await dio.get(ApiEndpoints.currentUser);
-      return UserModel.fromJson(response.data);
+      final response = await apiClient.get(ApiEndpoints.currentUser);
+      final data = response.data;
+      if (data is Map && data['user'] != null) {
+        return UserModel.fromJson(data['user'] as Map<String, dynamic>);
+      }
+      return UserModel.fromJson(data);
     } on DioException catch (e) {
       throw Exception(e.response?.data?['message'] ?? 'فشل جلب بيانات المستخدم');
     }

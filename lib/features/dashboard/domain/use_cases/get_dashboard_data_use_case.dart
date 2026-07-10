@@ -1,3 +1,4 @@
+import '../entities/dashboard_data.dart';
 import '../repositories/dashboard_repository.dart';
 
 class GetDashboardDataUseCase {
@@ -5,7 +6,7 @@ class GetDashboardDataUseCase {
 
   GetDashboardDataUseCase(this.repository);
 
-  Future<Map<String, dynamic>> call() async {
-    return await repository.getDashboardData();
+  Future<DashboardData> call(String userId) async {
+    return await repository.getDashboardData(userId);
   }
 }

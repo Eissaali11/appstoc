@@ -1,5 +1,6 @@
 import '../../../../shared/models/inventory_request.dart';
 import '../../../fixed_inventory/data/models/inventory_entry.dart';
+import '../../../../shared/models/item_type.dart';
 
 abstract class InventoryRequestRepository {
   /// Create inventory request using dynamic entries (preferred method)
@@ -32,4 +33,6 @@ abstract class InventoryRequestRepository {
   });
 
   Future<List<InventoryRequest>> getMyInventoryRequests();
+
+  Future<List<ItemType>> getItemTypes();
 }

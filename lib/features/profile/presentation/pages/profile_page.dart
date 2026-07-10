@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../auth/presentation/controllers/auth_controller.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/storage/local_cache.dart';
+import '../../../../core/utils/ui_helper.dart';
 import '../../../../shared/widgets/app_drawer.dart';
 
 class ProfilePage extends StatelessWidget {
@@ -287,6 +288,9 @@ class ProfilePage extends StatelessWidget {
 
                     if (confirmed == true) {
                       await authController.logout();
+                      if (authController.error != null) {
+                        UIHelper.showErrorSnackBar(authController.error!);
+                      }
                     }
                   },
                   icon: const Icon(Icons.logout),

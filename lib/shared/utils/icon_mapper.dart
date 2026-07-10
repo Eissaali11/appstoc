@@ -124,4 +124,41 @@ class IconMapper {
 
     return _iconMap['default']!;
   }
+
+  /// Get asset image path for items if available
+  static String? getItemImagePath(String? nameAr, String? nameEn, String? category) {
+    final searchText = '${nameAr ?? ''} ${nameEn ?? ''}'.toLowerCase();
+    
+    // Check for SIM operator logos
+    if (category == 'sim' || searchText.contains('شريحة') || searchText.contains('sim')) {
+      if (searchText.contains('stc') || searchText.contains('اس تي سي') || searchText.contains('سوا') || searchText.contains('sawa')) {
+        return 'assets/stc.jpg';
+      } else if (searchText.contains('mobily') || searchText.contains('موبايلي') || searchText.contains('مبايلي')) {
+        return 'assets/mobile.png';
+      } else if (searchText.contains('zain') || searchText.contains('زين')) {
+        return 'assets/zein.png';
+      } else if (searchText.contains('libara') || searchText.contains('libar') || searchText.contains('lebara') || searchText.contains('ليبارة') || searchText.contains('ليبرة')) {
+        return 'assets/libar.png';
+      }
+    }
+    
+    // Check for Device / POS
+    if (category == 'devices' || searchText.contains('جهاز') || searchText.contains('device') || searchText.contains('terminal') || searchText.contains('n950') || searchText.contains('i9000') || searchText.contains('i9100')) {
+      return 'assets/1.png';
+    }
+    
+    // Check for Sticker / mol
+    if (category == 'stickers' ||
+        searchText.contains('ملصق') ||
+        searchText.contains('ملصقات') ||
+        searchText.contains('الملصقات') ||
+        searchText.contains('sticker') ||
+        searchText.contains('stickers') ||
+        searchText.contains('label') ||
+        searchText.contains('mol')) {
+      return 'assets/mol.png';
+    }
+    
+    return null;
+  }
 }

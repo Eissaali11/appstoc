@@ -3,8 +3,6 @@ import '../../domain/repositories/inventory_request_repository.dart';
 import '../../../../shared/models/inventory_request.dart';
 import '../../../fixed_inventory/data/models/inventory_entry.dart';
 import '../../../../shared/models/item_type.dart';
-import '../../../../core/api/api_endpoints.dart';
-import 'package:dio/dio.dart';
 
 class InventoryRequestController extends GetxController {
   final InventoryRequestRepository repository;
@@ -37,15 +35,11 @@ class InventoryRequestController extends GetxController {
 
   Future<void> loadItemTypes() async {
     try {
-      final dio = Get.find<Dio>();
-      final response = await dio.get(ApiEndpoints.activeItemTypes);
-      if (response.data is List) {
-        _itemTypes.value = (response.data as List)
-            .map((e) => ItemType.fromJson(e as Map<String, dynamic>))
-            .where((item) => item.isActive && item.isVisible)
-            .toList()
-          ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
-      }
+      final items = await repository.getItemTypes();
+      _itemTypes.value = items
+          .where((item) => item.isActive && item.isVisible)
+          .toList()
+        ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
     } catch (e) {
       // Silently fail - item types are not critical for basic functionality
     }

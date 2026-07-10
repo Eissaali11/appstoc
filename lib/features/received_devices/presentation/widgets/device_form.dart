@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../../core/utils/validators.dart';
+import '../../../../shared/widgets/barcode_scanner_widget.dart';
 
 class DeviceForm extends StatefulWidget {
   final Function(Map<String, dynamic>) onSubmit;
@@ -88,8 +89,20 @@ class _DeviceFormState extends State<DeviceForm> {
                 const SizedBox(width: 8),
                 IconButton(
                   icon: const Icon(Icons.qr_code_scanner),
-                  onPressed: () {
-                    // TODO: Open barcode scanner
+                  onPressed: () async {
+                    final result = await Navigator.push<String>(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const BarcodeScannerWidget(
+                          title: 'مسح الرقم التسلسلي',
+                        ),
+                      ),
+                    );
+                    if (result != null) {
+                      setState(() {
+                        _serialNumberController.text = result;
+                      });
+                    }
                   },
                   tooltip: 'clear_barcode'.tr,
                 ),

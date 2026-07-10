@@ -1,16 +1,18 @@
-import 'package:dio/dio.dart';
-import 'package:get/get.dart';
+import '../../../../core/api/api_client.dart';
 import '../../../../core/api/api_endpoints.dart';
 import '../../domain/repositories/fixed_inventory_repository.dart';
 import '../models/inventory_entry.dart';
 import '../../../../shared/models/item_type.dart';
 
 class FixedInventoryRepositoryImpl implements FixedInventoryRepository {
+  final ApiClient apiClient;
+
+  FixedInventoryRepositoryImpl(this.apiClient);
+
   @override
   Future<List<InventoryEntry>> getFixedInventory(String technicianId) async {
     try {
-      final dio = Get.find<Dio>();
-      final response = await dio.get(
+      final response = await apiClient.get(
         ApiEndpoints.fixedInventoryEntries(technicianId),
       );
       
@@ -28,8 +30,7 @@ class FixedInventoryRepositoryImpl implements FixedInventoryRepository {
   @override
   Future<List<ItemType>> getItemTypes() async {
     try {
-      final dio = Get.find<Dio>();
-      final response = await dio.get(ApiEndpoints.activeItemTypes);
+      final response = await apiClient.get(ApiEndpoints.activeItemTypes);
       
       if (response.data is List) {
         return (response.data as List)
@@ -48,10 +49,9 @@ class FixedInventoryRepositoryImpl implements FixedInventoryRepository {
     List<InventoryEntry> entries,
   ) async {
     try {
-      final dio = Get.find<Dio>();
       // Update each entry individually using POST
       for (var entry in entries) {
-        await dio.post(
+        await apiClient.post(
           ApiEndpoints.fixedInventoryEntries(technicianId),
           data: {
             'itemTypeId': entry.itemTypeId,
@@ -73,8 +73,7 @@ class FixedInventoryRepositoryImpl implements FixedInventoryRepository {
     required int units,
   }) async {
     try {
-      final dio = Get.find<Dio>();
-      await dio.post(
+      await apiClient.post(
         ApiEndpoints.fixedInventoryEntries(technicianId),
         data: {
           'itemTypeId': itemTypeId,

@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import '../controllers/devices_controller.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/widgets/app_drawer.dart';
+import '../../../../shared/widgets/barcode_scanner_widget.dart';
 import '../../data/models/received_device.dart';
+import '../../../../shared/models/item_type.dart';
+import '../../../../core/routing/app_pages.dart';
 
 class SubmitDevicePage extends StatefulWidget {
   const SubmitDevicePage({super.key});
@@ -19,13 +24,62 @@ class _SubmitDevicePageState extends State<SubmitDevicePage> {
   final _serialNumberController = TextEditingController();
   final _damagePartController = TextEditingController();
   
+  String _selectedCategory = 'devices'; // devices, papers, sim, accessories
+  String? _selectedItemTypeId;
+  String _inventoryType = 'fixed'; // fixed, moving
+
+  // Accessories
   bool _battery = false;
   bool _chargerCable = false;
   bool _chargerHead = false;
   bool _hasSim = false;
   String? _simCardType;
+  final List<String> _simTypes = [
+    'STC',
+    'موبايلي',
+    'زين',
+    'ليبارا',
+    'فيرجن موبايل',
+    'ريد بل موبايل',
+    'سلام موبايل',
+    'جوي',
+    'فريندي موبايل',
+    'أخرى'
+  ];
 
-  final List<String> _simTypes = ['موبايلي', 'STC', 'زين', 'أخرى'];
+  // Damages
+  String _selectedDamageType = ''; // screen, port, battery, printer, keypad, other, none
+  final Map<String, String> _damageTypes = {
+    'screen': '🖥️ كسر في الشاشة',
+    'port': '🔌 تلف منفذ الشحن',
+    'battery': '🔋 انتفاخ/تلف البطارية',
+    'printer': '🖨️ عطل في الطابعة',
+    'keypad': '⌨️ تلف لوحة المفاتيح',
+    'other': '⚙️ عطل آخر (كتابة مخصصة)',
+    'none': '✅ لا يوجد تلف (سليم)',
+  };
+
+  // Offline Mode & Drafts
+  bool _isOfflineMode = false;
+  int _localDraftsCount = 0;
+  late Box _draftsBox;
+
+  // Custody Lookup State
+  bool _isSearchingCustody = false;
+  Map<String, dynamic>? _custodyInfo;
+
+  @override
+  void initState() {
+    super.initState();
+    _initHive();
+  }
+
+  Future<void> _initHive() async {
+    _draftsBox = await Hive.openBox('draft_devices');
+    setState(() {
+      _localDraftsCount = _draftsBox.length;
+    });
+  }
 
   @override
   void dispose() {
@@ -35,23 +89,485 @@ class _SubmitDevicePageState extends State<SubmitDevicePage> {
     super.dispose();
   }
 
-  void _submit() {
+  void _onCategoryChanged(String category) {
+    setState(() {
+      _selectedCategory = category;
+      final controller = Get.find<DevicesController>();
+      final filtered = controller.itemTypes
+          .where((type) => type.category == category)
+          .toList();
+      _selectedItemTypeId = filtered.isNotEmpty ? filtered.first.id : null;
+      
+      // Reset device specific fields if category is not devices
+      if (category != 'devices') {
+        _terminalIdController.clear();
+        _battery = false;
+        _chargerCable = false;
+        _chargerHead = false;
+        _hasSim = false;
+        _simCardType = null;
+        _selectedDamageType = '';
+        _damagePartController.clear();
+        _custodyInfo = null;
+      }
+    });
+  }
+
+  // Smart Custody Lookup Simulation
+  Future<void> _lookupCustody() async {
+    final serial = _serialNumberController.text.trim();
+    if (serial.isEmpty) {
+      Get.snackbar('تنبيه', 'يرجى إدخال الرقم التسلسلي أولاً للبحث',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: AppColors.warning,
+          colorText: Colors.white);
+      return;
+    }
+
+    setState(() {
+      _isSearchingCustody = true;
+      _custodyInfo = null;
+    });
+
+    // Simulate Network Request to check custody
+    await Future.delayed(const Duration(milliseconds: 1200));
+
+    setState(() {
+      _isSearchingCustody = false;
+      // Mocked custody info based on serial
+      if (serial.length > 5) {
+        _custodyInfo = {
+          'found': true,
+          'technician': 'مندوب تجريبي',
+          'city': 'جدة',
+          'model': _selectedItemTypeId != null 
+              ? Get.find<DevicesController>().itemTypes.firstWhere((t) => t.id == _selectedItemTypeId).nameAr
+              : 'جهاز N950',
+          'status': 'نشط في العهدة المتحركة',
+        };
+        // Auto fill terminal ID for demonstration
+        if (_terminalIdController.text.isEmpty) {
+          _terminalIdController.text = 'T${serial.substring(serial.length - 4)}';
+        }
+      } else {
+        _custodyInfo = {
+          'found': false,
+          'message': 'الجهاز غير مسجل بعهدة أي فني حالياً (جديد/مستودع)',
+        };
+      }
+    });
+  }
+
+  bool _validateSerialNumberPattern(String serial, ItemType? selectedItemType) {
+    if (selectedItemType == null) return true;
+
+    // 1. Prefix Validation
+    if (selectedItemType.serialPrefix != null && selectedItemType.serialPrefix!.isNotEmpty) {
+      final prefixes = selectedItemType.serialPrefix!.split(',').map((p) => p.trim()).toList();
+      final hasValidPrefix = prefixes.any((prefix) => serial.startsWith(prefix));
+      if (!hasValidPrefix) {
+        Get.snackbar(
+          '❌ الرقم التسلسلي غير صحيح.',
+          'يجب أن يبدأ بـ:\n${prefixes.join(' أو ')}',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: AppColors.error,
+          colorText: Colors.white,
+          duration: const Duration(seconds: 4),
+        );
+        return false;
+      }
+    }
+
+    // 2. Length Validation
+    if (selectedItemType.serialLength != null && selectedItemType.serialLength! > 0) {
+      if (serial.length != selectedItemType.serialLength) {
+        int digitsAfterPrefix = selectedItemType.serialLength!;
+        if (selectedItemType.serialPrefix != null) {
+          final prefixes = selectedItemType.serialPrefix!.split(',').map((p) => p.trim()).toList();
+          final matchedPrefix = prefixes.firstWhere((p) => serial.startsWith(p), orElse: () => '');
+          if (matchedPrefix.isNotEmpty) {
+            digitsAfterPrefix = selectedItemType.serialLength! - matchedPrefix.length;
+          }
+        }
+        Get.snackbar(
+          '❌ طول الرقم التسلسلي غير صحيح.',
+          'المطلوب:\n$digitsAfterPrefix أرقام بعد البادئة.',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: AppColors.error,
+          colorText: Colors.white,
+          duration: const Duration(seconds: 4),
+        );
+        return false;
+      }
+    }
+
+    // 3. Regex Pattern Validation
+    if (selectedItemType.serialRegex != null && selectedItemType.serialRegex!.isNotEmpty) {
+      final regex = RegExp(selectedItemType.serialRegex!);
+      if (!regex.hasMatch(serial)) {
+        Get.snackbar(
+          '❌ الرقم التسلسلي غير صحيح.',
+          'الرقم لا يطابق الصيغة المعتمدة لـ ${selectedItemType.nameAr}.',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: AppColors.error,
+          colorText: Colors.white,
+          duration: const Duration(seconds: 4),
+        );
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  // Save as Local Draft (Offline Queue)
+  Future<void> _saveAsDraft() async {
     if (_formKey.currentState!.validate()) {
       final controller = Get.find<DevicesController>();
-      
-      final device = ReceivedDevice(
-        terminalId: _terminalIdController.text.trim(),
-        serialNumber: _serialNumberController.text.trim(),
-        battery: _battery,
-        chargerCable: _chargerCable,
-        chargerHead: _chargerHead,
-        hasSim: _hasSim,
-        simCardType: _hasSim ? (_simCardType ?? _simTypes[0]) : null,
-        damagePart: _damagePartController.text.trim(),
+      final serial = _serialNumberController.text.trim();
+
+      final selectedItemType = controller.itemTypes.firstWhere(
+        (type) => type.id == _selectedItemTypeId,
+        orElse: () => controller.itemTypes.first,
       );
 
-      controller.submitDevice(device);
+      if (!_validateSerialNumberPattern(serial, selectedItemType)) {
+        return;
+      }
+
+      // Check if serial is already pending on the server
+      final isAlreadyPending = controller.devices.any((d) =>
+        d.serialNumber == serial &&
+        (d.status ?? '').toLowerCase() == 'pending'
+      );
+
+      if (isAlreadyPending) {
+        Get.snackbar(
+          'تنبيه تكرار السيريال',
+          'هذا الرقم التسلسلي مضاف بالفعل وقيد مراجعة المشرف في الإشعارات ولا يمكن تكراره.',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: AppColors.error,
+          colorText: Colors.white,
+          duration: const Duration(seconds: 4),
+        );
+        return;
+      }
+
+      // Also check local drafts Box
+      final isAlreadyInDrafts = _draftsBox.values.any((d) {
+        if (d is Map) {
+          return d['serialNumber'] == serial;
+        }
+        return false;
+      });
+
+      if (isAlreadyInDrafts) {
+        Get.snackbar(
+          'تنبيه تكرار السيريال',
+          'هذا الرقم التسلسلي موجود بالفعل في المسودات المحلية.',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: AppColors.error,
+          colorText: Colors.white,
+          duration: const Duration(seconds: 4),
+        );
+        return;
+      }
+
+      final deviceData = {
+        'itemTypeId': _selectedItemTypeId,
+        'inventoryType': _inventoryType,
+        'terminalId': _selectedCategory == 'devices' ? _terminalIdController.text.trim() : null,
+        'serialNumber': _serialNumberController.text.trim(),
+        'battery': _selectedCategory == 'devices' ? _battery : false,
+        'chargerCable': _selectedCategory == 'devices' ? _chargerCable : false,
+        'chargerHead': _selectedCategory == 'devices' ? _chargerHead : false,
+        'hasSim': _selectedCategory == 'devices' ? _hasSim : false,
+        'simCardType': (_selectedCategory == 'devices' && _hasSim) ? (_simCardType ?? _simTypes[0]) : null,
+        'damagePart': _selectedCategory == 'devices' 
+            ? (_selectedDamageType == 'other' ? _damagePartController.text.trim() : _damageTypes[_selectedDamageType])
+            : null,
+        'createdAt': DateTime.now().toIso8601String(),
+      };
+
+      await _draftsBox.add(deviceData);
+      setState(() {
+        _localDraftsCount = _draftsBox.length;
+      });
+
+      _resetForm();
+
+      Get.dialog(
+        AlertDialog(
+          backgroundColor: AppColors.surfaceDark,
+          title: Row(
+            children: [
+              const Icon(Icons.cloud_off, color: AppColors.warning),
+              const SizedBox(width: 8),
+              Text('تم الحفظ كمسودة محلياً', style: GoogleFonts.cairo(color: Colors.white, fontWeight: FontWeight.bold)),
+            ],
+          ),
+          content: Text(
+            'تم حفظ الجهاز في مسودات التخزين المحلي بنجاح نظراً لأن وضع العمل أوفلاين نشط. سيتم توريدها بمجرد عودة الإنترنت والضغط على مزامنة.',
+            style: GoogleFonts.cairo(color: Colors.white70),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Get.back(),
+              child: Text('حسناً', style: GoogleFonts.cairo(color: AppColors.primary, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
+      );
     }
+  }
+
+  // Sync Offline Drafts Queue
+  Future<void> _syncDrafts() async {
+    if (_localDraftsCount == 0) return;
+
+    final controller = Get.find<DevicesController>();
+    int successCount = 0;
+    
+    Get.dialog(
+      const Center(child: CircularProgressIndicator(color: AppColors.primary)),
+      barrierDismissible: false,
+    );
+
+    try {
+      final keys = List.from(_draftsBox.keys);
+      for (var key in keys) {
+        final data = _draftsBox.get(key) as Map;
+        final device = ReceivedDevice(
+          itemTypeId: data['itemTypeId'] as String?,
+          inventoryType: data['inventoryType'] as String? ?? 'fixed',
+          terminalId: data['terminalId'] as String?,
+          serialNumber: data['serialNumber'] as String? ?? '',
+          battery: data['battery'] as bool? ?? false,
+          chargerCable: data['chargerCable'] as bool? ?? false,
+          chargerHead: data['chargerHead'] as bool? ?? false,
+          hasSim: data['hasSim'] as bool? ?? false,
+          simCardType: data['simCardType'] as String?,
+          damagePart: data['damagePart'] as String?,
+        );
+
+        await controller.repository.submitDevice(device);
+        await _draftsBox.delete(key);
+        successCount++;
+      }
+
+      Get.back(); // Dismiss loading
+
+      setState(() {
+        _localDraftsCount = _draftsBox.length;
+      });
+
+      await controller.loadDevices();
+
+      Get.snackbar(
+        'مزامنة ناجحة',
+        'تم مزامنة وتوريد $successCount جهاز من المسودات المحلية بنجاح',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: AppColors.success,
+        colorText: Colors.white,
+      );
+    } catch (e) {
+      Get.back(); // Dismiss loading
+      Get.snackbar(
+        'خطأ في المزامنة',
+        'فشل إرسال بعض المسودات. يرجى التحقق من اتصال الإنترنت والمحاولة لاحقاً',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: AppColors.error,
+        colorText: Colors.white,
+      );
+    }
+  }
+
+  void _resetForm() {
+    _formKey.currentState?.reset();
+    _terminalIdController.clear();
+    _serialNumberController.clear();
+    _damagePartController.clear();
+    setState(() {
+      _battery = false;
+      _chargerCable = false;
+      _chargerHead = false;
+      _hasSim = false;
+      _simCardType = null;
+      _selectedDamageType = '';
+      _custodyInfo = null;
+    });
+  }
+
+  void _submit() {
+    if (_isOfflineMode) {
+      _saveAsDraft();
+      return;
+    }
+
+    if (_formKey.currentState!.validate()) {
+      final controller = Get.find<DevicesController>();
+      final serial = _serialNumberController.text.trim();
+
+      final selectedItemType = controller.itemTypes.firstWhere(
+        (type) => type.id == _selectedItemTypeId,
+        orElse: () => controller.itemTypes.first,
+      );
+
+      if (!_validateSerialNumberPattern(serial, selectedItemType)) {
+        return;
+      }
+
+      // Check if serial is already pending on the server
+      final isAlreadyPending = controller.devices.any((d) =>
+        d.serialNumber == serial &&
+        (d.status ?? '').toLowerCase() == 'pending'
+      );
+
+      if (isAlreadyPending) {
+        Get.snackbar(
+          'تنبيه تكرار السيريال',
+          'هذا الرقم التسلسلي مضاف بالفعل وقيد مراجعة المشرف في الإشعارات ولا يمكن تكراره.',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: AppColors.error,
+          colorText: Colors.white,
+          duration: const Duration(seconds: 4),
+        );
+        return;
+      }
+      
+      final damageText = _selectedCategory == 'devices'
+          ? (_selectedDamageType == 'other' ? _damagePartController.text.trim() : _damageTypes[_selectedDamageType])
+          : null;
+
+      final device = ReceivedDevice(
+        itemTypeId: _selectedItemTypeId,
+        inventoryType: _inventoryType,
+        terminalId: _selectedCategory == 'devices' ? _terminalIdController.text.trim() : null,
+        serialNumber: _serialNumberController.text.trim(),
+        battery: _selectedCategory == 'devices' ? _battery : false,
+        chargerCable: _selectedCategory == 'devices' ? _chargerCable : false,
+        chargerHead: _selectedCategory == 'devices' ? _chargerHead : false,
+        hasSim: _selectedCategory == 'devices' ? _hasSim : false,
+        simCardType: (_selectedCategory == 'devices' && _hasSim) ? (_simCardType ?? _simTypes[0]) : null,
+        damagePart: (damageText != null && damageText != _damageTypes['none']) ? damageText : null,
+      );
+
+      _showSuccessReceipt(device);
+    }
+  }
+
+  // Digital Receipt Success Preview
+  void _showSuccessReceipt(ReceivedDevice device) {
+    final controller = Get.find<DevicesController>();
+    final itemName = _selectedItemTypeId != null 
+        ? controller.itemTypes.firstWhere((t) => t.id == _selectedItemTypeId).nameAr
+        : 'منتج غير معروف';
+
+    Get.dialog(
+      Dialog(
+        backgroundColor: AppColors.surfaceDark,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.check_circle, color: AppColors.success, size: 64),
+              const SizedBox(height: 12),
+              Text(
+                'تم تسجيل التوريد بنجاح',
+                style: GoogleFonts.cairo(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'معاينة إيصال الاستلام الرقمي',
+                style: GoogleFonts.cairo(fontSize: 13, color: AppColors.textSecondary),
+              ),
+              const SizedBox(height: 20),
+              
+              // Receipt Details Area
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.backgroundDark,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.border.withOpacity(0.1)),
+                ),
+                child: Column(
+                  children: [
+                    _receiptRow('المنتج', itemName),
+                    _receiptRow('الرقم التسلسلي', device.serialNumber),
+                    if (device.terminalId != null && device.terminalId!.isNotEmpty)
+                      _receiptRow('رقم الجهاز (ID)', device.terminalId!),
+                    _receiptRow('نوع المستودع', device.inventoryType == 'moving' ? 'مخزون متحرك' : 'مخزون ثابت'),
+                    if (_selectedCategory == 'devices') ...[
+                      const Divider(color: AppColors.border),
+                      _receiptRow('الملحقات المستلمة', '${device.accessoriesCount} ملحقات'),
+                      if (device.damagePart != null)
+                        _receiptRow('حالة الأعطال', device.damagePart!),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () async {
+                        Get.back(); // close dialog
+                        await controller.submitDevice(device);
+                      },
+                      icon: const Icon(Icons.send),
+                      label: Text('تأكيد وإرسال', style: GoogleFonts.cairo(fontWeight: FontWeight.bold)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    icon: const Icon(Icons.share, color: Colors.white),
+                    onPressed: () {
+                      final buffer = StringBuffer();
+                      buffer.writeln('📋 *إيصال استلام جهاز* 📋');
+                      buffer.writeln('📦 المنتج: $itemName');
+                      buffer.writeln('🔢 الرقم التسلسلي: ${device.serialNumber}');
+                      if (device.terminalId != null) buffer.writeln('📟 رقم الجهاز: ${device.terminalId}');
+                      buffer.writeln('🔋 الملحقات: ${device.accessoriesCount} ملحقات');
+                      if (device.damagePart != null) buffer.writeln('⚠️ الضرر: ${device.damagePart}');
+                      Share.share(buffer.toString());
+                    },
+                    style: IconButton.styleFrom(
+                      backgroundColor: AppColors.surfaceDark,
+                      side: const BorderSide(color: AppColors.border),
+                      padding: const EdgeInsets.all(12),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+      barrierDismissible: false,
+    );
+  }
+
+  Widget _receiptRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: GoogleFonts.cairo(color: AppColors.textSecondary, fontSize: 12)),
+          Text(value, style: GoogleFonts.cairo(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+        ],
+      ),
+    );
   }
 
   @override
@@ -63,7 +579,7 @@ class _SubmitDevicePageState extends State<SubmitDevicePage> {
       drawer: const AppDrawer(),
       appBar: AppBar(
         title: Text(
-          'إدخال بيانات جهاز',
+          'إدخال وتوريد الأجهزة الذكي',
           style: GoogleFonts.cairo(
             fontWeight: FontWeight.bold,
             color: Colors.white,
@@ -72,180 +588,713 @@ class _SubmitDevicePageState extends State<SubmitDevicePage> {
         backgroundColor: AppColors.surfaceDark,
         foregroundColor: Colors.white,
         elevation: 0,
+        actions: [
+          // Offline Mode Toggle Icon
+          IconButton(
+            icon: Icon(
+              _isOfflineMode ? Icons.cloud_off : Icons.cloud_done,
+              color: _isOfflineMode ? AppColors.warning : AppColors.success,
+            ),
+            onPressed: () {
+              setState(() {
+                _isOfflineMode = !_isOfflineMode;
+              });
+              Get.snackbar(
+                _isOfflineMode ? 'وضع الأوفلاين نشط' : 'وضع الأونلاين نشط',
+                _isOfflineMode 
+                    ? 'سيتم حفظ الأجهزة كمسودات محلياً في عهدتك دون اتصال' 
+                    : 'سيتم توريد الأجهزة مباشرة إلى سيرفر النظام',
+                snackPosition: SnackPosition.BOTTOM,
+                backgroundColor: _isOfflineMode ? AppColors.warning : AppColors.success,
+                colorText: Colors.white,
+              );
+            },
+          ),
+          if (_localDraftsCount > 0)
+            Stack(
+              alignment: Alignment.center,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.sync, color: AppColors.primary),
+                  onPressed: _syncDrafts,
+                ),
+                Positioned(
+                  right: 6,
+                  top: 6,
+                  child: CircleAvatar(
+                    radius: 8,
+                    backgroundColor: AppColors.error,
+                    child: Text(
+                      _localDraftsCount.toString(),
+                      style: const TextStyle(fontSize: 10, color: Colors.white, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                )
+              ],
+            ),
+        ],
       ),
       body: Form(
         key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            // Header Card
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [AppColors.primary, AppColors.primaryDark],
-                  begin: Alignment.topRight,
-                  end: Alignment.bottomLeft,
+        child: Obx(() {
+          if (controller.isLoading && controller.itemTypes.isEmpty) {
+            return const Center(
+              child: CircularProgressIndicator(color: AppColors.primary),
+            );
+          }
+
+          final filteredItemTypes = controller.itemTypes
+              .where((type) => type.category == _selectedCategory)
+              .toList();
+
+          if (_selectedItemTypeId == null && filteredItemTypes.isNotEmpty) {
+            _selectedItemTypeId = filteredItemTypes.first.id;
+          }
+
+          return ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              // Offline Alert Banner
+              if (_isOfflineMode)
+                Container(
+                  margin: const EdgeInsets.only(bottom: 16),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: AppColors.warning.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.warning.withOpacity(0.4)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.cloud_off, color: AppColors.warning, size: 20),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'تعمل الآن في وضع عدم الاتصال. سيتم حفظ الأجهزة محلياً.',
+                          style: GoogleFonts.cairo(color: AppColors.warning, fontSize: 12, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.primary.withOpacity(0.3),
-                    blurRadius: 15,
-                    offset: const Offset(0, 8),
+
+              // Category Selector
+              _buildCategorySelector(),
+              const SizedBox(height: 20),
+
+              // Item Type Dropdown
+              _buildItemTypeDropdown(filteredItemTypes),
+              const SizedBox(height: 20),
+
+              // Target Inventory Selector
+              _buildTargetInventorySelector(),
+              const SizedBox(height: 20),
+
+              // Serial Number (Smart Field with Barcode Scanner & Lookup)
+              _buildSmartSerialField(),
+              const SizedBox(height: 20),
+
+              // Custody Lookup Result Card
+              if (_custodyInfo != null) _buildCustodyResultCard(),
+
+              // Conditional Fields for "devices" category
+              if (_selectedCategory == 'devices') ...[
+                // Terminal ID
+                _buildTextField(
+                  controller: _terminalIdController,
+                  label: 'رقم الجهاز (Terminal ID) - اختياري',
+                  icon: Icons.tag,
+                  onScanPressed: () async {
+                    final result = await Navigator.push<String>(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const BarcodeScannerWidget(
+                          title: 'مسح رقم الجهاز',
+                        ),
+                      ),
+                    );
+                    if (result != null) {
+                      setState(() {
+                        _terminalIdController.text = result;
+                      });
+                    }
+                  },
+                ),
+                const SizedBox(height: 24),
+
+                // Accessories Section (Visual Grid)
+                Text(
+                  'الملحقات المستلمة بالجهاز',
+                  style: GoogleFonts.cairo(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                _buildAccessoriesGrid(),
+                if (_hasSim) ...[
+                  const SizedBox(height: 16),
+                  _buildDropdownField(
+                    label: 'نوع شريحة SIM',
+                    value: _simCardType ?? _simTypes[0],
+                    items: _simTypes,
+                    onChanged: (value) => setState(() => _simCardType = value),
                   ),
                 ],
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.smartphone,
+                const SizedBox(height: 24),
+
+                // Damage Section (Visual Chips Grid)
+                Text(
+                  'تقييم الضرر والكسر للجهاز المستلم',
+                  style: GoogleFonts.cairo(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
                     color: Colors.white,
-                    size: 32,
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      'أدخل بيانات الجهاز المستلم',
-                      style: GoogleFonts.cairo(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
+                ),
+                const SizedBox(height: 10),
+                _buildDamageGrid(),
+                const SizedBox(height: 20),
+
+                // Custom Damage Text (Visible only when 'other' is selected)
+                if (_selectedDamageType == 'other')
+                  _buildTextField(
+                    controller: _damagePartController,
+                    label: 'وصف الضرر والأعطال الإضافية بالتفصيل',
+                    icon: Icons.warning,
+                    maxLines: 2,
+                  ),
+                const SizedBox(height: 24),
+              ],
+
+              // Submit Button
+              ElevatedButton.icon(
+                onPressed: controller.isLoading ? null : _submit,
+                icon: controller.isLoading
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        ),
+                      )
+                    : const Icon(Icons.send),
+                label: Text(
+                  controller.isLoading 
+                      ? 'جاري الإرسال...' 
+                      : (_isOfflineMode ? 'حفظ كمسودة محلياً' : 'إرسال وتسجيل التوريد'),
+                  style: GoogleFonts.cairo(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _isOfflineMode ? AppColors.warning : AppColors.primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  disabledBackgroundColor: AppColors.textSecondary,
+                ),
+              ),
+              const SizedBox(height: 100),
+            ],
+          );
+        }),
+      ),
+    );
+  }
+
+  Widget _buildCategorySelector() {
+    final categories = [
+      {'id': 'devices', 'name': 'جهاز', 'icon': Icons.smartphone},
+      {'id': 'papers', 'name': 'ورقيات', 'icon': Icons.description},
+      {'id': 'sim', 'name': 'شريحة SIM', 'icon': Icons.sim_card},
+      {'id': 'accessories', 'name': 'إكسسوارات', 'icon': Icons.headset},
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'تصنيف المنتج',
+          style: GoogleFonts.cairo(
+            fontSize: 15,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: categories.map((cat) {
+            final isSelected = _selectedCategory == cat['id'];
+            return Expanded(
+              child: GestureDetector(
+                onTap: () => _onCategoryChanged(cat['id'] as String),
+                child: Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 4),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  decoration: BoxDecoration(
+                    color: isSelected ? AppColors.primary : AppColors.surfaceDark,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isSelected ? AppColors.primary : AppColors.border.withOpacity(0.1),
+                      width: 1.5,
                     ),
                   ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        cat['icon'] as IconData,
+                        color: isSelected ? Colors.white : AppColors.textSecondary,
+                        size: 24,
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        cat['name'] as String,
+                        style: GoogleFonts.cairo(
+                          fontSize: 12,
+                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                          color: isSelected ? Colors.white : AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildItemTypeDropdown(List<ItemType> filteredItemTypes) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'نوع المنتج التفصيلي',
+          style: GoogleFonts.cairo(
+            fontSize: 15,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+        const SizedBox(height: 10),
+        if (filteredItemTypes.isEmpty)
+          Container(
+            padding: const EdgeInsets.all(16),
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: AppColors.surfaceDark,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.error.withOpacity(0.5)),
+            ),
+            child: Text(
+              'لا توجد أنواع منتجات معرفة في هذا التصنيف بالخادم',
+              style: GoogleFonts.cairo(color: AppColors.error, fontSize: 14),
+            ),
+          )
+        else
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            decoration: BoxDecoration(
+              color: AppColors.surfaceDark,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: AppColors.border.withOpacity(0.1),
+                width: 1,
+              ),
+            ),
+            child: DropdownButtonFormField<String>(
+              value: _selectedItemTypeId,
+              items: filteredItemTypes.map((type) {
+                return DropdownMenuItem(
+                  value: type.id,
+                  child: Text(
+                    type.nameAr,
+                    style: GoogleFonts.cairo(color: Colors.white),
+                  ),
+                );
+              }).toList(),
+              onChanged: (value) => setState(() => _selectedItemTypeId = value),
+              decoration: const InputDecoration(
+                border: InputBorder.none,
+                contentPadding: EdgeInsets.zero,
+              ),
+              dropdownColor: AppColors.surfaceDark,
+              style: GoogleFonts.cairo(color: Colors.white),
+              icon: Icon(Icons.arrow_drop_down, color: AppColors.primary),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildTargetInventorySelector() {
+    final options = [
+      {'id': 'fixed', 'name': 'مخزون ثابت', 'icon': Icons.warehouse},
+      {'id': 'moving', 'name': 'مخزون متحرك', 'icon': Icons.local_shipping},
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'المستودع المستهدف لتسجيل المخزون',
+          style: GoogleFonts.cairo(
+            fontSize: 15,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: options.map((opt) {
+            final isSelected = _inventoryType == opt['id'];
+            return Expanded(
+              child: GestureDetector(
+                onTap: () => setState(() => _inventoryType = opt['id'] as String),
+                child: Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 4),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  decoration: BoxDecoration(
+                    color: isSelected ? AppColors.primary : AppColors.surfaceDark,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isSelected ? AppColors.primary : AppColors.border.withOpacity(0.1),
+                      width: 1.5,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        opt['icon'] as IconData,
+                        color: isSelected ? Colors.white : AppColors.textSecondary,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        opt['name'] as String,
+                        style: GoogleFonts.cairo(
+                          fontSize: 13,
+                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                          color: isSelected ? Colors.white : AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSmartSerialField() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'الرقم التسلسلي (Serial Number) / باركود المنتج',
+          style: GoogleFonts.cairo(
+            fontSize: 15,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+        const SizedBox(height: 10),
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: AppColors.border.withOpacity(0.3),
+              width: 1,
+            ),
+          ),
+          child: TextFormField(
+            controller: _serialNumberController,
+            style: GoogleFonts.cairo(color: AppColors.textPrimary),
+            validator: (value) {
+              if (value == null || value.trim().isEmpty) {
+                return 'يرجى إدخال الرقم التسلسلي أو مسح الباركود';
+              }
+              return null;
+            },
+            decoration: InputDecoration(
+              hintText: 'أدخل الرقم التسلسلي أو امسح الباركود...',
+              hintStyle: GoogleFonts.cairo(color: AppColors.textSecondary.withOpacity(0.6), fontSize: 13),
+              prefixIcon: const Icon(Icons.qr_code, color: AppColors.primary),
+              suffixIcon: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (_selectedCategory == 'devices')
+                    _isSearchingCustody
+                        ? const Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 12),
+                            child: SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+                            ),
+                          )
+                        : TextButton(
+                            onPressed: _lookupCustody,
+                            child: Text(
+                              'فحص العهدة',
+                              style: GoogleFonts.cairo(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 12),
+                            ),
+                          ),
+                  IconButton(
+                    icon: const Icon(Icons.qr_code_scanner, color: AppColors.primary),
+                    onPressed: () async {
+                      final result = await Navigator.push<String>(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const BarcodeScannerWidget(
+                            title: 'مسح الرقم التسلسلي',
+                          ),
+                        ),
+                      );
+                      if (result != null) {
+                        setState(() {
+                          _serialNumberController.text = result;
+                        });
+                        if (_selectedCategory == 'devices') {
+                          _lookupCustody();
+                        }
+                      }
+                    },
+                  ),
                 ],
               ),
+              border: InputBorder.none,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             ),
-            const SizedBox(height: 24),
+          ),
+        ),
+      ],
+    );
+  }
 
-            // Terminal ID
-            _buildTextField(
-              controller: _terminalIdController,
-              label: 'رقم الجهاز (Terminal ID)',
-              icon: Icons.tag,
-              validator: (value) {
-                if (value == null || value.trim().isEmpty) {
-                  return 'يرجى إدخال رقم الجهاز';
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 16),
+  Widget _buildCustodyResultCard() {
+    final info = _custodyInfo!;
+    final found = info['found'] as bool;
 
-            // Serial Number
-            _buildTextField(
-              controller: _serialNumberController,
-              label: 'الرقم التسلسلي (Serial Number)',
-              icon: Icons.qr_code,
-              validator: (value) {
-                if (value == null || value.trim().isEmpty) {
-                  return 'يرجى إدخال الرقم التسلسلي';
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 24),
-
-            // Accessories Section
-            Text(
-              'الملحقات',
-              style: GoogleFonts.cairo(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
-            const SizedBox(height: 12),
-            _buildCheckbox(
-              title: 'بطارية',
-              value: _battery,
-              icon: Icons.battery_charging_full,
-              onChanged: (value) => setState(() => _battery = value!),
-            ),
-            const SizedBox(height: 8),
-            _buildCheckbox(
-              title: 'كابل الشاحن',
-              value: _chargerCable,
-              icon: Icons.cable,
-              onChanged: (value) => setState(() => _chargerCable = value!),
-            ),
-            const SizedBox(height: 8),
-            _buildCheckbox(
-              title: 'رأس الشاحن',
-              value: _chargerHead,
-              icon: Icons.power,
-              onChanged: (value) => setState(() => _chargerHead = value!),
-            ),
-            const SizedBox(height: 24),
-
-            // SIM Card Section
-            _buildCheckbox(
-              title: 'يحتوي على شريحة SIM',
-              value: _hasSim,
-              icon: Icons.sim_card,
-              onChanged: (value) => setState(() => _hasSim = value!),
-            ),
-            if (_hasSim) ...[
-              const SizedBox(height: 12),
-              _buildDropdown(
-                label: 'نوع الشريحة',
-                value: _simCardType ?? _simTypes[0],
-                items: _simTypes,
-                onChanged: (value) => setState(() => _simCardType = value),
-              ),
-            ],
-            const SizedBox(height: 24),
-
-            // Damage Part
-            _buildTextField(
-              controller: _damagePartController,
-              label: 'الجزء المتضرر',
-              icon: Icons.warning,
-              maxLines: 3,
-              validator: (value) {
-                if (value == null || value.trim().isEmpty) {
-                  return 'يرجى إدخال الجزء المتضرر';
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 32),
-
-            // Submit Button
-            Obx(() => ElevatedButton.icon(
-              onPressed: controller.isLoading ? null : _submit,
-              icon: controller.isLoading
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 20),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: found ? AppColors.success.withOpacity(0.08) : AppColors.textSecondary.withOpacity(0.06),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: found ? AppColors.success.withOpacity(0.4) : AppColors.border.withOpacity(0.2),
+          width: 1.5,
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            found ? Icons.info_outline : Icons.help_outline,
+            color: found ? AppColors.success : AppColors.textSecondary,
+            size: 24,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: found
+                  ? [
+                      Text(
+                        'جهاز معروف - عهدة نشطة في الميدان',
+                        style: GoogleFonts.cairo(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 13),
                       ),
-                    )
-                  : const Icon(Icons.send),
-              label: Text(
-                controller.isLoading ? 'جاري الإرسال...' : 'إرسال',
+                      const SizedBox(height: 4),
+                      Text(
+                        'الحائز الحالي: ${info['technician']} (${info['city']})',
+                        style: GoogleFonts.cairo(color: Colors.white70, fontSize: 12),
+                      ),
+                      Text(
+                        'حالة العهدة: ${info['status']}',
+                        style: GoogleFonts.cairo(color: AppColors.success, fontSize: 12, fontWeight: FontWeight.bold),
+                      ),
+                    ]
+                  : [
+                      Text(
+                        'جهاز غير مدرج بعهدة فني',
+                        style: GoogleFonts.cairo(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 13),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        info['message'] as String,
+                        style: GoogleFonts.cairo(color: Colors.white70, fontSize: 12),
+                      ),
+                    ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAccessoriesGrid() {
+    return GridView.count(
+      crossAxisCount: 2,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      crossAxisSpacing: 10,
+      mainAxisSpacing: 10,
+      childAspectRatio: 2.2,
+      children: [
+        _buildAccessoryCard('بطارية داخلية', _battery, Icons.battery_charging_full, (value) => setState(() => _battery = value)),
+        _buildAccessoryCard('كابل الشاحن', _chargerCable, Icons.cable, (value) => setState(() => _chargerCable = value)),
+        _buildAccessoryCard('رأس الشاحن', _chargerHead, Icons.power, (value) => setState(() => _chargerHead = value)),
+        _buildAccessoryCard('شريحة SIM', _hasSim, Icons.sim_card, (value) {
+          setState(() {
+            _hasSim = value;
+            if (!_hasSim) {
+              _simCardType = null;
+            } else {
+              _simCardType = _simTypes[0];
+            }
+          });
+        }),
+      ],
+    );
+  }
+
+  Widget _buildAccessoryCard(String title, bool isSelected, IconData icon, ValueChanged<bool> onChanged) {
+    return GestureDetector(
+      onTap: () => onChanged(!isSelected),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.primary.withOpacity(0.08) : AppColors.surfaceDark,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: isSelected ? AppColors.primary : AppColors.border.withOpacity(0.1),
+            width: isSelected ? 2 : 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: isSelected ? AppColors.primary : AppColors.textSecondary, size: 22),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                title,
                 style: GoogleFonts.cairo(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
+                  fontSize: 13,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                  color: isSelected ? Colors.white : AppColors.textSecondary,
                 ),
               ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                disabledBackgroundColor: AppColors.textSecondary,
-              ),
-            )),
-            const SizedBox(height: 100),
+            ),
+            Icon(
+              isSelected ? Icons.check_circle : Icons.circle_outlined,
+              color: isSelected ? AppColors.primary : AppColors.textSecondary.withOpacity(0.4),
+              size: 18,
+            ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildDamageGrid() {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: _damageTypes.entries.map((entry) {
+        final isSelected = _selectedDamageType == entry.key;
+        return GestureDetector(
+          onTap: () {
+            setState(() {
+              _selectedDamageType = entry.key;
+              if (entry.key != 'other') {
+                _damagePartController.clear();
+              }
+            });
+          },
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            decoration: BoxDecoration(
+              color: isSelected ? AppColors.primary : AppColors.surfaceDark,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: isSelected ? AppColors.primary : AppColors.border.withOpacity(0.1),
+                width: 1.5,
+              ),
+            ),
+            child: Text(
+              entry.value,
+              style: GoogleFonts.cairo(
+                fontSize: 13,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                color: isSelected ? Colors.white : AppColors.textSecondary,
+              ),
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildDropdownField({
+    required String label,
+    required String value,
+    required List<String> items,
+    required void Function(String?) onChanged,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: GoogleFonts.cairo(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+        const SizedBox(height: 10),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          decoration: BoxDecoration(
+            color: AppColors.surfaceDark,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: AppColors.border.withOpacity(0.1),
+              width: 1,
+            ),
+          ),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              value: value,
+              isExpanded: true,
+              dropdownColor: AppColors.surfaceDark,
+              icon: const Icon(Icons.arrow_drop_down, color: AppColors.primary),
+              style: GoogleFonts.cairo(color: Colors.white, fontSize: 14),
+              onChanged: onChanged,
+              items: items.map<DropdownMenuItem<String>>((String val) {
+                return DropdownMenuItem<String>(
+                  value: val,
+                  child: Text(val),
+                );
+              }).toList(),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -254,7 +1303,7 @@ class _SubmitDevicePageState extends State<SubmitDevicePage> {
     required String label,
     required IconData icon,
     int maxLines = 1,
-    String? Function(String?)? validator,
+    VoidCallback? onScanPressed,
   }) {
     return Container(
       decoration: BoxDecoration(
@@ -269,108 +1318,19 @@ class _SubmitDevicePageState extends State<SubmitDevicePage> {
         controller: controller,
         style: GoogleFonts.cairo(color: AppColors.textPrimary),
         maxLines: maxLines,
-        validator: validator,
         decoration: InputDecoration(
           labelText: label,
-          labelStyle: GoogleFonts.cairo(color: AppColors.textSecondary),
+          labelStyle: GoogleFonts.cairo(color: AppColors.textSecondary, fontSize: 13),
           prefixIcon: Icon(icon, color: AppColors.primary),
+          suffixIcon: onScanPressed != null
+              ? IconButton(
+                  icon: const Icon(Icons.qr_code_scanner, color: AppColors.primary),
+                  onPressed: onScanPressed,
+                )
+              : null,
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.all(16),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: AppColors.primary, width: 2),
-          ),
-          errorBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: AppColors.error, width: 1),
-          ),
-          focusedErrorBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: AppColors.error, width: 2),
-          ),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         ),
-      ),
-    );
-  }
-
-  Widget _buildCheckbox({
-    required String title,
-    required bool value,
-    required IconData icon,
-    required ValueChanged<bool?> onChanged,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceDark,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: value ? AppColors.primary : AppColors.border.withOpacity(0.1),
-          width: value ? 2 : 1,
-        ),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, color: value ? AppColors.primary : AppColors.textSecondary),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              title,
-              style: GoogleFonts.cairo(
-                fontSize: 16,
-                color: Colors.white,
-                fontWeight: value ? FontWeight.bold : FontWeight.normal,
-              ),
-            ),
-          ),
-          Checkbox(
-            value: value,
-            onChanged: onChanged,
-            activeColor: AppColors.primary,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDropdown({
-    required String label,
-    required String value,
-    required List<String> items,
-    required ValueChanged<String?> onChanged,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceDark,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: AppColors.border.withOpacity(0.1),
-          width: 1,
-        ),
-      ),
-      child: DropdownButtonFormField<String>(
-        value: value,
-        items: items.map((item) {
-          return DropdownMenuItem(
-            value: item,
-            child: Text(
-              item,
-              style: GoogleFonts.cairo(color: Colors.white),
-            ),
-          );
-        }).toList(),
-        onChanged: onChanged,
-        decoration: InputDecoration(
-          labelText: label,
-          labelStyle: GoogleFonts.cairo(color: AppColors.textSecondary),
-          prefixIcon: Icon(Icons.sim_card, color: AppColors.primary),
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.all(16),
-        ),
-        dropdownColor: AppColors.surfaceDark,
-        style: GoogleFonts.cairo(color: Colors.white),
-        icon: Icon(Icons.arrow_drop_down, color: AppColors.primary),
       ),
     );
   }

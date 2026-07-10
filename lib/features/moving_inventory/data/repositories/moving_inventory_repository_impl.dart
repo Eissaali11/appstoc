@@ -1,5 +1,4 @@
-import 'package:dio/dio.dart';
-import 'package:get/get.dart';
+import '../../../../core/api/api_client.dart';
 import '../../../../core/api/api_endpoints.dart';
 import '../../domain/repositories/moving_inventory_repository.dart';
 import '../../../fixed_inventory/data/models/inventory_entry.dart';
@@ -7,11 +6,14 @@ import '../models/warehouse_transfer.dart';
 import '../../../../shared/models/item_type.dart';
 
 class MovingInventoryRepositoryImpl implements MovingInventoryRepository {
+  final ApiClient apiClient;
+
+  MovingInventoryRepositoryImpl(this.apiClient);
+
   @override
   Future<List<InventoryEntry>> getMovingInventory(String technicianId) async {
     try {
-      final dio = Get.find<Dio>();
-      final response = await dio.get(
+      final response = await apiClient.get(
         ApiEndpoints.movingInventoryEntries(technicianId),
       );
       
@@ -29,8 +31,7 @@ class MovingInventoryRepositoryImpl implements MovingInventoryRepository {
   @override
   Future<List<WarehouseTransfer>> getPendingTransfers(String technicianId) async {
     try {
-      final dio = Get.find<Dio>();
-      final response = await dio.get(ApiEndpoints.warehouseTransfers);
+      final response = await apiClient.get(ApiEndpoints.warehouseTransfers);
       
       if (response.data is List) {
         return (response.data as List)
@@ -47,8 +48,7 @@ class MovingInventoryRepositoryImpl implements MovingInventoryRepository {
   @override
   Future<List<ItemType>> getItemTypes() async {
     try {
-      final dio = Get.find<Dio>();
-      final response = await dio.get(ApiEndpoints.activeItemTypes);
+      final response = await apiClient.get(ApiEndpoints.activeItemTypes);
       
       if (response.data is List) {
         return (response.data as List)
@@ -67,10 +67,9 @@ class MovingInventoryRepositoryImpl implements MovingInventoryRepository {
     List<InventoryEntry> entries,
   ) async {
     try {
-      final dio = Get.find<Dio>();
       // Update each entry individually using POST
       for (var entry in entries) {
-        await dio.post(
+        await apiClient.post(
           ApiEndpoints.movingInventoryEntries(technicianId),
           data: {
             'itemTypeId': entry.itemTypeId,
@@ -92,8 +91,7 @@ class MovingInventoryRepositoryImpl implements MovingInventoryRepository {
     required int units,
   }) async {
     try {
-      final dio = Get.find<Dio>();
-      await dio.post(
+      await apiClient.post(
         ApiEndpoints.movingInventoryEntries(technicianId),
         data: {
           'itemTypeId': itemTypeId,
@@ -109,8 +107,7 @@ class MovingInventoryRepositoryImpl implements MovingInventoryRepository {
   @override
   Future<void> acceptTransfer(String transferId) async {
     try {
-      final dio = Get.find<Dio>();
-      await dio.post(ApiEndpoints.acceptTransfer(transferId));
+      await apiClient.post(ApiEndpoints.acceptTransfer(transferId));
     } catch (e) {
       throw Exception('فشل قبول طلب النقل: ${e.toString()}');
     }
@@ -119,8 +116,7 @@ class MovingInventoryRepositoryImpl implements MovingInventoryRepository {
   @override
   Future<void> rejectTransfer(String transferId, {String? reason}) async {
     try {
-      final dio = Get.find<Dio>();
-      await dio.post(
+      await apiClient.post(
         ApiEndpoints.rejectTransfer(transferId),
         data: reason != null ? {'reason': reason} : null,
       );

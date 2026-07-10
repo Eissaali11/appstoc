@@ -50,12 +50,12 @@ class QuickActionsSection extends StatelessWidget {
           ),
           // Actions Grid
           GridView.count(
-            crossAxisCount: 4,
+            crossAxisCount: 3,
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             mainAxisSpacing: 12,
             crossAxisSpacing: 12,
-            childAspectRatio: 0.85,
+            childAspectRatio: 0.95,
             children: [
               QuickActionButton(
                 icon: Icons.inventory_2,
@@ -80,6 +80,18 @@ class QuickActionsSection extends StatelessWidget {
                 label: 'request_stock'.tr,
                 color: AppColors.warning,
                 onTap: onRequestInventory ?? () => Get.toNamed('/request-inventory'),
+              ),
+              QuickActionButton(
+                icon: Icons.assignment_return_outlined,
+                label: 'سحب جهاز',
+                color: AppColors.error,
+                onTap: () => Get.toNamed('/withdraw-device'),
+              ),
+              QuickActionButton(
+                icon: Icons.local_shipping_outlined,
+                label: 'طلبات التوصيل',
+                color: AppColors.purpleGradient.first,
+                onTap: () => Get.toNamed('/courier-requests'),
               ),
             ],
           ),

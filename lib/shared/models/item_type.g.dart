@@ -15,6 +15,11 @@ ItemType _$ItemTypeFromJson(Map<String, dynamic> json) => ItemType(
       sortOrder: (json['sortOrder'] as num).toInt(),
       isActive: json['isActive'] as bool,
       isVisible: json['isVisible'] as bool,
+      category: json['category'] as String?,
+      requiresSerial: json['requiresSerial'] as bool?,
+      serialPrefix: json['serialPrefix'] as String?,
+      serialLength: (json['serialLength'] as num?)?.toInt(),
+      serialRegex: json['serialRegex'] as String?,
     );
 
 Map<String, dynamic> _$ItemTypeToJson(ItemType instance) => <String, dynamic>{
@@ -26,4 +31,9 @@ Map<String, dynamic> _$ItemTypeToJson(ItemType instance) => <String, dynamic>{
       'sortOrder': instance.sortOrder,
       'isActive': instance.isActive,
       'isVisible': instance.isVisible,
+      'category': instance.category,
+      'requiresSerial': instance.requiresSerial,
+      'serialPrefix': instance.serialPrefix,
+      'serialLength': instance.serialLength,
+      'serialRegex': instance.serialRegex,
     };

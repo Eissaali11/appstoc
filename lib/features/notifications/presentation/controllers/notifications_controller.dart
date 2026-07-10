@@ -9,6 +9,7 @@ import '../../domain/repositories/notifications_repository.dart';
 import '../../../moving_inventory/data/models/warehouse_transfer.dart';
 import '../../../../shared/models/item_type.dart';
 import '../../../../core/api/api_endpoints.dart';
+import '../../../../core/storage/local_cache.dart';
 
 class NotificationsController extends GetxController {
   final NotificationsRepository repository;
@@ -24,6 +25,7 @@ class NotificationsController extends GetxController {
   final _transfers = <WarehouseTransfer>[].obs;
   final _itemTypes = <ItemType>[].obs;
   final _selectedIds = <String>[].obs;
+  final _scannedSerials = <String, List<String>>{}.obs;
 
   bool get isLoading => _isLoading.value;
   String? get error => _error.value;
@@ -34,6 +36,35 @@ class NotificationsController extends GetxController {
   bool get isAllSelected =>
       _transfers.isNotEmpty && _selectedIds.length == _transfers.length;
   bool isSelected(String id) => _selectedIds.contains(id);
+
+  List<String> getScannedSerials(String transferId) {
+    return _scannedSerials[transferId] ?? [];
+  }
+
+  bool isSerialScannedAnywhere(String serial) {
+    for (var list in _scannedSerials.values) {
+      if (list.contains(serial)) return true;
+    }
+    return false;
+  }
+
+  void addScannedSerial(String transferId, String serial) {
+    final list = _scannedSerials[transferId] ?? [];
+    if (!list.contains(serial)) {
+      list.add(serial);
+      _scannedSerials[transferId] = List.from(list);
+    }
+  }
+
+  void removeScannedSerial(String transferId, String serial) {
+    final list = _scannedSerials[transferId] ?? [];
+    list.remove(serial);
+    _scannedSerials[transferId] = List.from(list);
+  }
+
+  void clearScannedSerials(String transferId) {
+    _scannedSerials[transferId] = [];
+  }
 
   void toggleSelection(String id) {
     if (_selectedIds.contains(id)) {
@@ -78,19 +109,47 @@ class NotificationsController extends GetxController {
         throw Exception('المستخدم غير مسجل دخول');
       }
 
-      final dioInstance = Get.find<dio.Dio>();
-      final results = await Future.wait([
-        repository.getPendingTransfers(userId),
-        dioInstance.get(ApiEndpoints.activeItemTypes),
-      ]);
+      // 1. Fetch transfers (managed by repository caching)
+      List<WarehouseTransfer> transfersList = [];
+      try {
+        transfersList = await repository.getPendingTransfers(userId);
+      } catch (e) {
+        debugPrint('Failed to fetch transfers from network/cache: $e');
+        _error.value = e.toString().replaceAll('Exception: ', '');
+      }
 
-      _transfers.value = results[0] as List<WarehouseTransfer>;
-      
-      final response = results[1] as dio.Response;
-      if (response.data is List) {
-        _itemTypes.value = (response.data as List)
-            .map((e) => ItemType.fromJson(e as Map<String, dynamic>))
-            .toList();
+      // 2. Fetch active item types with fallback caching
+      List<ItemType> typesList = [];
+      try {
+        final dioInstance = Get.find<dio.Dio>();
+        final response = await dioInstance.get(ApiEndpoints.activeItemTypes);
+        if (response.data is List) {
+          final typesJson = response.data as List;
+          try {
+            final box = await LocalCache.getInventoryBox();
+            await box.put('active_item_types', typesJson);
+          } catch (_) {}
+
+          typesList = typesJson
+              .map((e) => ItemType.fromJson(Map<String, dynamic>.from(e as Map)))
+              .toList();
+        }
+      } catch (e) {
+        debugPrint('Failed to fetch item types from network: $e');
+        try {
+          final box = await LocalCache.getInventoryBox();
+          final cachedData = box.get('active_item_types');
+          if (cachedData is List) {
+            typesList = cachedData
+                .map((e) => ItemType.fromJson(Map<String, dynamic>.from(e as Map)))
+                .toList();
+          }
+        } catch (_) {}
+      }
+
+      _transfers.value = transfersList;
+      if (typesList.isNotEmpty) {
+        _itemTypes.value = typesList;
       }
     } catch (e) {
       _error.value = e.toString().replaceAll('Exception: ', '');
@@ -138,6 +197,58 @@ class NotificationsController extends GetxController {
         backgroundColor: Get.theme.colorScheme.error,
         colorText: Colors.white,
       );
+    } finally {
+      _isLoading.value = false;
+    }
+  }
+
+  Future<bool> acceptSerializedTransfer({
+    required String transferId,
+    required List<String> serials,
+    required ItemType itemType,
+  }) async {
+    try {
+      _isLoading.value = true;
+      _error.value = null;
+
+      final dioInstance = Get.find<dio.Dio>();
+      
+      // 1. Submit batch scan in
+      final body = {
+        'items': serials.map((serial) => {
+          'serialNumber': serial,
+          'itemTypeId': itemType.id,
+          if (itemType.category == 'sim') 'carrierName': 'STC',
+        }).toList(),
+      };
+      
+      await dioInstance.post('/api/serialized-items/batch-scan-in', data: body);
+      
+      // 2. Accept transfer
+      await repository.acceptTransfer(transferId);
+      
+      await loadData();
+      await _refreshInventoryData();
+      
+      Get.snackbar(
+        'نجح',
+        'تم تسجيل الأرقام وقبول طلب النقل بنجاح',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Get.theme.colorScheme.primary,
+        colorText: Colors.white,
+      );
+      return true;
+    } catch (e) {
+      Get.snackbar(
+        'خطأ في التسجيل',
+        e is dio.DioException 
+            ? (e.response?.data?['message'] ?? 'فشل تسجيل الأرقام التسلسلية') 
+            : e.toString().replaceAll('Exception: ', ''),
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Get.theme.colorScheme.error,
+        colorText: Colors.white,
+      );
+      return false;
     } finally {
       _isLoading.value = false;
     }

@@ -611,35 +611,57 @@ class _InventoryItemCard extends StatelessWidget {
         child: Row(
           children: [
             // Icon
-            Container(
-              width: 56,
-              height: 56,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    itemColor,
-                    itemColor.withOpacity(0.7),
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: itemColor.withOpacity(0.4),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
+            Builder(builder: (ctx) {
+              final operatorImg = IconMapper.getItemImagePath(itemType.nameAr, itemType.nameEn, itemType.category);
+              if (operatorImg != null) {
+                return Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: itemType.category == 'devices' ? Colors.transparent : Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.15),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-              child: Icon(
-                itemType.iconName != null && itemType.iconName!.isNotEmpty
-                    ? IconMapper.getIcon(itemType.iconName)
-                    : IconMapper.getIconFromItemName(itemType.nameAr, itemType.nameEn),
-                color: Colors.white,
-                size: 28,
-              ),
-            ),
+                  padding: const EdgeInsets.all(6),
+                  child: Image.asset(operatorImg, fit: BoxFit.contain),
+                );
+              }
+              return Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      itemColor,
+                      itemColor.withOpacity(0.7),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: itemColor.withOpacity(0.4),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Icon(
+                  itemType.iconName != null && itemType.iconName!.isNotEmpty
+                      ? IconMapper.getIcon(itemType.iconName)
+                      : IconMapper.getIconFromItemName(itemType.nameAr, itemType.nameEn),
+                  color: Colors.white,
+                  size: 28,
+                ),
+              );
+            }),
             const SizedBox(width: 16),
             // Name and Details
             Expanded(

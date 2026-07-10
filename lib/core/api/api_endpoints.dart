@@ -55,6 +55,16 @@ class ApiEndpoints {
   static String updateReceivedDeviceStatus(String id) =>
       '/api/received-devices/$id/status';
 
+  // Withdrawn Devices
+  static const String withdrawnDevices = '/api/withdrawn-devices';
+  static String withdrawnDevice(String id) => '/api/withdrawn-devices/$id';
+
   // Item Types
   static const String activeItemTypes = '/api/item-types/active';
+
+  // Serialized Items
+  static const String scanIn = '/api/serialized-items/scan-in';
+  static const String scanOut = '/api/serialized-items/scan-out';
+  static String lookup(String serialNumber) => '/api/serialized-items/lookup/$serialNumber';
 }
+

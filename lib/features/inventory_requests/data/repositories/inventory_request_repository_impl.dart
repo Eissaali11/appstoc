@@ -1,19 +1,21 @@
-import 'package:dio/dio.dart';
-import 'package:get/get.dart';
+import '../../../../core/api/api_client.dart';
 import '../../../../core/api/api_endpoints.dart';
 import '../../domain/repositories/inventory_request_repository.dart';
 import '../../../../shared/models/inventory_request.dart';
 import '../../../fixed_inventory/data/models/inventory_entry.dart';
+import '../../../../shared/models/item_type.dart';
 
 class InventoryRequestRepositoryImpl implements InventoryRequestRepository {
+  final ApiClient apiClient;
+
+  InventoryRequestRepositoryImpl(this.apiClient);
+
   @override
   Future<InventoryRequest> createInventoryRequestWithEntries({
     required List<InventoryEntry> entries,
     String? notes,
   }) async {
     try {
-      final dio = Get.find<Dio>();
-      
       // Filter out entries with zero quantities
       final validEntries = entries
           .where((e) => e.boxes > 0 || e.units > 0)
@@ -24,7 +26,7 @@ class InventoryRequestRepositoryImpl implements InventoryRequestRepository {
         throw Exception('يجب إدخال كمية لصنف واحد على الأقل');
       }
       
-      final response = await dio.post(
+      final response = await apiClient.post(
         ApiEndpoints.inventoryRequests,
         data: {
           'entries': validEntries,
@@ -60,8 +62,7 @@ class InventoryRequestRepositoryImpl implements InventoryRequestRepository {
     String? notes,
   }) async {
     try {
-      final dio = Get.find<Dio>();
-      final response = await dio.post(
+      final response = await apiClient.post(
         ApiEndpoints.inventoryRequests,
         data: {
           'n950Boxes': n950Boxes,
@@ -94,8 +95,7 @@ class InventoryRequestRepositoryImpl implements InventoryRequestRepository {
   @override
   Future<List<InventoryRequest>> getMyInventoryRequests() async {
     try {
-      final dio = Get.find<Dio>();
-      final response = await dio.get(ApiEndpoints.myInventoryRequests);
+      final response = await apiClient.get(ApiEndpoints.myInventoryRequests);
       if (response.data is List) {
         return (response.data as List)
             .map((json) => InventoryRequest.fromJson(json as Map<String, dynamic>))
@@ -104,6 +104,21 @@ class InventoryRequestRepositoryImpl implements InventoryRequestRepository {
       return [];
     } catch (e) {
       throw Exception('فشل جلب طلبات المخزون: ${e.toString()}');
+    }
+  }
+
+  @override
+  Future<List<ItemType>> getItemTypes() async {
+    try {
+      final response = await apiClient.get(ApiEndpoints.activeItemTypes);
+      if (response.data is List) {
+        return (response.data as List)
+            .map((e) => ItemType.fromJson(e as Map<String, dynamic>))
+            .toList();
+      }
+      return [];
+    } catch (e) {
+      throw Exception('فشل جلب أنواع السلع: ${e.toString()}');
     }
   }
 }

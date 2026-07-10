@@ -47,7 +47,9 @@ dependencies:
   # UI Components
   google_fonts: ^6.1.0
   shimmer: ^3.0.0
+  lottie: ^3.1.2
   cached_network_image: ^3.3.1
+  video_player: ^2.8.2
 
   # Utilities
   intl: ^0.20.2
@@ -57,10 +59,15 @@ dependencies:
   share_plus: ^7.2.1
   mobile_scanner: ^3.5.6
   path_provider: ^2.1.2
+  path_provider_windows: ^2.3.0
 
   # Icons
   flutter_svg: ^2.0.9
   lucide_icons: ^0.257.0
+  geolocator: ^14.0.2
+  syncfusion_flutter_signaturepad: ^33.2.15
+  pdf: ^3.12.0
+  printing: ^5.14.3
 
 dev_dependencies:
   flutter_test:
@@ -88,6 +95,13 @@ flutter:
     - assets/ico1.png
     - assets/p1.png
     - assets/banr.png
+    - assets/1.png
+    - assets/stc.jpg
+    - assets/mobile.png
+    - assets/zein.png
+    - assets/libar.png
+    - assets/mol.png
+    - assets/splsh.mp4
 
 flutter_launcher_icons:
   android: true

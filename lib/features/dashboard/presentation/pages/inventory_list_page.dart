@@ -8,6 +8,7 @@ import '../widgets/inventory_filter_bar.dart';
 import '../widgets/inventory_item_card.dart';
 import '../widgets/shimmer_loading.dart';
 import '../../../../shared/models/item_type.dart';
+import '../../../../core/routing/app_pages.dart';
 
 class InventoryListPage extends StatefulWidget {
   const InventoryListPage({super.key});
@@ -301,6 +302,18 @@ class _InventoryListPageState extends State<InventoryListPage> {
                                 fixedUnits: item.fixedUnits,
                                 movingBoxes: item.movingBoxes,
                                 movingUnits: item.movingUnits,
+                                onTap: () {
+                                  Get.toNamed(
+                                    Routes.inventorySectionDetails,
+                                    arguments: {
+                                      'itemType': item.itemType,
+                                      'fixedBoxes': item.fixedBoxes,
+                                      'fixedUnits': item.fixedUnits,
+                                      'movingBoxes': item.movingBoxes,
+                                      'movingUnits': item.movingUnits,
+                                    },
+                                  );
+                                },
                               ),
                             );
                           },

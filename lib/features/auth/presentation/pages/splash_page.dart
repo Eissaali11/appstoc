@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:video_player/video_player.dart';
 import '../../presentation/controllers/auth_controller.dart';
+import '../../../../core/utils/gps_helper.dart';
 
-/// Animated splash screen with logo and strong intro animation.
-/// Decides whether to go to login or dashboard based on the persisted auth token.
 class SplashPage extends StatefulWidget {
   const SplashPage({super.key});
 
@@ -12,54 +13,135 @@ class SplashPage extends StatefulWidget {
 }
 
 class _SplashPageState extends State<SplashPage>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   late final AuthController _authController;
+
+  // Fallback animation
   late final AnimationController _animController;
   late final Animation<double> _scaleAnim;
   late final Animation<double> _fadeAnim;
   late final Animation<double> _glowAnim;
 
+  // Video
+  late VideoPlayerController _videoController;
+  bool _isVideoInitialized = false;
+  bool _hasVideoError = false;
+
+  // Navigation guards — all three must be true before navigating
+  bool _minTimerElapsed = false;  // ≥ 5 seconds minimum
+  bool _servicesReady   = false;  // auth + GPS done
+  bool _videoFinished   = false;  // video played to end (or errored)
+  bool _hasNavigated    = false;  // prevent double navigation
+  bool _isAuthenticated = false;
+
+  static const _kMinSplash = Duration(seconds: 5);
+
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
     _authController = Get.find<AuthController>();
 
     _animController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 2200),
     );
-
     _scaleAnim = CurvedAnimation(
       parent: _animController,
       curve: const Interval(0.0, 0.6, curve: Curves.easeOutBack),
     );
-
     _fadeAnim = CurvedAnimation(
       parent: _animController,
       curve: const Interval(0.1, 0.8, curve: Curves.easeOut),
     );
-
     _glowAnim = CurvedAnimation(
       parent: _animController,
       curve: const Interval(0.4, 1.0, curve: Curves.easeInOut),
     );
-
     _animController.forward();
-    _init();
+
+    // ── 1. Minimum timer — runs independently ──────────────────
+    Future.delayed(_kMinSplash).then((_) {
+      if (!mounted) return;
+      _minTimerElapsed = true;
+      _tryNavigate();
+    });
+
+    // ── 2. Services ────────────────────────────────────────────
+    _runServices();
+
+    // ── 3. Video ───────────────────────────────────────────────
+    _initVideo();
   }
 
-  Future<void> _init() async {
-    // نسمح للأنيميشن أن يعمل على الأقل 1.5 ثانية مع التحقق من التوكن
-    final results = await Future.wait([
-      _authController.checkAuth(),
-      Future.delayed(const Duration(milliseconds: 1500)),
-    ]);
+  // ── Services (auth + GPS) ─────────────────────────────────────
+  Future<void> _runServices() async {
+    try {
+      final results = await Future.wait([
+        _authController.checkAuth(),
+        GpsHelper.requestPermission()
+            .timeout(const Duration(seconds: 3), onTimeout: () => false)
+            .catchError((_) => false),
+      ]);
+      _isAuthenticated = results.first;
+    } catch (e) {
+      debugPrint('Services init error: $e');
+      _isAuthenticated = false;
+    }
+    _servicesReady = true;
+    _tryNavigate();
+  }
 
-    final bool isAuthenticated = results.first as bool;
+  // ── Video ─────────────────────────────────────────────────────
+  Future<void> _initVideo() async {
+    _videoController = VideoPlayerController.asset('assets/splsh.mp4');
+    try {
+      await _videoController.initialize();
+      _videoController.setLooping(false);
+      _videoController.setVolume(1.0);
+      _videoController.addListener(_onVideoProgress);
+      if (mounted) setState(() => _isVideoInitialized = true);
+      await _videoController.play();
+    } catch (e) {
+      debugPrint('Video Splash error: $e');
+      if (mounted) setState(() => _hasVideoError = true);
+      _videoFinished = true;
+      _tryNavigate();
+    }
+  }
 
+  void _onVideoProgress() {
     if (!mounted) return;
+    final v = _videoController.value;
+    final pos = v.position;
 
-    if (isAuthenticated) {
+    // Audio fade 2s → 3s
+    if (pos.inMilliseconds >= 2000 && pos.inMilliseconds < 3000) {
+      final vol = (3000 - pos.inMilliseconds) / 1000.0;
+      _videoController.setVolume(vol.clamp(0.0, 1.0));
+    } else if (pos.inMilliseconds >= 3000) {
+      _videoController.setVolume(0.0);
+    }
+
+    // Video end
+    if (v.isInitialized && !v.isPlaying && pos >= v.duration && pos.inSeconds > 0) {
+      if (!_videoFinished) {
+        _videoFinished = true;
+        _tryNavigate();
+      }
+    }
+  }
+
+  // ── Central navigation gate ───────────────────────────────────
+  void _tryNavigate() {
+    if (_hasNavigated || !mounted) return;
+    if (!_minTimerElapsed || !_servicesReady || !_videoFinished) return;
+
+    _hasNavigated = true;
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+
+    if (_isAuthenticated) {
       Get.offAllNamed('/dashboard');
     } else {
       Get.offAllNamed('/login');
@@ -67,123 +149,116 @@ class _SplashPageState extends State<SplashPage>
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (!_isVideoInitialized || _hasVideoError) return;
+    switch (state) {
+      case AppLifecycleState.inactive:
+      case AppLifecycleState.paused:
+      case AppLifecycleState.hidden:
+        _videoController.pause();
+        SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+        break;
+      case AppLifecycleState.resumed:
+        SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+        if (!_videoFinished && !_hasNavigated) {
+          _videoController.play();
+        }
+        break;
+      case AppLifecycleState.detached:
+        break;
+    }
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     _animController.dispose();
+    if (_isVideoInitialized) {
+      _videoController.removeListener(_onVideoProgress);
+      _videoController.dispose();
+    }
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF0B1220),
-      body: Stack(
-        children: [
-          // خلفية متدرجة مع دوائر شفافة تعطي عمق
-          Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Color(0xFF020617),
-                  Color(0xFF020617),
-                  Color(0xFF020617),
-                ],
-              ),
-            ),
-          ),
-          Align(
-            alignment: const Alignment(-1.2, -1.2),
-            child: Container(
-              width: 260,
-              height: 260,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    Colors.tealAccent.withOpacity(0.16),
+    // ── Fallback static splash ────────────────────────────────
+    if (_hasVideoError || !_isVideoInitialized) {
+      return Scaffold(
+        backgroundColor: const Color(0xFF020617),
+        body: Stack(
+          children: [
+            // Glows
+            Align(
+              alignment: const Alignment(-1.2, -1.2),
+              child: Container(
+                width: 260, height: 260,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(colors: [
+                    Colors.tealAccent.withValues(alpha: 0.16),
                     Colors.transparent,
-                  ],
+                  ]),
                 ),
               ),
             ),
-          ),
-          Align(
-            alignment: const Alignment(1.1, 1.2),
-            child: Container(
-              width: 220,
-              height: 220,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    Colors.amberAccent.withOpacity(0.18),
+            Align(
+              alignment: const Alignment(1.1, 1.2),
+              child: Container(
+                width: 220, height: 220,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(colors: [
+                    Colors.amberAccent.withValues(alpha: 0.18),
                     Colors.transparent,
-                  ],
+                  ]),
                 ),
               ),
             ),
-          ),
-
-          // محتوى الشعار والكتابة
-          Center(
-            child: AnimatedBuilder(
-              animation: _animController,
-              builder: (context, child) {
-                final double scale = 0.4 + (_scaleAnim.value * 0.6);
-                final double glow = 10 + (_glowAnim.value * 25);
-
-                return Opacity(
-                  opacity: _fadeAnim.value,
-                  child: Transform.scale(
-                    scale: scale,
-                    child: Container(
-                      padding: const EdgeInsets.all(24),
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.tealAccent.withOpacity(0.5),
-                            blurRadius: glow,
-                            spreadRadius: 2,
+            // Logo
+            Center(
+              child: AnimatedBuilder(
+                animation: _animController,
+                builder: (context, _) {
+                  final scale = 0.4 + (_scaleAnim.value * 0.6);
+                  final glow  = 10 + (_glowAnim.value * 25);
+                  return Opacity(
+                    opacity: _fadeAnim.value,
+                    child: Transform.scale(
+                      scale: scale,
+                      child: Container(
+                        padding: const EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.tealAccent.withValues(alpha: 0.5),
+                              blurRadius: glow, spreadRadius: 2,
+                            ),
+                          ],
+                        ),
+                        child: ClipOval(
+                          child: Image.asset(
+                            'assets/banr.png',
+                            fit: BoxFit.cover,
                           ),
-                        ],
-                      ),
-                      child: ClipOval(
-                        child: Image.asset(
-                          'assets/banr.png',
-                          fit: BoxFit.cover,
                         ),
                       ),
                     ),
-                  ),
-                );
-              },
+                  );
+                },
+              ),
             ),
-          ),
-
-          // نص أسفل الشعار + مؤشر تقدم بسيط
-          Align(
-            alignment: Alignment.bottomCenter,
-            child: Padding(
-              padding: const EdgeInsets.only(bottom: 48.0),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TweenAnimationBuilder<double>(
-                    tween: Tween(begin: 0.0, end: 1.0),
-                    duration: const Duration(milliseconds: 1200),
-                    curve: Curves.easeOut,
-                    builder: (context, value, child) {
-                      return Opacity(
-                        opacity: value,
-                        child: Transform.translate(
-                          offset: Offset(0, 10 * (1 - value)),
-                          child: child,
-                        ),
-                      );
-                    },
-                    child: const Text(
+            // Bottom text + progress
+            Align(
+              alignment: Alignment.bottomCenter,
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 48),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
                       'StockPro',
                       style: TextStyle(
                         fontFamily: 'Tajawal',
@@ -193,28 +268,106 @@ class _SplashPageState extends State<SplashPage>
                         letterSpacing: 1.2,
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'إدارة مخزون ذكية وسهلة',
-                    style: TextStyle(
-                      fontFamily: 'Tajawal',
-                      fontSize: 14,
-                      color: Colors.white70,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  SizedBox(
-                    width: 120,
-                    child: LinearProgressIndicator(
-                      minHeight: 3,
-                      backgroundColor: Colors.white.withOpacity(0.1),
-                      valueColor: const AlwaysStoppedAnimation<Color>(
-                        Color(0xFF40E0D0),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'إدارة مخزون ذكية وسهلة',
+                      style: TextStyle(
+                        fontFamily: 'Tajawal',
+                        fontSize: 14,
+                        color: Colors.white70,
                       ),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 24),
+                    SizedBox(
+                      width: 120,
+                      child: LinearProgressIndicator(
+                        minHeight: 3,
+                        backgroundColor: Colors.white.withValues(alpha: 0.1),
+                        valueColor: const AlwaysStoppedAnimation<Color>(
+                          Color(0xFF40E0D0),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // ── Full-screen video splash (BoxFit.cover) ───────────────
+    // We wrap in a ClipRect and scale by 1.15x to crop the edges and hide the Gemini watermark
+    return Scaffold(
+      backgroundColor: const Color(0xFF020617),
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: ClipRect(
+              child: FittedBox(
+                fit: BoxFit.cover,
+                child: SizedBox(
+                  width: _videoController.value.size.width,
+                  height: _videoController.value.size.height,
+                  child: VideoPlayer(_videoController),
+                ),
+              ),
+            ),
+          ),
+          // Gradient overlays to blend screen top and bottom
+          Positioned.fill(
+            child: Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Color(0x99020617), // Dark top blend
+                    Colors.transparent,
+                    Colors.transparent,
+                    Color(0xCC020617), // Dark bottom blend to highlight the loading indicators
+                  ],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  stops: [0.0, 0.2, 0.7, 1.0],
+                ),
+              ),
+            ),
+          ),
+          // Beautiful interactive progress indicator and brand label
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 40.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Glowing loading bar
+                    Container(
+                      width: 140,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(10),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF40E0D0).withValues(alpha: 0.5),
+                            blurRadius: 10,
+                            spreadRadius: 1,
+                          ),
+                        ],
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(10),
+                        child: const LinearProgressIndicator(
+                          backgroundColor: Colors.white10,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Color(0xFF40E0D0),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -223,4 +376,3 @@ class _SplashPageState extends State<SplashPage>
     );
   }
 }
-

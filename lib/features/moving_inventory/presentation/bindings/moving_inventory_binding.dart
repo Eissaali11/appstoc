@@ -1,4 +1,5 @@
 import 'package:get/get.dart';
+import '../../../../core/api/api_client.dart';
 import '../../../auth/presentation/controllers/auth_controller.dart';
 import '../../domain/repositories/moving_inventory_repository.dart';
 import '../../data/repositories/moving_inventory_repository_impl.dart';
@@ -10,7 +11,7 @@ class MovingInventoryBinding extends Bindings {
     // Repository
     if (!Get.isRegistered<MovingInventoryRepository>()) {
       Get.lazyPut<MovingInventoryRepository>(
-        () => MovingInventoryRepositoryImpl(),
+        () => MovingInventoryRepositoryImpl(Get.find<ApiClient>()),
       );
     }
 

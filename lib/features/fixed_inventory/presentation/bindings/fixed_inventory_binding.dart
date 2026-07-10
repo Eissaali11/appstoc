@@ -1,4 +1,5 @@
 import 'package:get/get.dart';
+import '../../../../core/api/api_client.dart';
 import '../../../auth/presentation/controllers/auth_controller.dart';
 import '../../domain/repositories/fixed_inventory_repository.dart';
 import '../../data/repositories/fixed_inventory_repository_impl.dart';
@@ -13,7 +14,7 @@ class FixedInventoryBinding extends Bindings {
     // Repository
     if (!Get.isRegistered<FixedInventoryRepository>()) {
       Get.lazyPut<FixedInventoryRepository>(
-        () => FixedInventoryRepositoryImpl(),
+        () => FixedInventoryRepositoryImpl(Get.find<ApiClient>()),
       );
     }
 

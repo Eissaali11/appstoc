@@ -8,10 +8,14 @@ import '../../domain/use_cases/login_use_case.dart';
 import '../../domain/use_cases/logout_use_case.dart';
 import '../../domain/use_cases/get_current_user_use_case.dart';
 import '../controllers/auth_controller.dart';
+import '../routes/auth_router.dart';
 
 class AuthBinding extends Bindings {
   @override
   void dependencies() {
+    // Router
+    Get.lazyPut<AuthRouter>(() => AuthRouterImpl());
+
     // Data Sources
     Get.lazyPut<AuthRemoteDataSource>(
       () => AuthRemoteDataSourceImpl(Get.find<ApiClient>()),
@@ -36,6 +40,7 @@ class AuthBinding extends Bindings {
         loginUseCase: Get.find<LoginUseCase>(),
         logoutUseCase: Get.find<LogoutUseCase>(),
         getCurrentUserUseCase: Get.find<GetCurrentUserUseCase>(),
+        router: Get.find<AuthRouter>(),
       ),
       permanent: true,
     );

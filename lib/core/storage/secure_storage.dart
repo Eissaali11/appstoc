@@ -39,7 +39,39 @@ class SecureStorageService {
     await _storage.delete(key: _userIdKey);
   }
 
+  Future<void> saveCachedUserJson(String userJson) async {
+    await _storage.write(key: 'cached_user', value: userJson);
+  }
+
+  Future<String?> getCachedUserJson() async {
+    return await _storage.read(key: 'cached_user');
+  }
+
+  // ─── Google Places API Key ────────────────────────────────────────────────
+  static const String _googlePlacesApiKeyKey = 'google_places_api_key';
+
+  Future<void> saveGooglePlacesApiKey(String key) async {
+    await _storage.write(key: _googlePlacesApiKeyKey, value: key);
+  }
+
+  Future<String?> getGooglePlacesApiKey() async {
+    return await _storage.read(key: _googlePlacesApiKeyKey);
+  }
+
+  Future<void> deleteGooglePlacesApiKey() async {
+    await _storage.delete(key: _googlePlacesApiKeyKey);
+  }
+  // ─────────────────────────────────────────────────────────────────────────
+
   Future<void> clearAll() async {
-    await _storage.deleteAll();
+    try {
+      await _storage.deleteAll();
+    } catch (e) {
+      try {
+        await _storage.delete(key: _tokenKey);
+        await _storage.delete(key: _userIdKey);
+        await _storage.delete(key: 'cached_user');
+      } catch (_) {}
+    }
   }
 }

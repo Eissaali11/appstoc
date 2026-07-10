@@ -74,3 +74,4 @@ logs/
 free_disk_space.ps1
 BUILD_ISSUE_CMake.md
 CLEANUP_SPACE.md
+scratch/

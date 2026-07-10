@@ -6,6 +6,7 @@ import '../api/interceptors/auth_interceptor.dart';
 import '../api/interceptors/error_interceptor.dart';
 import '../storage/secure_storage.dart';
 import '../storage/local_cache.dart';
+import '../storage/offline_queue_manager.dart';
 
 import '../api/api_config.dart';
 
@@ -14,9 +15,14 @@ class InjectionContainer {
     // Initialize Hive
     await LocalCache.init();
 
+    // مسح الكاش دائماً لضمان استخدام defaultBaseUrl المحدّث
+    await ApiConfig.clearCache();
     // جلب عنوان الـ API ديناميكياً (من خادم الإعداد أو الكاش أو الافتراضي)
     final baseUrl = await ApiConfig.getBaseUrl();
     ApiEndpoints.baseUrl = baseUrl;
+    if (Get.isRegistered<Dio>()) {
+      Get.find<Dio>().options.baseUrl = baseUrl;
+    }
 
     // Secure Storage
     Get.put<SecureStorageService>(
@@ -55,5 +61,15 @@ class InjectionContainer {
       ApiClient(dio),
       permanent: true,
     );
+
+    // Offline Sync Repository & Controller
+    final offlineRepo = OfflineQueueRepositoryImpl();
+    Get.put<OfflineQueueRepository>(offlineRepo, permanent: true);
+    
+    Get.put<OfflineQueueController>(
+      OfflineQueueController(repository: offlineRepo),
+      permanent: true,
+    );
   }
 }
+
