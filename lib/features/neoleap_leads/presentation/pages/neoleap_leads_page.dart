@@ -8,7 +8,6 @@ import '../../domain/entities/region_entity.dart';
 import '../controllers/neoleap_leads_controller.dart';
 import '../../../../shared/widgets/app_scaffold.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/theme/text_styles.dart';
 import '../../../../shared/widgets/design_system.dart';
 
 class NeoleapLeadsPage extends StatefulWidget {
@@ -264,6 +263,188 @@ class _NeoleapLeadsPageState extends State<NeoleapLeadsPage> {
           ),
         ),
       ),
+    );
+  }
+
+  void _showRegionsMultiSelectBottomSheet() {
+    String searchKeyword = '';
+    
+    Get.bottomSheet(
+      StatefulBuilder(
+        builder: (context, setSheetState) {
+          final filteredList = RegionEntity.saudiRegions.where((region) {
+            return region.name.contains(searchKeyword) || 
+                   region.name.toLowerCase().contains(searchKeyword.toLowerCase());
+          }).toList();
+
+          return Container(
+            height: context.height * 0.75,
+            decoration: const BoxDecoration(
+              color: AppColors.surfaceDark,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+            ),
+            child: Directionality(
+              textDirection: TextDirection.rtl,
+              child: Column(
+                children: [
+                  const SizedBox(height: 8),
+                  Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.white24,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'تحديد المدن المستهدفة بالبحث',
+                          style: GoogleFonts.cairo(
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                        Text(
+                          '(${controller.selectedRegions.length} مختارة)',
+                          style: GoogleFonts.cairo(
+                            fontSize: 12,
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: TextField(
+                      style: GoogleFonts.cairo(color: Colors.white, fontSize: 13),
+                      onChanged: (val) {
+                        setSheetState(() {
+                          searchKeyword = val;
+                        });
+                      },
+                      decoration: InputDecoration(
+                        hintText: 'ابحث عن مدينة من مدن المملكة...',
+                        hintStyle: GoogleFonts.cairo(color: Colors.white30, fontSize: 12),
+                        prefixIcon: const Icon(LucideIcons.search, size: 16, color: AppColors.textSecondary),
+                        filled: true,
+                        fillColor: AppColors.backgroundDark,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: const BorderSide(color: AppColors.border),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: const BorderSide(color: AppColors.border),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: const BorderSide(color: AppColors.primary),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton.icon(
+                          onPressed: () {
+                            controller.selectAllRegions();
+                            setSheetState(() {});
+                          },
+                          icon: const Icon(LucideIcons.checkSquare, size: 14, color: AppColors.primary),
+                          label: Text(
+                            'select_all'.tr,
+                            style: GoogleFonts.cairo(fontSize: 12, color: AppColors.primary, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        TextButton.icon(
+                          onPressed: () {
+                            controller.deselectAllRegions();
+                            setSheetState(() {});
+                          },
+                          icon: const Icon(LucideIcons.square, size: 14, color: AppColors.error),
+                          label: Text(
+                            'deselect_all'.tr,
+                            style: GoogleFonts.cairo(fontSize: 12, color: AppColors.error, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Divider(color: Colors.white10, height: 16),
+
+                  Expanded(
+                    child: ListView.separated(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      itemCount: filteredList.length,
+                      separatorBuilder: (_, __) => const Divider(color: Colors.white10, height: 1),
+                      itemBuilder: (context, idx) {
+                        final r = filteredList[idx];
+                        final isSelected = controller.selectedRegions.any((s) => s.name == r.name);
+
+                        return ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: Text(r.emoji, style: const TextStyle(fontSize: 18)),
+                          title: Text(
+                            r.name,
+                            style: GoogleFonts.cairo(
+                              color: isSelected ? Colors.white : AppColors.textSecondary,
+                              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                              fontSize: 14,
+                            ),
+                          ),
+                          trailing: Theme(
+                            data: ThemeData(unselectedWidgetColor: Colors.white30),
+                            child: Checkbox(
+                              value: isSelected,
+                              activeColor: AppColors.primary,
+                              checkColor: AppColors.backgroundDark,
+                              onChanged: (val) {
+                                controller.toggleRegion(r);
+                                setSheetState(() {});
+                              },
+                            ),
+                          ),
+                          onTap: () {
+                            controller.toggleRegion(r);
+                            setSheetState(() {});
+                          },
+                        );
+                      },
+                    ),
+                  ),
+
+                  Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: NeonButton(
+                      label: 'تأكيد الاختيار',
+                      onPressed: () => Get.back(),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+      ),
+      isScrollControlled: true,
     );
   }
 
@@ -580,79 +761,43 @@ class _NeoleapLeadsPageState extends State<NeoleapLeadsPage> {
           ),
           const SizedBox(height: 12),
 
-          // Regions Header
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'regions_selection'.tr,
-                style: GoogleFonts.cairo(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.white),
-              ),
-              Row(
-                children: [
-                  GestureDetector(
-                    onTap: controller.selectAllRegions,
-                    child: Text(
-                      'select_all'.tr,
-                      style: GoogleFonts.cairo(fontSize: 11, color: AppColors.primary, fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  GestureDetector(
-                    onTap: controller.deselectAllRegions,
-                    child: Text(
-                      'deselect_all'.tr,
-                      style: GoogleFonts.cairo(fontSize: 11, color: AppColors.error, fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                ],
-              ),
-            ],
+          // Regions Selection Dropdown Label
+          Text(
+            'regions_selection'.tr,
+            style: GoogleFonts.cairo(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.white),
           ),
           const SizedBox(height: 8),
 
-          // Regions scrollable chips list
-          SizedBox(
-            height: 38,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              itemCount: RegionEntity.saudiRegions.length,
-              itemBuilder: (_, i) {
-                final r = RegionEntity.saudiRegions[i];
-                final selected = controller.selectedRegions.any((s) => s.name == r.name);
-                return Padding(
-                  padding: const EdgeInsets.only(left: 6),
-                  child: GestureDetector(
-                    onTap: () => controller.toggleRegion(r),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: selected ? AppColors.primary.withOpacity(0.15) : Colors.white.withOpacity(0.04),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: selected ? AppColors.primary.withOpacity(0.5) : Colors.white.withOpacity(0.08),
-                          width: 1,
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(r.emoji, style: const TextStyle(fontSize: 14)),
-                          const SizedBox(width: 4),
-                          Text(
-                            r.name,
-                            style: GoogleFonts.cairo(
-                              color: selected ? AppColors.primary : AppColors.textSecondary,
-                              fontSize: 12,
-                              fontWeight: selected ? FontWeight.bold : FontWeight.normal,
-                            ),
-                          ),
-                        ],
+          // Custom Dropdown Trigger
+          GestureDetector(
+            onTap: _showRegionsMultiSelectBottomSheet,
+            child: Container(
+              height: 52,
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              decoration: BoxDecoration(
+                color: AppColors.backgroundDark,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: Row(
+                children: [
+                  const Icon(LucideIcons.mapPin, color: AppColors.primary, size: 18),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      controller.selectedRegions.isEmpty
+                          ? 'اختر المدن المستهدفة بالبحث...'
+                          : 'تم تحديد ${controller.selectedRegions.length} مدينة من مدن المملكة',
+                      style: GoogleFonts.cairo(
+                        color: controller.selectedRegions.isEmpty ? Colors.white38 : Colors.white,
+                        fontSize: 13,
+                        fontWeight: controller.selectedRegions.isEmpty ? FontWeight.normal : FontWeight.bold,
                       ),
                     ),
                   ),
-                );
-              },
+                  const Icon(LucideIcons.chevronDown, color: AppColors.textSecondary, size: 16),
+                ],
+              ),
             ),
           ),
           const SizedBox(height: 16),
