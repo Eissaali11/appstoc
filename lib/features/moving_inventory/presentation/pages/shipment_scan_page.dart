@@ -8,6 +8,8 @@ import '../../../../shared/models/item_type.dart';
 import '../../../../shared/widgets/design_system.dart';
 import '../../../../shared/widgets/barcode_scanner_widget.dart';
 import '../../../../shared/utils/icon_mapper.dart';
+import '../../../../shared/utils/barcode_validator.dart';
+
 import '../../../moving_inventory/data/models/serialized_item.dart';
 import '../../../dashboard/presentation/controllers/dashboard_controller.dart';
 import '../controllers/moving_inventory_controller.dart';
@@ -112,7 +114,7 @@ class _ShipmentScanPageState extends State<ShipmentScanPage>
   }
 
   void _updateSelectedItemType() {
-    final filtered = _itemTypes.where((t) => t.category == _selectedCategory).toList();
+    final filtered = _itemTypes.where((t) => t.category == _selectedCategory && t.requiresSerial == true).toList();
     if (filtered.isNotEmpty) {
       _selectedItemTypeId = filtered.first.id;
       _isSim = _selectedCategory == 'sim';
@@ -121,6 +123,25 @@ class _ShipmentScanPageState extends State<ShipmentScanPage>
       _isSim = _selectedCategory == 'sim';
     }
     _carrierName = _isSim ? 'STC' : null;
+  }
+
+  String? _resolveCarrierName(ItemType type, String? defaultCarrier) {
+    if (type.category != 'sim') return null;
+    final nameEn = type.nameEn.toLowerCase();
+    final nameAr = type.nameAr.toLowerCase();
+    if (nameEn.contains('stc') || nameAr.contains('stc') || nameEn.contains('اتصالات') || nameAr.contains('اتصالات')) {
+      return 'STC';
+    }
+    if (nameEn.contains('mobily') || nameAr.contains('موبايلي')) {
+      return 'Mobily';
+    }
+    if (nameEn.contains('zain') || nameAr.contains('زين')) {
+      return 'Zain';
+    }
+    if (nameEn.contains('lebara') || nameAr.contains('ليبارا') || nameEn.contains('repara') || nameAr.contains('ريباره') || nameAr.contains('ريبارا')) {
+      return 'Lebara';
+    }
+    return defaultCarrier ?? 'STC';
   }
 
   void _onCategoryChanged(String category) {
@@ -219,13 +240,25 @@ class _ShipmentScanPageState extends State<ShipmentScanPage>
 
     final selectedType = _itemTypes.firstWhere((t) => t.id == _selectedItemTypeId);
 
+    // التحقق من صحة الرقم المكتوب يدوياً أو الممسوح
+    final validationError = BarcodeValidator.validate(serial, selectedType);
+    if (validationError != null) {
+      HapticFeedback.vibrate();
+      setState(() {
+        _scanError = validationError;
+        _scanSuccess = null;
+      });
+      return;
+    }
+
     setState(() {
+      final resolvedCarrier = _isSim ? _resolveCarrierName(selectedType, _carrierName) : null;
       _scannedBatchItems.add(ScannedBatchItem(
         serialNumber: serial,
         itemTypeId: _selectedItemTypeId!,
         itemTypeName: selectedType.nameAr,
         isSim: _isSim,
-        carrierName: _isSim ? _carrierName : null,
+        carrierName: resolvedCarrier,
       ));
       _scanSuccess = 'تمت إضافة ${_isSim ? "الشريحة" : "الجهاز"} $serial للقائمة المؤقتة ✓';
       _scanError = null;
@@ -498,7 +531,7 @@ class _ShipmentScanPageState extends State<ShipmentScanPage>
       );
     }
 
-    final filtered = _itemTypes.where((t) => t.category == _selectedCategory).toList();
+    final filtered = _itemTypes.where((t) => t.category == _selectedCategory && t.requiresSerial == true).toList();
     if (filtered.isEmpty) {
       return Container(
         padding: const EdgeInsets.all(16),
@@ -625,7 +658,7 @@ class _ShipmentScanPageState extends State<ShipmentScanPage>
                       builder: (context) => BarcodeScannerWidget(
                         title: 'مسح باركود الأجهزة والشرائح',
                         isMultiScan: true,
-                        itemTypes: _itemTypes,
+                        itemTypes: _itemTypes.where((t) => t.category == _selectedCategory && t.requiresSerial == true).toList(),
                         selectedItemTypeId: _selectedItemTypeId,
                       ),
                     ),
@@ -663,22 +696,51 @@ class _ShipmentScanPageState extends State<ShipmentScanPage>
                           }
                           if (serial.isEmpty) continue;
                           
-                          // Check for duplicates in local list
-                          final isDuplicate = _scannedBatchItems.any((item) => item.serialNumber.toLowerCase() == serial.toLowerCase());
-                          if (isDuplicate) continue;
+                          // تطبيع الكود الخام أولاً
+                          final normalized = BarcodeValidator.normalizeRawBarcode(serial);
 
-                          // Check for duplicates in actual custody
-                          final isInCustody = _custodyItems.any((item) => item.serialNumber.toLowerCase() == serial.toLowerCase());
-                          if (isInCustody) continue;
+                          // التحقق من نوع الصنف الأنسب لكل كود ممسوح
+                          ItemType? targetType;
+                          
+                          // 1. أولاً نجرب التحقق من الصنف المختار/المرتجع
+                          if (_selectedItemTypeId != null) {
+                            final type = _itemTypes.firstWhereOrNull((t) => t.id == _selectedItemTypeId);
+                            if (type != null && BarcodeValidator.validate(normalized, type) == null) {
+                              targetType = type;
+                            }
+                          }
+                          
+                          // 2. إذا لم يطابق، نبحث في بقية الأصناف النشطة المتاحة لهذا القسم
+                          if (targetType == null) {
+                            final categoryTypes = _itemTypes.where((t) => t.category == _selectedCategory && t.requiresSerial == true).toList();
+                            for (final type in categoryTypes) {
+                              if (BarcodeValidator.validate(normalized, type) == null) {
+                                targetType = type;
+                                break;
+                              }
+                            }
+                          }
 
-                          final selectedType = _itemTypes.firstWhereOrNull((t) => t.id == _selectedItemTypeId);
-                          if (_selectedItemTypeId != null && selectedType != null) {
+                          if (targetType != null) {
+                            // استخراج الرقم التسلسلي النظيف بناءً على الصنف المكتشف
+                            final cleanSerial = BarcodeValidator.extractCleanSerialForType(normalized, targetType);
+
+                            // Check for duplicates in local list
+                            final isDuplicate = _scannedBatchItems.any((item) => item.serialNumber.toLowerCase() == cleanSerial.toLowerCase());
+                            if (isDuplicate) continue;
+
+                            // Check for duplicates in actual custody
+                            final isInCustody = _custodyItems.any((item) => item.serialNumber.toLowerCase() == cleanSerial.toLowerCase());
+                            if (isInCustody) continue;
+
+                            final isTargetSim = targetType.category == 'sim';
+                            final resolvedCarrier = isTargetSim ? _resolveCarrierName(targetType, _carrierName) : null;
                             _scannedBatchItems.add(ScannedBatchItem(
-                              serialNumber: serial,
-                              itemTypeId: _selectedItemTypeId!,
-                              itemTypeName: selectedType.nameAr,
-                              isSim: _isSim,
-                              carrierName: _isSim ? _carrierName : null,
+                              serialNumber: cleanSerial,
+                              itemTypeId: targetType.id,
+                              itemTypeName: targetType.nameAr,
+                              isSim: isTargetSim,
+                              carrierName: resolvedCarrier,
                             ));
                             addedCount++;
                           }
@@ -1084,7 +1146,7 @@ class _ShipmentScanPageState extends State<ShipmentScanPage>
                       builder: (context) => BarcodeScannerWidget(
                         title: 'مسح للبحث في العهدة',
                         isMultiScan: false,
-                        itemTypes: _itemTypes,
+                        itemTypes: _itemTypes.where((t) => t.requiresSerial == true).toList(),
                         selectedItemTypeId: _selectedItemTypeId,
                       ),
                     ),
