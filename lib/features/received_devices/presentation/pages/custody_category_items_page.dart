@@ -62,42 +62,47 @@ class CustodyCategoryItemsPage extends StatelessWidget {
                   final itemTypeId = item.itemType.id;
                   final category = item.itemType.category;
 
-                  // Compute offsets
-                  int executedCount = 0;
-                  for (var request in completedRequests) {
-                    if (category == 'devices' && request.sn != null && request.sn!.isNotEmpty) {
-                      executedCount++;
-                    } else if (category == 'sim' && request.simSerial != null && request.simSerial!.isNotEmpty) {
-                      executedCount++;
+                  final actualSerials = dashboardController.serializedItems
+                      .where((si) => si['itemTypeId'] == itemTypeId || si['itemTypeCategory'] == category)
+                      .map((si) => si['serialNumber'] as String? ?? '')
+                      .where((s) => s.isNotEmpty)
+                      .toList();
+
+                  final deliveredForType = dashboardController.deliveredItems
+                      .where((si) =>
+                          si['itemTypeId'] == itemTypeId ||
+                          si['itemTypeCategory'] == category)
+                      .toList();
+
+                  // Prefer API delivered count; fall back to completed courier requests
+                  int executedCount = deliveredForType.length;
+                  if (executedCount == 0) {
+                    for (var request in completedRequests) {
+                      if (category == 'devices' && request.sn != null && request.sn!.isNotEmpty) {
+                        executedCount++;
+                      } else if (category == 'sim' && request.simSerial != null && request.simSerial!.isNotEmpty) {
+                        executedCount++;
+                      }
                     }
                   }
 
-                  if (category == 'papers') {
+                  if (category == 'papers' && executedCount == 0) {
                     executedCount = completedRequests.length * 2;
-                  } else if (category == 'accessories') {
+                  } else if (category == 'accessories' && executedCount == 0) {
                     executedCount = completedRequests.length;
-                  }
-
-                  if (executedCount == 0) {
-                    if (category == 'devices') executedCount = 3;
-                    else if (category == 'sim') executedCount = 5;
-                    else if (category == 'papers') executedCount = 2;
-                    else executedCount = 1;
                   }
 
                   int receivedCount = dashboardController.pendingTransfers
                       .where((t) => t.itemType == itemTypeId && t.status == 'accepted')
                       .fold(0, (sum, t) => sum + t.quantity);
 
-                  if (receivedCount == 0) {
-                    if (category == 'devices') receivedCount = 8;
-                    else if (category == 'sim') receivedCount = 12;
-                    else if (category == 'papers') receivedCount = 4;
-                    else receivedCount = 10;
-                  }
+                  final current = (category == 'devices' || category == 'sim')
+                      ? actualSerials.length
+                      : item.totalQuantity;
 
-                  final current = item.totalQuantity > 0 ? item.totalQuantity : (receivedCount - executedCount > 0 ? receivedCount - executedCount : 5);
-                  final starting = current + executedCount - receivedCount > 0 ? current + executedCount - receivedCount : 2;
+                  final starting = current + executedCount - receivedCount > 0 
+                      ? current + executedCount - receivedCount 
+                      : 0;
 
                   Color categoryColor = accentColor;
                   IconData categoryIcon = Icons.inventory_2_outlined;
@@ -123,7 +128,7 @@ class CustodyCategoryItemsPage extends StatelessWidget {
                     received: receivedCount,
                     executed: executedCount,
                     current: current,
-                    serials: _getSimulatedSerials(category ?? '', current),
+                    serials: actualSerials,
                     itemTypeId: item.itemType.id,
                     rawCategory: category ?? '',
                     itemTypeObj: item.itemType,
@@ -147,15 +152,6 @@ class CustodyCategoryItemsPage extends StatelessWidget {
       default:
         return 'عهدة عامة';
     }
-  }
-
-  List<String> _getSimulatedSerials(String category, int count) {
-    if (category == 'devices') {
-      return List.generate(count, (index) => 'NXG-${847291 + index}');
-    } else if (category == 'sim') {
-      return List.generate(count, (index) => 'SIM-${928374 + index}');
-    }
-    return [];
   }
 
   Widget _buildCustodyLedgerCard({
@@ -188,6 +184,16 @@ class CustodyCategoryItemsPage extends StatelessWidget {
                 'activeCount': current,
                 'executedCount': executed,
                 'serials': serials,
+                'deliveredItems': dashboardController.deliveredItems
+                    .where((si) =>
+                        si['itemTypeId'] == itemTypeId ||
+                        si['itemTypeCategory'] == rawCategory)
+                    .toList(),
+                'activeItems': dashboardController.serializedItems
+                    .where((si) =>
+                        si['itemTypeId'] == itemTypeId ||
+                        si['itemTypeCategory'] == rawCategory)
+                    .toList(),
               },
             );
           },

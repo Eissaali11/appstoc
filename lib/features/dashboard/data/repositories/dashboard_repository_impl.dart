@@ -133,4 +133,24 @@ class DashboardRepositoryImpl implements DashboardRepository {
       throw Exception('فشل جلب الأرقام التسلسلية: ${e.toString()}');
     }
   }
+
+  @override
+  Future<List<Map<String, dynamic>>> fetchDeliveredItems(
+    String technicianId, {
+    String? itemTypeId,
+  }) async {
+    try {
+      final query = itemTypeId != null && itemTypeId.isNotEmpty
+          ? '?itemTypeId=${Uri.encodeQueryComponent(itemTypeId)}'
+          : '';
+      final response = await apiClient.get(
+        '/api/technicians/$technicianId/delivered-items$query',
+      );
+      return (response.data as List)
+          .map((e) => e as Map<String, dynamic>)
+          .toList();
+    } catch (e) {
+      throw Exception('فشل جلب سجل التسليم: ${e.toString()}');
+    }
+  }
 }

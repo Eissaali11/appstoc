@@ -60,6 +60,8 @@ class DashboardController extends GetxController {
   final _movingInventory = <InventoryEntry>[].obs;
   final _pendingTransfers = <WarehouseTransfer>[].obs;
   final _itemTypes = <ItemType>[].obs;
+  final _serializedItems = <Map<String, dynamic>>[].obs;
+  final _deliveredItems = <Map<String, dynamic>>[].obs;
 
   // Search & Filter State
   final searchQuery = ''.obs;
@@ -83,6 +85,8 @@ class DashboardController extends GetxController {
   List<InventoryEntry> get movingInventory => _movingInventory;
   List<WarehouseTransfer> get pendingTransfers => _pendingTransfers;
   List<ItemType> get itemTypes => _itemTypes;
+  List<Map<String, dynamic>> get serializedItems => _serializedItems;
+  List<Map<String, dynamic>> get deliveredItems => _deliveredItems;
   
   Map<String, ItemType> get itemTypesMap {
     final map = <String, ItemType>{};
@@ -186,6 +190,28 @@ class DashboardController extends GetxController {
       }
     }
 
+    // Override/set moving units for serialized item types using the loaded serializedItems list
+    for (var itemType in _itemTypes) {
+      final isSerialized = itemType.requiresSerial == true ||
+          itemType.category == 'sim' ||
+          itemType.category == 'devices';
+      if (isSerialized) {
+        final count = _serializedItems.where((si) => si['itemTypeId'] == itemType.id).length;
+        if (itemsMap.containsKey(itemType.id)) {
+          itemsMap[itemType.id]!.movingUnits = count;
+          itemsMap[itemType.id]!.movingBoxes = 0;
+        } else {
+          itemsMap[itemType.id] = MergedInventoryItem(
+            itemType: itemType,
+            fixedBoxes: 0,
+            fixedUnits: 0,
+            movingBoxes: 0,
+            movingUnits: count,
+          );
+        }
+      }
+    }
+
     var items = itemsMap.values.toList();
 
     // Apply search query
@@ -244,6 +270,37 @@ class DashboardController extends GetxController {
       _movingInventory.value = data.movingInventory;
       _pendingTransfers.value = data.pendingTransfers;
       _itemTypes.value = data.itemTypes;
+
+      // Fetch actual serialized items (active + delivered)
+      try {
+        final repo = getDashboardDataUseCase.repository;
+        final serials = await repo.fetchMySerializedItems(userId);
+        _serializedItems.value = serials;
+
+        try {
+          final delivered = await repo.fetchDeliveredItems(userId);
+          _deliveredItems.value = delivered;
+        } catch (e) {
+          debugPrint('Failed to load delivered items in dashboard: $e');
+          _deliveredItems.value = [];
+        }
+
+        // Recalculate moving units to include the count of active serialized items
+        int serializedCount = serials.length;
+        int nonSerializedMovingUnits = 0;
+        for (var entry in data.movingInventory) {
+          final itemType = itemTypesMap[entry.itemTypeId];
+          final isSerialized = itemType?.requiresSerial == true ||
+              itemType?.category == 'sim' ||
+              itemType?.category == 'devices';
+          if (!isSerialized) {
+            nonSerializedMovingUnits += entry.units;
+          }
+        }
+        _movingUnits.value = nonSerializedMovingUnits + serializedCount;
+      } catch (e) {
+        debugPrint('Failed to load serialized items in dashboard: $e');
+      }
       
       _isInitialLoad.value = false;
     } catch (e) {

@@ -9,6 +9,7 @@ import '../../../../shared/utils/icon_mapper.dart';
 import '../../../courier_requests/presentation/controllers/courier_requests_controller.dart';
 import '../../../../shared/utils/responsive_helper.dart';
 import '../controllers/dashboard_controller.dart';
+import '../../domain/repositories/dashboard_repository.dart';
 
 class InventorySectionDetailsPage extends StatefulWidget {
   const InventorySectionDetailsPage({super.key});
@@ -22,6 +23,9 @@ class _InventorySectionDetailsPageState extends State<InventorySectionDetailsPag
   String _selectedStatusFilter = 'all';
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
+  List<Map<String, String>> _custodySerials = [];
+  bool _loadingCustody = true;
+  int _inTransitCount = 0;
 
   @override
   void initState() {
@@ -30,6 +34,201 @@ class _InventorySectionDetailsPageState extends State<InventorySectionDetailsPag
     _searchController.addListener(() {
       setState(() => _searchQuery = _searchController.text.toLowerCase().trim());
     });
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadCustodyData());
+  }
+
+  bool _matchesItemType(Map<String, dynamic> item, ItemType itemType) {
+    final typeId = item['itemTypeId']?.toString();
+    final category = item['itemTypeCategory']?.toString();
+    if (typeId != null && typeId == itemType.id) return true;
+    if (category != null && category == itemType.category) return true;
+    return false;
+  }
+
+  Future<void> _loadCustodyData() async {
+    final args = Get.arguments as Map<String, dynamic>? ?? {};
+    final ItemType itemType = args['itemType'] as ItemType? ?? ItemType(
+      id: 'mock-pos',
+      nameAr: 'جهاز نقطة بيع POS',
+      nameEn: 'POS Terminal V2',
+      iconName: 'devices',
+      colorHex: '#18B2B0',
+      sortOrder: 1,
+      isActive: true,
+      isVisible: true,
+      category: 'devices',
+    );
+
+    final List<Map<String, String>> merged = [];
+    final seen = <String>{};
+
+    void addRow(Map<String, String> row, {bool prefer = false}) {
+      final serial = (row['serial'] ?? '').trim();
+      if (serial.isEmpty) return;
+      final key = serial.toLowerCase();
+      if (seen.contains(key)) {
+        if (!prefer) return;
+        merged.removeWhere((e) => (e['serial'] ?? '').toLowerCase() == key);
+      }
+      seen.add(key);
+      merged.add(row);
+    }
+
+    try {
+      List<dynamic> activeItems = (args['activeItems'] as List?) ?? [];
+      List<dynamic> deliveredItems = (args['deliveredItems'] as List?) ?? [];
+      final List<dynamic> passedSerials = args['serials'] as List? ?? [];
+
+      // Refresh from API when possible (source of truth after order close)
+      if (Get.isRegistered<DashboardController>()) {
+        final dash = Get.find<DashboardController>();
+        final userId = dash.user?.id as String?;
+        if (userId != null) {
+          try {
+            final repo = Get.find<DashboardRepository>();
+            final active = await repo.fetchMySerializedItems(userId);
+            final deliveredByType = await repo.fetchDeliveredItems(
+              userId,
+              itemTypeId: itemType.id,
+            );
+            // Also fetch all and filter by category — itemType.id may not match DB UUID
+            final deliveredAll = await repo.fetchDeliveredItems(userId);
+            activeItems = active.where((e) => _matchesItemType(e, itemType)).toList();
+            final mergedDelivered = <String, Map<String, dynamic>>{};
+            for (final e in [...deliveredByType, ...deliveredAll]) {
+              if (!_matchesItemType(e, itemType) &&
+                  e['itemTypeId']?.toString() != itemType.id) {
+                // category match via name for legacy type ids like n950
+                final name = '${e['itemTypeName'] ?? ''}'.toLowerCase();
+                final cat = '${e['itemTypeCategory'] ?? ''}';
+                final matchesName = itemType.category == 'devices'
+                    ? (cat == 'devices' || name.contains('n950') || name.contains('pos'))
+                    : (cat == 'sim' || name.contains('lebara') || name.contains('sim') || name.contains('شريحة'));
+                if (!matchesName) continue;
+              }
+              final sn = '${e['serialNumber'] ?? ''}';
+              if (sn.isEmpty) continue;
+              mergedDelivered[sn] = e;
+            }
+            deliveredItems = mergedDelivered.values.toList();
+          } catch (e) {
+            debugPrint('Custody API refresh failed: $e');
+          }
+        }
+      }
+
+      // Delivered first (wins over active on duplicate serial)
+      for (final raw in deliveredItems) {
+        final item = Map<String, dynamic>.from(raw as Map);
+        addRow({
+          'serial': '${item['serialNumber'] ?? ''}',
+          'tid': '${item['barcode'] ?? ''}',
+          'status': 'مسلّم للعميل',
+          'type': itemType.category == 'sim' ? 'شريحة' : 'متحرك',
+          'customerName': '',
+          'orderId': item['referenceId'] != null ? '#${item['referenceId']}' : '',
+          'date': '${item['deliveredAt'] ?? item['createdAt'] ?? ''}',
+          'simType': '${item['carrierName'] ?? ''}',
+          'notes': '${item['notes'] ?? ''}',
+        }, prefer: true);
+      }
+
+      // Active custody from API objects
+      if (activeItems.isNotEmpty) {
+        for (final raw in activeItems) {
+          final item = Map<String, dynamic>.from(raw as Map);
+          final statusRaw = '${item['status'] ?? ''}'.toUpperCase();
+          if (statusRaw == 'DELIVERED') continue;
+          addRow({
+            'serial': '${item['serialNumber'] ?? ''}',
+            'tid': item['barcode'] != null
+                ? '${item['barcode']}'
+                : ((item['serialNumber']?.toString().length ?? 0) > 4
+                    ? 'T-${item['serialNumber'].toString().substring(item['serialNumber'].toString().length - 4)}'
+                    : ''),
+            'status': statusRaw.contains('TRANSIT') ? 'قيد النقل' : 'نشط في العهدة',
+            'type': itemType.category == 'sim' ? 'شريحة' : 'متحرك',
+            'simType': '${item['carrierName'] ?? ''}',
+          });
+        }
+      } else {
+        for (final s in passedSerials) {
+          final serial = s.toString();
+          addRow({
+            'serial': serial,
+            'tid': serial.length > 4 ? 'T-${serial.substring(serial.length - 4)}' : 'T-$serial',
+            'status': 'نشط في العهدة',
+            'type': itemType.category == 'sim' ? 'شريحة' : 'متحرك',
+          });
+        }
+      }
+
+      // Enrich / add from completed courier requests (real closes only — no mock)
+      if (Get.isRegistered<CourierRequestsController>()) {
+        final requestsController = Get.find<CourierRequestsController>();
+        final completedRequests =
+            requestsController.requests.where((r) => r.isCompleted).toList();
+
+        for (final request in completedRequests) {
+          if (itemType.category == 'devices' &&
+              request.sn != null &&
+              request.sn!.trim().isNotEmpty) {
+            addRow({
+              'serial': request.sn!,
+              'tid': request.tid ?? '',
+              'status': 'مسلّم للعميل',
+              'type': 'متحرك',
+              'customerName': request.customerName ?? '',
+              'retailerName': request.retailerName ?? '',
+              'orderId': '#${request.id}',
+              'date': request.date ?? '',
+              'terminalId': request.terminalId ?? '',
+              'city': request.city ?? '',
+              'address': request.addressAr ?? '',
+              'mobile': request.mobile ?? '',
+              'installationType': request.installationType ?? '',
+              'simType': request.simType ?? '',
+              'simSerial': request.simSerial ?? '',
+              'trsm': request.trsm ?? '',
+              'incidentNumber': request.incidentNumber ?? '',
+            }, prefer: true);
+          } else if (itemType.category == 'sim' &&
+              request.simSerial != null &&
+              request.simSerial!.trim().isNotEmpty) {
+            addRow({
+              'serial': request.simSerial!,
+              'tid': '',
+              'status': 'مسلّم للعميل',
+              'type': 'شريحة',
+              'customerName': request.customerName ?? '',
+              'retailerName': request.retailerName ?? '',
+              'orderId': '#${request.id}',
+              'date': request.date ?? '',
+              'terminalId': request.terminalId ?? '',
+              'city': request.city ?? '',
+              'address': request.addressAr ?? '',
+              'mobile': request.mobile ?? '',
+              'installationType': request.installationType ?? '',
+              'simType': request.simType ?? '',
+              'trsm': request.trsm ?? '',
+              'incidentNumber': request.incidentNumber ?? '',
+            }, prefer: true);
+          }
+        }
+      }
+
+      if (!mounted) return;
+      setState(() {
+        _custodySerials = merged;
+        _inTransitCount =
+            merged.where((e) => e['status'] == 'قيد النقل').length;
+        _loadingCustody = false;
+      });
+    } catch (e) {
+      debugPrint('Failed to build custody list: $e');
+      if (!mounted) return;
+      setState(() => _loadingCustody = false);
+    }
   }
 
   @override
@@ -73,17 +272,38 @@ class _InventorySectionDetailsPageState extends State<InventorySectionDetailsPag
       category: 'devices',
     );
 
-    final int fixedBoxes = args['fixedBoxes'] ?? 5;
-    final int fixedUnits = args['fixedUnits'] ?? 12;
-    final int movingBoxes = args['movingBoxes'] ?? 2;
-    final int movingUnits = args['movingUnits'] ?? 4;
+    final int fixedBoxes = args['fixedBoxes'] ?? 0;
+    final int fixedUnits = args['fixedUnits'] ?? 0;
+    final int movingBoxes = args['movingBoxes'] ?? 0;
+    final int movingUnits = args['movingUnits'] ?? 0;
 
     final totalBoxes = fixedBoxes + movingBoxes;
     final totalUnits = fixedUnits + movingUnits;
     final totalAvailable = totalBoxes + totalUnits;
 
-    final int activeCount = args['activeCount'] ?? totalAvailable;
-    final int executedCount = args['executedCount'] ?? 24;
+    // Derive counters from the same list used by filters (fixes top vs chip mismatch)
+    final int activeCount = _loadingCustody
+        ? (args['activeCount'] as int? ?? 0)
+        : _custodySerials.where((s) => s['status'] == 'نشط في العهدة' || s['status'] == 'قيد النقل').length;
+    final int executedCount = _loadingCustody
+        ? (args['executedCount'] as int? ?? 0)
+        : _custodySerials.where((s) => s['status'] == 'مسلّم للعميل' || s['status'] == 'مسلّم').length;
+    final custodySerials = _custodySerials;
+
+    // سجل أنشطة من التسليمات الحقيقية فقط
+    final List<Map<String, dynamic>> activityLog = custodySerials
+        .where((e) => e['status'] == 'مسلّم للعميل')
+        .take(10)
+        .map((e) => {
+              'title': 'تسليم للعميل',
+              'desc': e['customerName']?.isNotEmpty == true
+                  ? 'تم تسليم ${e['serial']} للعميل ${e['customerName']}${e['orderId']?.isNotEmpty == true ? ' — طلب ${e['orderId']}' : ''}'
+                  : 'تم تسليم الرقم التسلسلي ${e['serial']}${e['orderId']?.isNotEmpty == true ? ' — طلب ${e['orderId']}' : ''}',
+              'date': e['date']?.isNotEmpty == true ? e['date']! : 'مكتمل',
+              'icon': Icons.assignment_turned_in_outlined,
+              'color': AppColors.success,
+            })
+        .toList();
 
     // استخراج لون الصنف وأيقونته
     Color itemColor = AppColors.primary;
@@ -99,146 +319,6 @@ class _InventorySectionDetailsPageState extends State<InventorySectionDetailsPag
     } else {
       itemIcon = IconMapper.getIconFromItemName(itemType.nameAr, itemType.nameEn);
     }
-
-    final List<dynamic> passedSerials = args['serials'] as List<dynamic>? ?? [];
-    final List<Map<String, String>> custodySerials = [];
-
-    // 1. Add active items
-    if (passedSerials.isNotEmpty) {
-      custodySerials.addAll(passedSerials.map((s) => {
-        'serial': s.toString(),
-        'tid': s.toString().length > 4 ? 'T-${s.toString().substring(s.toString().length - 4)}' : 'T-$s',
-        'status': 'نشط في العهدة',
-        'type': itemType.category == 'devices' ? 'متحرك' : 'شريحة'
-      }));
-    } else {
-      if (itemType.category == 'devices') {
-        custodySerials.addAll([
-          {'serial': 'SN-950-8821', 'tid': 'T8821', 'status': 'نشط في العهدة', 'type': 'متحرك'},
-          {'serial': 'SN-i90-5044', 'tid': 'T5044', 'status': 'نشط في العهدة', 'type': 'متحرك'},
-          {'serial': 'SN-950-0043', 'tid': 'T0043', 'status': 'نشط في العهدة', 'type': 'ثابت'},
-        ]);
-      } else if (itemType.category == 'sim') {
-        custodySerials.addAll([
-          {'serial': '8996601200003482910', 'tid': '', 'status': 'نشط في العهدة', 'type': 'شريحة'},
-          {'serial': '8996601200003482915', 'tid': '', 'status': 'نشط في العهدة', 'type': 'شريحة'},
-        ]);
-      }
-    }
-
-    // 2. Add delivered items from completed requests
-    if (Get.isRegistered<CourierRequestsController>()) {
-      final requestsController = Get.find<CourierRequestsController>();
-      final completedRequests = requestsController.requests
-          .where((r) => r.installationStatus == 'COMPLETED' || r.installationStatus == 'SUCCESS')
-          .toList();
-
-      for (var request in completedRequests) {
-        if (itemType.category == 'devices' && request.sn != null && request.sn!.isNotEmpty) {
-          custodySerials.add({
-            'serial': request.sn!,
-            'tid': request.tid ?? '',
-            'status': 'مسلّم للعميل',
-            'type': 'متحرك',
-            'customerName': request.customerName ?? '',
-            'retailerName': request.retailerName ?? '',
-            'orderId': '#${request.id}',
-            'date': request.date ?? '',
-            'terminalId': request.terminalId ?? '',
-            'city': request.city ?? '',
-            'address': request.addressAr ?? '',
-            'mobile': request.mobile ?? '',
-            'installationType': request.installationType ?? '',
-            'simType': request.simType ?? '',
-            'simSerial': request.simSerial ?? '',
-            'trsm': request.trsm ?? '',
-            'incidentNumber': request.incidentNumber ?? '',
-          });
-        } else if (itemType.category == 'sim' && request.simSerial != null && request.simSerial!.isNotEmpty) {
-          custodySerials.add({
-            'serial': request.simSerial!,
-            'tid': '',
-            'status': 'مسلّم للعميل',
-            'type': 'شريحة',
-            'customerName': request.customerName ?? '',
-            'retailerName': request.retailerName ?? '',
-            'orderId': '#${request.id}',
-            'date': request.date ?? '',
-            'terminalId': request.terminalId ?? '',
-            'city': request.city ?? '',
-            'address': request.addressAr ?? '',
-            'mobile': request.mobile ?? '',
-            'installationType': request.installationType ?? '',
-            'simType': request.simType ?? '',
-            'trsm': request.trsm ?? '',
-            'incidentNumber': request.incidentNumber ?? '',
-          });
-        }
-      }
-    }
-
-    // Fallback delivered items if none exist to ensure realistic state
-    if (custodySerials.where((e) => e['status'] == 'مسلّم للعميل').isEmpty) {
-      if (itemType.category == 'devices') {
-        custodySerials.addAll([
-          {
-            'serial': 'SN-950-7612', 'tid': 'T7612', 'status': 'مسلّم للعميل',
-            'type': 'متحرك', 'customerName': 'عبدالله المطيري',
-            'retailerName': 'Traditional Food Making MAJE',
-            'orderId': '#1042', 'date': '2026-07-01',
-            'terminalId': '1580578601677569',
-            'city': 'طائف', 'address': 'حي اسماعيل بن يوسف',
-            'mobile': '966536563046',
-            'installationType': 'Aggregation RPA',
-            'simType': 'Lebara', 'simSerial': '8996601200003482910',
-            'trsm': '5C4B9A', 'incidentNumber': '26141870',
-          },
-        ]);
-      } else if (itemType.category == 'sim') {
-        custodySerials.addAll([
-          {
-            'serial': '8996601200003482999', 'tid': '',
-            'status': 'مسلّم للعميل', 'type': 'شريحة',
-            'customerName': 'محمد العنزي',
-            'orderId': '#1044', 'date': '2026-07-02',
-            'city': 'الرياض', 'mobile': '966501234567',
-            'installationType': 'SIM Swap', 'simType': 'STC',
-          },
-        ]);
-      }
-    }
-
-    // سجل أنشطة هذا الصنف المحددة
-    final List<Map<String, dynamic>> activityLog = [
-      {
-        'title': 'نقل عهدة خارجي (تسليم أجهزة)',
-        'desc': 'تم نقل قطعتين (عهدة متحركة) للفني عيسى علي البشري بنجاح',
-        'date': 'اليوم - منذ ساعتين',
-        'icon': Icons.local_shipping,
-        'color': AppColors.primary,
-      },
-      {
-        'title': 'استلام أجهزة جديدة من المستودع',
-        'desc': 'تم إضافة 5 أجهزة جديدة للعهدة الثابتة من مستودع الرياض الرئيسي',
-        'date': 'منذ 3 أيام',
-        'icon': Icons.add_circle,
-        'color': AppColors.success,
-      },
-      {
-        'title': 'إجراء فحص وإدخال ذكي',
-        'desc': 'تم تسجيل سحب جهاز معيب بالرقم التسلسلي SN-950-7612 بنجاح',
-        'date': 'منذ 5 أيام',
-        'icon': Icons.qr_code_scanner,
-        'color': AppColors.warning,
-      },
-      {
-        'title': 'تحويل داخلي بين الفئات',
-        'desc': 'تم تحويل جهاز واحد من عهدتك الثابتة إلى عهدتك المتحركة للتسليم الميداني',
-        'date': 'منذ أسبوع',
-        'icon': Icons.swap_horiz,
-        'color': Colors.purple,
-      },
-    ];
 
     return Scaffold(
       backgroundColor: AppColors.backgroundDark,
@@ -294,7 +374,7 @@ class _InventorySectionDetailsPageState extends State<InventorySectionDetailsPag
                   _buildItemHeaderCard(itemType, itemColor, itemIcon),
 
                   // شبكة الإحصاءات الذكية
-                  _buildStatsGrid(activeCount, executedCount),
+                  _buildStatsGrid(activeCount, executedCount, _inTransitCount),
                 ],
               ),
             ),
@@ -324,7 +404,9 @@ class _InventorySectionDetailsPageState extends State<InventorySectionDetailsPag
           controller: _tabController,
           children: [
             // التبويب الأول: قائمة العهدة الفردية
-            _buildCustodyItemsTab(custodySerials, itemColor, itemType),
+            _loadingCustody
+                ? const Center(child: CircularProgressIndicator())
+                : _buildCustodyItemsTab(custodySerials, itemColor, itemType),
 
             // التبويب الثاني: سجل الأنشطة والتحركات
             _buildActivityLogTab(activityLog),
@@ -616,7 +698,7 @@ class _InventorySectionDetailsPageState extends State<InventorySectionDetailsPag
     );
   }
 
-  Widget _buildStatsGrid(int activeCount, int executedCount) {
+  Widget _buildStatsGrid(int activeCount, int executedCount, int inTransitCount) {
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Row(
@@ -648,7 +730,7 @@ class _InventorySectionDetailsPageState extends State<InventorySectionDetailsPag
             child: _buildSingleStatCard(
               context,
               title: 'قيد النقل حالياً',
-              value: '3 وحدات',
+              value: '$inTransitCount وحدات',
               icon: Icons.autorenew,
               color: AppColors.warning,
             ),
@@ -710,7 +792,7 @@ class _InventorySectionDetailsPageState extends State<InventorySectionDetailsPag
     // --- تطبيق الفلتر + البحث ---
     List<Map<String, String>> filteredSerials = serials;
     if (_selectedStatusFilter == 'active') {
-      filteredSerials = serials.where((s) => s['status'] == 'نشط في العهدة').toList();
+      filteredSerials = serials.where((s) => s['status'] == 'نشط في العهدة' || s['status'] == 'قيد النقل').toList();
     } else if (_selectedStatusFilter == 'delivered') {
       filteredSerials = serials.where((s) => s['status'] == 'مسلّم للعميل' || s['status'] == 'مسلّم').toList();
     }
@@ -780,7 +862,7 @@ class _InventorySectionDetailsPageState extends State<InventorySectionDetailsPag
                 const SizedBox(width: 8),
                 _buildFilterChip(
                   label: 'نشط بالعهدة',
-                  count: serials.where((s) => s['status'] == 'نشط في العهدة').length,
+                  count: serials.where((s) => s['status'] == 'نشط في العهدة' || s['status'] == 'قيد النقل').length,
                   isSelected: _selectedStatusFilter == 'active',
                   color: AppColors.primary,
                   onTap: () => setState(() => _selectedStatusFilter = 'active'),

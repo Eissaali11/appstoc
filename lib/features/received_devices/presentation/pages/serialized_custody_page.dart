@@ -162,7 +162,7 @@ class _SerializedCustodyPageState extends State<SerializedCustodyPage>
     }
 
     final completedRequests = requestsController.requests
-        .where((r) => r.installationStatus == 'COMPLETED' || r.installationStatus == 'SUCCESS')
+        .where((r) => r.isCompleted)
         .toList();
 
     // Group items by category
@@ -176,40 +176,14 @@ class _SerializedCustodyPageState extends State<SerializedCustodyPage>
         final itemTypeId = item.itemType.id;
         final category = item.itemType.category;
 
-        int executedCount = 0;
-        for (var request in completedRequests) {
-          if (category == 'devices' && request.sn != null && request.sn!.isNotEmpty) {
-            executedCount++;
-          } else if (category == 'sim' && request.simSerial != null && request.simSerial!.isNotEmpty) {
-            executedCount++;
-          }
+        if (category == 'devices' || category == 'sim') {
+          final count = dashboardController.serializedItems
+              .where((si) => si['itemTypeId'] == itemTypeId)
+              .length;
+          sum += count;
+        } else {
+          sum += item.totalQuantity;
         }
-        if (category == 'papers') {
-          executedCount = completedRequests.length * 2;
-        } else if (category == 'accessories') {
-          executedCount = completedRequests.length;
-        }
-
-        if (executedCount == 0) {
-          if (category == 'devices') executedCount = 3;
-          else if (category == 'sim') executedCount = 5;
-          else if (category == 'papers') executedCount = 2;
-          else executedCount = 1;
-        }
-
-        int receivedCount = dashboardController.pendingTransfers
-            .where((t) => t.itemType == itemTypeId && t.status == 'accepted')
-            .fold(0, (sum, t) => sum + t.quantity);
-
-        if (receivedCount == 0) {
-          if (category == 'devices') receivedCount = 8;
-          else if (category == 'sim') receivedCount = 12;
-          else if (category == 'papers') receivedCount = 4;
-          else receivedCount = 10;
-        }
-
-        final current = item.totalQuantity > 0 ? item.totalQuantity : (receivedCount - executedCount > 0 ? receivedCount - executedCount : 5);
-        sum += current;
       }
       return sum;
     }
@@ -981,7 +955,7 @@ class _SerializedCustodyPageState extends State<SerializedCustodyPage>
 
     // 1. Add completed requests
     final completedRequests = requestsController.requests
-        .where((r) => r.installationStatus == 'COMPLETED' || r.installationStatus == 'SUCCESS')
+        .where((r) => r.isCompleted)
         .toList();
 
     for (var r in completedRequests) {

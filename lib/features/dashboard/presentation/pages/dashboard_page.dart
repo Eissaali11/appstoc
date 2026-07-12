@@ -487,10 +487,10 @@ class DashboardPage extends GetView<DashboardController> {
     final pendingVerification = requests.where((r) => r.installationStatus == 'COMPLETED').length;
     final completedToday = requests.where((r) => r.installationStatus == 'COMPLETED' || r.installationStatus == 'SUCCESS').length;
 
-    final displayNew = requests.isEmpty ? 3 : newOrders;
-    final displayInProgress = requests.isEmpty ? 5 : inProgressOrders;
-    final displayPending = requests.isEmpty ? 2 : pendingVerification;
-    final displayCompleted = requests.isEmpty ? 8 : completedToday;
+    final displayNew = newOrders;
+    final displayInProgress = inProgressOrders;
+    final displayPending = pendingVerification;
+    final displayCompleted = completedToday;
 
     final int crossCount = context.isTabletDevice ? 4 : 2;
     final double aspectRatio = context.responsive(
@@ -617,10 +617,10 @@ class DashboardPage extends GetView<DashboardController> {
         .where((item) => item.itemType.category == 'accessories' || item.itemType.nameAr.contains('ملصق') || item.itemType.nameEn.toLowerCase().contains('sticker'))
         .fold(0, (sum, item) => sum + item.totalQuantity);
 
-    final dCount = filtered.isEmpty ? 12 : devicesQuantity;
-    final sCount = filtered.isEmpty ? 15 : simsQuantity;
-    final pCount = filtered.isEmpty ? 7 : papersQuantity;
-    final stCount = filtered.isEmpty ? 20 : stickersQuantity;
+    final dCount = devicesQuantity;
+    final sCount = simsQuantity;
+    final pCount = papersQuantity;
+    final stCount = stickersQuantity;
 
     final deviceItem = filtered.firstWhereOrNull(
       (item) => item.itemType.category == 'devices' || item.itemType.id.toLowerCase().contains('pos'),
@@ -653,13 +653,32 @@ class DashboardPage extends GetView<DashboardController> {
                 isVisible: true,
                 category: 'devices',
               );
+              
+              final actualSerials = controller.serializedItems
+                  .where((item) => item['itemTypeCategory'] == 'devices' || item['itemTypeId'] == type.id)
+                  .map((item) => item['serialNumber'] as String? ?? '')
+                  .where((s) => s.isNotEmpty)
+                  .toList();
+
+              final deliveredForType = controller.deliveredItems
+                  .where((item) =>
+                      item['itemTypeCategory'] == 'devices' ||
+                      item['itemTypeId'] == type.id)
+                  .toList();
+
               Get.toNamed(
                 Routes.inventorySectionDetails,
                 arguments: {
                   'itemType': type,
-                  'activeCount': dCount,
-                  'executedCount': 3,
-                  'serials': deviceItem != null ? List.generate(dCount, (index) => 'NXG-${847291 + index}') : <String>[],
+                  'activeCount': actualSerials.length,
+                  'executedCount': deliveredForType.length,
+                  'serials': actualSerials,
+                  'deliveredItems': deliveredForType,
+                  'activeItems': controller.serializedItems
+                      .where((item) =>
+                          item['itemTypeCategory'] == 'devices' ||
+                          item['itemTypeId'] == type.id)
+                      .toList(),
                 },
               );
             },
@@ -684,13 +703,32 @@ class DashboardPage extends GetView<DashboardController> {
                 isVisible: true,
                 category: 'sim',
               );
+
+              final actualSerials = controller.serializedItems
+                  .where((item) => item['itemTypeCategory'] == 'sim' || item['itemTypeId'] == type.id)
+                  .map((item) => item['serialNumber'] as String? ?? '')
+                  .where((s) => s.isNotEmpty)
+                  .toList();
+
+              final deliveredForType = controller.deliveredItems
+                  .where((item) =>
+                      item['itemTypeCategory'] == 'sim' ||
+                      item['itemTypeId'] == type.id)
+                  .toList();
+
               Get.toNamed(
                 Routes.inventorySectionDetails,
                 arguments: {
                   'itemType': type,
-                  'activeCount': sCount,
-                  'executedCount': 5,
-                  'serials': simItem != null ? List.generate(sCount, (index) => 'SIM-${928374 + index}') : <String>[],
+                  'activeCount': actualSerials.length,
+                  'executedCount': deliveredForType.length,
+                  'serials': actualSerials,
+                  'deliveredItems': deliveredForType,
+                  'activeItems': controller.serializedItems
+                      .where((item) =>
+                          item['itemTypeCategory'] == 'sim' ||
+                          item['itemTypeId'] == type.id)
+                      .toList(),
                 },
               );
             },

@@ -131,6 +131,15 @@ class CourierRequest {
     }
   }
 
+  /// True when the request is closed with successful installation (API uses "Installation Completed").
+  bool get isCompleted {
+    final s = (installationStatus ?? '').toUpperCase().trim();
+    return s == 'COMPLETED' ||
+        s == 'SUCCESS' ||
+        s.contains('INSTALLATION COMPLETED') ||
+        (s.contains('COMPLETED') && !s.contains('NOT'));
+  }
+
   Color get statusColor {
     final s = (installationStatus ?? '').toUpperCase();
     switch (s) {
