@@ -173,7 +173,7 @@ class AppEmptyState extends StatelessWidget {
             const SizedBox(height: 20),
             Text(
               title,
-              style: GoogleFonts.cairo(
+              style: TextStyle(fontFamily: 'BeIN', 
                 color: Colors.white,
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -183,7 +183,7 @@ class AppEmptyState extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               subtitle,
-              style: GoogleFonts.cairo(
+              style: TextStyle(fontFamily: 'BeIN', 
                 color: AppColors.textSecondary,
                 fontSize: 13,
               ),
@@ -196,7 +196,7 @@ class AppEmptyState extends StatelessWidget {
                 icon: const Icon(Icons.refresh_rounded),
                 label: Text(
                   actionLabel ?? 'إعادة المحاولة',
-                  style: GoogleFonts.cairo(fontWeight: FontWeight.bold),
+                  style: TextStyle(fontFamily: 'BeIN', fontWeight: FontWeight.bold),
                 ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,

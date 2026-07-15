@@ -21,7 +21,7 @@ class CourierRequestReviewPage extends GetView<CourierRequestsController> {
         body: Center(
           child: Text(
             'حدث خطأ في استرداد بيانات الجلسة',
-            style: GoogleFonts.cairo(color: Colors.white),
+            style: TextStyle(fontFamily: 'BeIN', color: Colors.white),
           ),
         ),
       );
@@ -32,7 +32,7 @@ class CourierRequestReviewPage extends GetView<CourierRequestsController> {
       appBar: AppBar(
         title: Text(
           'مراجعة واستلام العهدة',
-          style: GoogleFonts.cairo(fontWeight: FontWeight.bold),
+          style: TextStyle(fontFamily: 'BeIN', fontWeight: FontWeight.bold),
         ),
         backgroundColor: AppColors.surfaceDark,
         elevation: 0,
@@ -132,7 +132,7 @@ class CourierRequestReviewPage extends GetView<CourierRequestsController> {
             children: [
               Text(
                 'رمز الجلسة: $displayId',
-                style: GoogleFonts.cairo(color: AppColors.textSecondary, fontSize: 13),
+                style: TextStyle(fontFamily: 'BeIN', color: AppColors.textSecondary, fontSize: 13),
               ),
               StatusBadge(
                 text: 'قيد المراجعة',
@@ -143,12 +143,12 @@ class CourierRequestReviewPage extends GetView<CourierRequestsController> {
           const SizedBox(height: 12),
           Text(
             'طلب رقم #${request.id}',
-            style: GoogleFonts.cairo(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+            style: TextStyle(fontFamily: 'BeIN', color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 4),
           Text(
             'العميل: ${request.customerName ?? "غير محدد"}',
-            style: GoogleFonts.cairo(color: AppColors.textSecondary, fontSize: 14),
+            style: TextStyle(fontFamily: 'BeIN', color: AppColors.textSecondary, fontSize: 14),
           ),
         ],
       ),
@@ -166,7 +166,7 @@ class CourierRequestReviewPage extends GetView<CourierRequestsController> {
       alignment: Alignment.center,
       child: Text(
         text,
-        style: GoogleFonts.cairo(color: AppColors.textMuted, fontSize: 14),
+        style: TextStyle(fontFamily: 'BeIN', color: AppColors.textMuted, fontSize: 14),
       ),
     );
   }
@@ -204,11 +204,11 @@ class CourierRequestReviewPage extends GetView<CourierRequestsController> {
               children: [
                 Text(
                   isPos ? 'أجهزة نقاط البيع POS' : 'شرائح اتصال SIM',
-                  style: GoogleFonts.cairo(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                  style: TextStyle(fontFamily: 'BeIN', color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
                 ),
                 Text(
                   'الرقم التسلسلي: $serial',
-                  style: GoogleFonts.cairo(color: AppColors.textSecondary, fontSize: 13),
+                  style: TextStyle(fontFamily: 'BeIN', color: AppColors.textSecondary, fontSize: 13),
                 ),
               ],
             ),
@@ -267,7 +267,7 @@ class CourierRequestReviewPage extends GetView<CourierRequestsController> {
               const SizedBox(width: 8),
               Text(
                 isPos ? 'أجهزة نقاط البيع POS' : 'شرائح اتصال SIM',
-                style: GoogleFonts.cairo(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                style: TextStyle(fontFamily: 'BeIN', color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
               ),
               const Spacer(),
               StatusBadge(
@@ -279,12 +279,12 @@ class CourierRequestReviewPage extends GetView<CourierRequestsController> {
           const Divider(color: AppColors.border, height: 16),
           Text(
             'الرقم التسلسلي: $serial',
-            style: GoogleFonts.cairo(color: AppColors.textSecondary, fontSize: 13),
+            style: TextStyle(fontFamily: 'BeIN', color: AppColors.textSecondary, fontSize: 13),
           ),
           const SizedBox(height: 4),
           Text(
             'السبب: $reason',
-            style: GoogleFonts.cairo(color: AppColors.error, fontSize: 12, fontWeight: FontWeight.bold),
+            style: TextStyle(fontFamily: 'BeIN', color: AppColors.error, fontSize: 12, fontWeight: FontWeight.bold),
           ),
         ],
       ),
@@ -298,11 +298,11 @@ class CourierRequestReviewPage extends GetView<CourierRequestsController> {
         children: [
           Text(
             'المطابقة والتحقق من الملحقات الورقية:',
-            style: GoogleFonts.cairo(color: AppColors.textSecondary, fontSize: 13),
+            style: TextStyle(fontFamily: 'BeIN', color: AppColors.textSecondary, fontSize: 13),
           ),
           Text(
             '$checked / $total',
-            style: GoogleFonts.cairo(
+            style: TextStyle(fontFamily: 'BeIN', 
               color: checked == total ? AppColors.success : AppColors.warning,
               fontWeight: FontWeight.bold,
               fontSize: 16,
@@ -320,7 +320,7 @@ class CourierRequestReviewPage extends GetView<CourierRequestsController> {
         children: [
           Text(
             'يرجى التقاط صورتين على الأقل لإثبات حالة الكرتون والمحتويات قبل التأكيد.',
-            style: GoogleFonts.cairo(color: AppColors.textSecondary, fontSize: 12),
+            style: TextStyle(fontFamily: 'BeIN', color: AppColors.textSecondary, fontSize: 12),
           ),
           const SizedBox(height: 12),
           GridView.count(
@@ -383,7 +383,7 @@ class CourierRequestReviewPage extends GetView<CourierRequestsController> {
                         const SizedBox(height: 4),
                         Text(
                           'إضافة صورة',
-                          style: GoogleFonts.cairo(color: AppColors.textSecondary, fontSize: 10),
+                          style: TextStyle(fontFamily: 'BeIN', color: AppColors.textSecondary, fontSize: 10),
                         ),
                       ],
                     ),
@@ -419,7 +419,7 @@ class CourierRequestReviewPage extends GetView<CourierRequestsController> {
                   const SizedBox(width: 8),
                   Text(
                     'يجب التقاط صورتين إثبات استلام على الأقل للتأكيد ($photoCount/2)',
-                    style: GoogleFonts.cairo(color: AppColors.error, fontSize: 12, fontWeight: FontWeight.bold),
+                    style: TextStyle(fontFamily: 'BeIN', color: AppColors.error, fontSize: 12, fontWeight: FontWeight.bold),
                   ),
                 ],
               ),

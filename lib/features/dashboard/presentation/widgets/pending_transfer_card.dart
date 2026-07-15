@@ -75,7 +75,7 @@ class PendingTransferCard extends StatelessWidget {
                     children: [
                       Text(
                         transfer.warehouseName ?? 'مستودع غير محدد',
-                        style: GoogleFonts.cairo(
+                        style: TextStyle(fontFamily: 'BeIN', 
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
@@ -84,7 +84,7 @@ class PendingTransferCard extends StatelessWidget {
                       const SizedBox(height: 4),
                       Text(
                         _getTimeAgo(),
-                        style: GoogleFonts.cairo(
+                        style: TextStyle(fontFamily: 'BeIN', 
                           fontSize: 12,
                           color: AppColors.textSecondary,
                         ),
@@ -106,7 +106,7 @@ class PendingTransferCard extends StatelessWidget {
                 children: [
                   Text(
                     transfer.itemType,
-                    style: GoogleFonts.cairo(
+                    style: TextStyle(fontFamily: 'BeIN', 
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
                       color: Colors.white,
@@ -115,7 +115,7 @@ class PendingTransferCard extends StatelessWidget {
                   const Spacer(),
                   Text(
                     '${transfer.quantity} ${_getPackagingTypeText()}',
-                    style: GoogleFonts.cairo(
+                    style: TextStyle(fontFamily: 'BeIN', 
                       fontSize: 14,
                       color: AppColors.primary,
                       fontWeight: FontWeight.bold,
@@ -134,7 +134,7 @@ class PendingTransferCard extends StatelessWidget {
                     icon: const Icon(Icons.check, size: 18),
                     label: Text(
                       'قبول',
-                      style: GoogleFonts.cairo(fontWeight: FontWeight.bold),
+                      style: TextStyle(fontFamily: 'BeIN', fontWeight: FontWeight.bold),
                     ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.success,
@@ -153,7 +153,7 @@ class PendingTransferCard extends StatelessWidget {
                     icon: const Icon(Icons.close, size: 18),
                     label: Text(
                       'رفض',
-                      style: GoogleFonts.cairo(fontWeight: FontWeight.bold),
+                      style: TextStyle(fontFamily: 'BeIN', fontWeight: FontWeight.bold),
                     ),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppColors.error,
@@ -224,7 +224,7 @@ class PendingTransfersSection extends StatelessWidget {
                 Expanded(
                   child: Text(
                     'لديك ${transfers.length} طلبات نقل معلقة',
-                    style: GoogleFonts.cairo(
+                    style: TextStyle(fontFamily: 'BeIN', 
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
@@ -236,7 +236,7 @@ class PendingTransfersSection extends StatelessWidget {
                     onPressed: onViewAll,
                     child: Text(
                       'عرض الكل →',
-                      style: GoogleFonts.cairo(
+                      style: TextStyle(fontFamily: 'BeIN', 
                         fontSize: 14,
                         color: AppColors.primary,
                         fontWeight: FontWeight.w600,

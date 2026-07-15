@@ -19,6 +19,9 @@ class AuthInterceptor extends Interceptor {
       }
     }
     
+    // CSRF custom header for cookie-authenticated mutating requests
+    options.headers['X-Requested-With'] ??= 'XMLHttpRequest';
+
     // التأكد من وجود Content-Type
     if (!options.headers.containsKey('Content-Type')) {
       options.headers['Content-Type'] = 'application/json';

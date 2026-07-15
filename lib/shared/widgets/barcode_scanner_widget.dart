@@ -4,6 +4,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import '../../core/theme/app_colors.dart';
 import '../models/item_type.dart';
+import '../utils/barcode_validator.dart';
+
 
 /// مكون مسح الباركود التفاعلي باستخدام الكاميرا.
 /// يدعم قراءة الأكواد الخطية 1D (أجهزة نقاط البيع POS وشرائح SIM والسلع).
@@ -75,6 +77,55 @@ class _BarcodeScannerWidgetState extends State<BarcodeScannerWidget> {
           cleaned = cleaned.substring(2);
         }
         final String scannedValue = cleaned;
+
+        // التحقق من صحة الباركود بالنسبة لنوع الصنف المختار
+        if (widget.itemTypes != null && _selectedItemTypeId != null) {
+          ItemType? selectedType;
+          for (final t in widget.itemTypes!) {
+            if (t.id == _selectedItemTypeId) {
+              selectedType = t;
+              break;
+            }
+          }
+            var validationError = BarcodeValidator.validate(scannedValue, selectedType);
+            if (validationError != null) {
+              // محاولة الكشف التلقائي عن نوع الصنف المطابق من بين الأصناف المتاحة
+              ItemType? detectedType;
+              for (final t in widget.itemTypes!) {
+                if (BarcodeValidator.validate(scannedValue, t) == null) {
+                  detectedType = t;
+                  break;
+                }
+              }
+
+              if (detectedType != null) {
+                setState(() {
+                  _selectedItemTypeId = detectedType!.id;
+                });
+                if (widget.onItemTypeChanged != null) {
+                  widget.onItemTypeChanged!(detectedType.id);
+                }
+                validationError = null;
+                selectedType = detectedType;
+              } else {
+                // تشغيل اهتزاز تنبيه بالخطأ
+                HapticFeedback.heavyImpact();
+                
+                // عرض رسالة خطأ للمستخدم
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      validationError!,
+                      style: TextStyle(fontFamily: 'BeIN', fontWeight: FontWeight.bold, color: Colors.white),
+                    ),
+                    backgroundColor: AppColors.error,
+                    duration: const Duration(seconds: 2),
+                  ),
+                );
+                continue; // تخطي هذا الباركود غير الصالح ومتابعة المسح
+              }
+            }
+        }
 
         if (widget.isMultiScan) {
           if (!_scannedCodes.contains(scannedValue)) {
@@ -165,13 +216,13 @@ class _BarcodeScannerWidgetState extends State<BarcodeScannerWidget> {
                             child: DropdownButton<String>(
                               value: _selectedItemTypeId,
                               dropdownColor: AppColors.surfaceDark,
-                              style: GoogleFonts.cairo(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+                              style: TextStyle(fontFamily: 'BeIN', color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
                               isExpanded: true,
                               items: widget.itemTypes!.map((t) {
                                 final label = t.category == 'sim' ? '[شريحة] ${t.nameAr}' : '[جهاز] ${t.nameAr}';
                                 return DropdownMenuItem<String>(
                                   value: t.id,
-                                  child: Text(label, style: GoogleFonts.cairo(color: Colors.white)),
+                                  child: Text(label, style: TextStyle(fontFamily: 'BeIN', color: Colors.white)),
                                 );
                               }).toList(),
                               onChanged: (val) {
@@ -206,7 +257,7 @@ class _BarcodeScannerWidgetState extends State<BarcodeScannerWidget> {
                       children: [
                         Text(
                           'الأرقام الممسوحة (${_scannedCodes.length})',
-                          style: GoogleFonts.cairo(
+                          style: TextStyle(fontFamily: 'BeIN', 
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
                             fontSize: 14,
@@ -221,7 +272,7 @@ class _BarcodeScannerWidgetState extends State<BarcodeScannerWidget> {
                             },
                             child: Text(
                               'حذف الكل',
-                              style: GoogleFonts.cairo(
+                              style: TextStyle(fontFamily: 'BeIN', 
                                 color: AppColors.error,
                                 fontSize: 12,
                                 fontWeight: FontWeight.bold,
@@ -239,7 +290,7 @@ class _BarcodeScannerWidgetState extends State<BarcodeScannerWidget> {
                           padding: const EdgeInsets.symmetric(vertical: 40),
                           child: Text(
                             'لم يتم مسح أي باركود بعد',
-                            style: GoogleFonts.cairo(
+                            style: TextStyle(fontFamily: 'BeIN', 
                               color: Colors.white30,
                               fontSize: 13,
                             ),
@@ -303,7 +354,7 @@ class _BarcodeScannerWidgetState extends State<BarcodeScannerWidget> {
                       icon: const Icon(Icons.check_circle_outline, color: Colors.white),
                       label: Text(
                         'تأكيد وحفظ الشحنة (${_scannedCodes.length})',
-                        style: GoogleFonts.cairo(
+                        style: TextStyle(fontFamily: 'BeIN', 
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
                           fontSize: 15,
@@ -357,13 +408,13 @@ class _BarcodeScannerWidgetState extends State<BarcodeScannerWidget> {
                   child: DropdownButton<String>(
                     value: _selectedItemTypeId,
                     dropdownColor: AppColors.surfaceDark,
-                    style: GoogleFonts.cairo(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+                    style: TextStyle(fontFamily: 'BeIN', color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
                     isExpanded: true,
                     items: widget.itemTypes!.map((t) {
                       final label = t.category == 'sim' ? '[شريحة] ${t.nameAr}' : '[جهاز] ${t.nameAr}';
                       return DropdownMenuItem<String>(
                         value: t.id,
-                        child: Text(label, style: GoogleFonts.cairo(color: Colors.white)),
+                        child: Text(label, style: TextStyle(fontFamily: 'BeIN', color: Colors.white)),
                       );
                     }).toList(),
                     onChanged: (val) {
@@ -388,7 +439,7 @@ class _BarcodeScannerWidgetState extends State<BarcodeScannerWidget> {
     return AppBar(
       title: Text(
         widget.title,
-        style: GoogleFonts.cairo(
+        style: TextStyle(fontFamily: 'BeIN', 
           fontWeight: FontWeight.bold,
           color: Colors.white,
         ),
@@ -441,7 +492,7 @@ class _BarcodeScannerWidgetState extends State<BarcodeScannerWidget> {
             Text(
               errorMessage,
               textAlign: TextAlign.center,
-              style: GoogleFonts.cairo(
+              style: TextStyle(fontFamily: 'BeIN', 
                 color: Colors.white,
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
@@ -455,7 +506,7 @@ class _BarcodeScannerWidgetState extends State<BarcodeScannerWidget> {
               ),
               child: Text(
                 'رجوع',
-                style: GoogleFonts.cairo(color: Colors.white),
+                style: TextStyle(fontFamily: 'BeIN', color: Colors.white),
               ),
             ),
           ],
@@ -519,7 +570,7 @@ class _BarcodeScannerWidgetState extends State<BarcodeScannerWidget> {
                 ),
                 child: Text(
                   'ضع الباركود داخل المربع للمسح التلقائي',
-                  style: GoogleFonts.cairo(
+                  style: TextStyle(fontFamily: 'BeIN', 
                     color: Colors.white,
                     fontSize: 14,
                   ),

@@ -41,7 +41,7 @@ class CustodyCategoryItemsPage extends StatelessWidget {
         appBar: AppBar(
           title: Text(
             title,
-            style: GoogleFonts.cairo(fontWeight: FontWeight.bold, color: Colors.white),
+            style: TextStyle(fontFamily: 'BeIN', fontWeight: FontWeight.bold, color: Colors.white),
           ),
           backgroundColor: AppColors.surfaceDark,
           foregroundColor: Colors.white,
@@ -51,7 +51,7 @@ class CustodyCategoryItemsPage extends StatelessWidget {
             ? Center(
                 child: Text(
                   'لا توجد عناصر في هذا القسم حالياً',
-                  style: GoogleFonts.cairo(color: AppColors.textSecondary, fontSize: 14),
+                  style: TextStyle(fontFamily: 'BeIN', color: AppColors.textSecondary, fontSize: 14),
                 ),
               )
             : ListView.builder(
@@ -238,7 +238,7 @@ class CustodyCategoryItemsPage extends StatelessWidget {
                       children: [
                         Text(
                           title,
-                          style: GoogleFonts.cairo(
+                          style: TextStyle(fontFamily: 'BeIN', 
                             fontSize: 15,
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
@@ -246,7 +246,7 @@ class CustodyCategoryItemsPage extends StatelessWidget {
                         ),
                         Text(
                           subtitle,
-                          style: GoogleFonts.cairo(
+                          style: TextStyle(fontFamily: 'BeIN', 
                             fontSize: 12,
                             color: AppColors.textSecondary,
                           ),
@@ -262,7 +262,7 @@ class CustodyCategoryItemsPage extends StatelessWidget {
                     ),
                     child: Text(
                       category,
-                      style: GoogleFonts.cairo(
+                      style: TextStyle(fontFamily: 'BeIN', 
                         color: categoryColor,
                         fontSize: 11,
                         fontWeight: FontWeight.bold,
@@ -302,7 +302,7 @@ class CustodyCategoryItemsPage extends StatelessWidget {
                   child: ExpansionTile(
                     title: Text(
                       'عرض الأرقام التسلسلية ($current)',
-                      style: GoogleFonts.cairo(
+                      style: TextStyle(fontFamily: 'BeIN', 
                         fontSize: 12,
                         color: categoryColor,
                         fontWeight: FontWeight.bold,
@@ -374,7 +374,7 @@ class CustodyCategoryItemsPage extends StatelessWidget {
       children: [
         Text(
           label,
-          style: GoogleFonts.cairo(fontSize: 10, color: AppColors.textSecondary),
+          style: TextStyle(fontFamily: 'BeIN', fontSize: 10, color: AppColors.textSecondary),
         ),
         const SizedBox(height: 4),
         Text(
@@ -411,7 +411,7 @@ class CustodyCategoryItemsPage extends StatelessWidget {
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             title: Text(
               'تحديث مخزون $title',
-              style: GoogleFonts.cairo(
+              style: TextStyle(fontFamily: 'BeIN', 
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
@@ -423,7 +423,7 @@ class CustodyCategoryItemsPage extends StatelessWidget {
               children: [
                 Text(
                   'الرجاء إدخال الكمية الجديدة للمخزون الحالي:',
-                  style: GoogleFonts.cairo(color: Colors.white60, fontSize: 13),
+                  style: TextStyle(fontFamily: 'BeIN', color: Colors.white60, fontSize: 13),
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
@@ -432,7 +432,7 @@ class CustodyCategoryItemsPage extends StatelessWidget {
                   style: GoogleFonts.poppins(color: Colors.white),
                   decoration: InputDecoration(
                     labelText: 'الكمية (وحدات)',
-                    labelStyle: GoogleFonts.cairo(color: Colors.white38),
+                    labelStyle: TextStyle(fontFamily: 'BeIN', color: Colors.white38),
                     filled: true,
                     fillColor: AppColors.surfaceDark,
                     border: OutlineInputBorder(
@@ -452,7 +452,7 @@ class CustodyCategoryItemsPage extends StatelessWidget {
                 onPressed: () => Navigator.of(context).pop(),
                 child: Text(
                   'إلغاء',
-                  style: GoogleFonts.cairo(color: Colors.white38),
+                  style: TextStyle(fontFamily: 'BeIN', color: Colors.white38),
                 ),
               ),
               Obx(() => ElevatedButton(
@@ -527,7 +527,7 @@ class CustodyCategoryItemsPage extends StatelessWidget {
                       )
                     : Text(
                         'حفظ',
-                        style: GoogleFonts.cairo(color: Colors.white, fontWeight: FontWeight.bold),
+                        style: TextStyle(fontFamily: 'BeIN', color: Colors.white, fontWeight: FontWeight.bold),
                       ),
               )),
             ],

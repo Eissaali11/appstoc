@@ -22,21 +22,67 @@ class BarcodeValidator {
   static String normalizeRawBarcode(String rawBarcode) {
     String cleaned = rawBarcode.trim().toUpperCase();
     cleaned = cleaned.replaceFirst(RegExp(r'^(SN|S/N|HW|SERIAL|BARCODE)[:\-\s]*', caseSensitive: false), '');
+    // GS1 symbology identifiers sometimes prepended by hardware scanners
+    cleaned = cleaned.replaceFirst(RegExp(r'^\]?(C1)'), '');
     cleaned = cleaned.replaceAll(RegExp(r'[\s\-_.]'), '');
     return cleaned;
   }
 
+  static List<String> _prefixesOf(ItemType itemType) {
+    if (itemType.serialPrefix == null || itemType.serialPrefix!.isEmpty) {
+      return const [];
+    }
+    return itemType.serialPrefix!
+        .split(',')
+        .map((p) => p.trim().toUpperCase())
+        .where((p) => p.isNotEmpty)
+        .toList();
+  }
+
+  /// Full serial for UI + save: keep alphabetic prefixes (e.g. NCC303042220).
+  /// If only digits were entered for a device type, prepend the primary letter prefix.
+  static String toDisplaySerial(String rawBarcode, ItemType? itemType) {
+    final cleaned = normalizeRawBarcode(rawBarcode);
+    if (itemType == null) return cleaned;
+
+    final prefixes = _prefixesOf(itemType);
+    final alphaPrefixes =
+        prefixes.where((p) => RegExp(r'^[A-Z]+$').hasMatch(p)).toList();
+
+    for (final prefix in alphaPrefixes) {
+      if (cleaned.startsWith(prefix)) return cleaned;
+    }
+
+    // Digits-only matching clean length → show with primary prefix (NCC…)
+    final clean = extractCleanSerialForType(cleaned, itemType);
+    if (alphaPrefixes.isNotEmpty &&
+        itemType.serialLength != null &&
+        clean.length == itemType.serialLength &&
+        RegExp(r'^\d+$').hasMatch(cleaned)) {
+      return '${alphaPrefixes.first}$clean';
+    }
+
+    return cleaned;
+  }
+
+  /// True when two serials refer to the same item (prefixed or stripped).
+  static bool serialsMatch(String a, String b, ItemType? itemType) {
+    final da = toDisplaySerial(a, itemType);
+    final db = toDisplaySerial(b, itemType);
+    if (da == db) return true;
+    return extractCleanSerialForType(a, itemType) ==
+        extractCleanSerialForType(b, itemType);
+  }
+
   /// Extracts the clean serial number based on item type prefix configuration
-  static String extractCleanSerialForType(String rawBarcode, ItemType itemType) {
+  static String extractCleanSerialForType(String rawBarcode, ItemType? itemType) {
+    if (itemType == null) return normalizeRawBarcode(rawBarcode);
     final cleaned = normalizeRawBarcode(rawBarcode);
     if (itemType.serialPrefix == null || itemType.serialPrefix!.isEmpty) {
       return cleaned;
     }
     
-    final prefixes = itemType.serialPrefix!
-        .split(',')
-        .map((p) => p.trim().toUpperCase())
-        .toList();
+    final prefixes = _prefixesOf(itemType);
         
     for (final prefix in prefixes) {
       if (cleaned.startsWith(prefix)) {
@@ -52,7 +98,8 @@ class BarcodeValidator {
 
   /// Validates a serial number/barcode against a specific ItemType.
   /// Returns null if valid, or a descriptive error message in Arabic if invalid.
-  static String? validate(String serial, ItemType itemType) {
+  static String? validate(String serial, ItemType? itemType) {
+    if (itemType == null) return null;
     final normalized = normalizeRawBarcode(serial);
     
     // Check if the itemType has a prefix restriction
@@ -70,7 +117,11 @@ class BarcodeValidator {
         }
       }
       if (!matched) {
-        return 'الرمز لا يبدأ بأي من البوادئ المعتمدة: ${itemType.serialPrefix}';
+        final isAlreadyClean = itemType.serialLength != null && 
+                               normalized.length == itemType.serialLength;
+        if (!isAlreadyClean) {
+          return 'الرمز لا يبدأ بأي من البوادئ المعتمدة: ${itemType.serialPrefix}';
+        }
       }
     }
 
@@ -88,7 +139,26 @@ class BarcodeValidator {
     if (itemType.serialRegex != null && itemType.serialRegex!.isNotEmpty) {
       try {
         final regex = RegExp(itemType.serialRegex!);
-        if (!regex.hasMatch(normalized)) {
+        bool isMatch = regex.hasMatch(normalized);
+        
+        // Fallback: If not matched and it is already clean (length matches target length), try prepending prefixes
+        if (!isMatch && itemType.serialLength != null && normalized.length == itemType.serialLength) {
+          if (itemType.serialPrefix != null && itemType.serialPrefix!.isNotEmpty) {
+            final prefixes = itemType.serialPrefix!
+                .split(',')
+                .map((p) => p.trim().toUpperCase())
+                .where((p) => RegExp(r'^[A-Z]+$').hasMatch(p))
+                .toList();
+            for (final prefix in prefixes) {
+              if (regex.hasMatch('$prefix$normalized')) {
+                isMatch = true;
+                break;
+              }
+            }
+          }
+        }
+        
+        if (!isMatch) {
           return 'صيغة الرقم التسلسلي غير مطابقة للمواصفات المعتمدة لـ ${itemType.nameAr}';
         }
       } catch (e) {

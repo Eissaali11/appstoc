@@ -44,7 +44,7 @@ class _WebViewPageState extends State<WebViewPage> {
         appBar: AppBar(
           title: Text(
             widget.title,
-            style: GoogleFonts.cairo(
+            style: TextStyle(fontFamily: 'BeIN', 
               fontWeight: FontWeight.bold,
               color: Colors.white,
             ),

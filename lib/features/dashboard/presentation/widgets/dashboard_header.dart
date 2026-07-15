@@ -89,7 +89,7 @@ class _DashboardHeaderState extends State<DashboardHeader>
               const SizedBox(width: 8),
               Text(
                 'المركز',
-                style: GoogleFonts.cairo(
+                style: TextStyle(fontFamily: 'BeIN', 
                   fontSize: 14,
                   color: Colors.white,
                 ),
@@ -136,7 +136,7 @@ class _DashboardHeaderState extends State<DashboardHeader>
                                   widget.notificationCount > 9
                                       ? '9+'
                                       : widget.notificationCount.toString(),
-                                  style: GoogleFonts.cairo(
+                                  style: TextStyle(fontFamily: 'BeIN', 
                                     color: Colors.white,
                                     fontSize: 10,
                                     fontWeight: FontWeight.bold,
@@ -263,7 +263,7 @@ class _DashboardHeaderState extends State<DashboardHeader>
                             Flexible(
                               child: Text(
                                 _currentDateTime,
-                                style: GoogleFonts.cairo(
+                                style: TextStyle(fontFamily: 'BeIN', 
                                   fontSize: 14,
                                   color: Colors.white.withOpacity(0.95),
                                 ),

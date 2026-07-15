@@ -211,7 +211,7 @@ class _CourierRequestScannerPageState
                         const SizedBox(width: 12),
                         Text(
                           'الإبلاغ عن مشكلة',
-                          style: GoogleFonts.cairo(
+                          style: TextStyle(fontFamily: 'BeIN', 
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
                             fontSize: 16,
@@ -221,7 +221,7 @@ class _CourierRequestScannerPageState
                     ),
                     const SizedBox(height: 20),
                     Text('حالة المشكلة:',
-                        style: GoogleFonts.cairo(
+                        style: TextStyle(fontFamily: 'BeIN', 
                             color: AppColors.textSecondary, fontSize: 13)),
                     const SizedBox(height: 8),
                     Container(
@@ -237,7 +237,7 @@ class _CourierRequestScannerPageState
                           isExpanded: true,
                           dropdownColor: AppColors.surfaceMid,
                           value: selectedStatus,
-                          style: GoogleFonts.cairo(
+                          style: TextStyle(fontFamily: 'BeIN', 
                               color: Colors.white, fontSize: 14),
                           items: const [
                             DropdownMenuItem(
@@ -267,16 +267,16 @@ class _CourierRequestScannerPageState
                     ),
                     const SizedBox(height: 16),
                     Text('تفاصيل المشكلة:',
-                        style: GoogleFonts.cairo(
+                        style: TextStyle(fontFamily: 'BeIN', 
                             color: AppColors.textSecondary, fontSize: 13)),
                     const SizedBox(height: 8),
                     TextField(
                       controller: reasonController,
-                      style: GoogleFonts.cairo(color: Colors.white, fontSize: 13),
+                      style: TextStyle(fontFamily: 'BeIN', color: Colors.white, fontSize: 13),
                       maxLines: 2,
                       decoration: InputDecoration(
                         hintText: 'اكتب تفاصيل المشكلة...',
-                        hintStyle: GoogleFonts.cairo(
+                        hintStyle: TextStyle(fontFamily: 'BeIN', 
                             color: AppColors.textMuted, fontSize: 12),
                         filled: true,
                         fillColor: AppColors.backgroundMid,
@@ -313,7 +313,7 @@ class _CourierRequestScannerPageState
                                   const EdgeInsets.symmetric(vertical: 12),
                             ),
                             child: Text('إلغاء',
-                                style: GoogleFonts.cairo(
+                                style: TextStyle(fontFamily: 'BeIN', 
                                     color: AppColors.textSecondary)),
                           ),
                         ),
@@ -406,7 +406,7 @@ class _CourierRequestScannerPageState
                 children: [
                   Text(
                     'محرك المسح الذكي',
-                    style: GoogleFonts.cairo(
+                    style: TextStyle(fontFamily: 'BeIN', 
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
                       fontSize: 17,
@@ -414,7 +414,7 @@ class _CourierRequestScannerPageState
                   ),
                   Text(
                     'طلب #$requestId — تحقق من هوية كل جهاز',
-                    style: GoogleFonts.cairo(
+                    style: TextStyle(fontFamily: 'BeIN', 
                       color: AppColors.textSecondary,
                       fontSize: 11,
                     ),
@@ -500,11 +500,21 @@ class _CourierRequestScannerPageState
               Expanded(
                 child: TextField(
                   controller: _serialInputController,
-                  style: GoogleFonts.cairo(color: Colors.white, fontSize: 14),
+                  style: TextStyle(fontFamily: 'BeIN', color: Colors.white, fontSize: 14),
                   textDirection: TextDirection.ltr,
+                  textCapitalization: TextCapitalization.characters,
+                  onChanged: (val) {
+                    final upper = val.toUpperCase();
+                    if (val != upper) {
+                      _serialInputController.value = TextEditingValue(
+                        text: upper,
+                        selection: _serialInputController.selection,
+                      );
+                    }
+                  },
                   decoration: InputDecoration(
                     hintText: 'أدخل السيريال يدوياً أو امسح',
-                    hintStyle: GoogleFonts.cairo(
+                    hintStyle: TextStyle(fontFamily: 'BeIN', 
                         color: AppColors.textMuted, fontSize: 13),
                     prefixIcon:
                         const Icon(Icons.qr_code, color: AppColors.primary),
@@ -519,7 +529,7 @@ class _CourierRequestScannerPageState
                   ),
                   onSubmitted: (val) {
                     if (val.trim().isNotEmpty) {
-                      _processScannedCode(val.trim());
+                      _processScannedCode(val.trim().toUpperCase());
                       _serialInputController.clear();
                     }
                   },
@@ -658,7 +668,7 @@ class _CourierRequestScannerPageState
                             : (item.itemType == 'POS'
                                 ? (item.serialNumber ?? 'جهاز POS')
                                 : (item.simSerial ?? 'شريحة SIM')),
-                        style: GoogleFonts.cairo(
+                        style: TextStyle(fontFamily: 'BeIN', 
                           fontWeight: FontWeight.bold,
                           fontSize: 13,
                           color: Colors.white,
@@ -670,7 +680,7 @@ class _CourierRequestScannerPageState
                             : hasProblem
                                 ? _problemText(itemStatus)
                                 : 'بانتظار المسح الضوئي',
-                        style: GoogleFonts.cairo(
+                        style: TextStyle(fontFamily: 'BeIN', 
                           fontSize: 11,
                           color: accentColor,
                           fontWeight: isScanned || hasProblem
@@ -737,7 +747,7 @@ class _CourierRequestScannerPageState
                   Expanded(
                     child: Text(
                       'المشكلة: $problemReason',
-                      style: GoogleFonts.cairo(
+                      style: TextStyle(fontFamily: 'BeIN', 
                           color: AppColors.error.withOpacity(0.9),
                           fontSize: 11),
                     ),
@@ -763,7 +773,7 @@ class _CourierRequestScannerPageState
                         size: 15, color: AppColors.textSecondary),
                     label: Text(
                       'تراجع وإعادة مسح',
-                      style: GoogleFonts.cairo(
+                      style: TextStyle(fontFamily: 'BeIN', 
                           color: AppColors.textSecondary, fontSize: 12),
                     ),
                   )
@@ -774,7 +784,7 @@ class _CourierRequestScannerPageState
                         size: 15, color: AppColors.warning),
                     label: Text(
                       'إبلاغ عن مشكلة',
-                      style: GoogleFonts.cairo(
+                      style: TextStyle(fontFamily: 'BeIN', 
                           color: AppColors.warning, fontSize: 12),
                     ),
                   ),
@@ -797,7 +807,7 @@ class _CourierRequestScannerPageState
                         size: 15, color: AppColors.primary),
                     label: Text(
                       'مسح الباركود',
-                      style: GoogleFonts.cairo(
+                      style: TextStyle(fontFamily: 'BeIN', 
                           color: AppColors.primary,
                           fontSize: 12,
                           fontWeight: FontWeight.bold),
@@ -855,7 +865,7 @@ class _CourierRequestScannerPageState
           Expanded(
             child: Text(
               title,
-              style: GoogleFonts.cairo(
+              style: TextStyle(fontFamily: 'BeIN', 
                 color: isChecked ? Colors.white : AppColors.textSecondary,
                 fontSize: 13,
                 fontWeight:
@@ -881,7 +891,7 @@ class _CourierRequestScannerPageState
               ),
               child: Text(
                 isChecked ? '✓ مستلم' : 'تأكيد',
-                style: GoogleFonts.cairo(
+                style: TextStyle(fontFamily: 'BeIN', 
                   color: isChecked ? AppColors.success : AppColors.primary,
                   fontSize: 12,
                   fontWeight: FontWeight.bold,

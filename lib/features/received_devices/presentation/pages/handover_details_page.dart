@@ -70,7 +70,7 @@ class _HandoverDetailsPageState extends State<HandoverDetailsPage> {
       appBar: AppBar(
         title: Text(
           'تفاصيل عملية التسليم',
-          style: GoogleFonts.cairo(
+          style: TextStyle(fontFamily: 'BeIN', 
             fontWeight: FontWeight.bold,
             color: Colors.white,
           ),
@@ -156,7 +156,7 @@ class _HandoverDetailsPageState extends State<HandoverDetailsPage> {
           const SizedBox(height: 12),
           Text(
             statusTitle,
-            style: GoogleFonts.cairo(
+            style: TextStyle(fontFamily: 'BeIN', 
               fontSize: 16,
               fontWeight: FontWeight.bold,
               color: Colors.white,
@@ -166,7 +166,7 @@ class _HandoverDetailsPageState extends State<HandoverDetailsPage> {
           const SizedBox(height: 8),
           Text(
             statusDesc,
-            style: GoogleFonts.cairo(
+            style: TextStyle(fontFamily: 'BeIN', 
               fontSize: 12,
               color: Colors.white70,
             ),
@@ -180,11 +180,11 @@ class _HandoverDetailsPageState extends State<HandoverDetailsPage> {
             children: [
               Text(
                 'تاريخ وتوقيت العملية',
-                style: GoogleFonts.cairo(color: AppColors.textSecondary, fontSize: 11),
+                style: TextStyle(fontFamily: 'BeIN', color: AppColors.textSecondary, fontSize: 11),
               ),
               Text(
                 dateStr,
-                style: GoogleFonts.cairo(
+                style: TextStyle(fontFamily: 'BeIN', 
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
                   fontSize: 11,
@@ -214,7 +214,7 @@ class _HandoverDetailsPageState extends State<HandoverDetailsPage> {
         children: [
           Text(
             'الجهة المستلمة للعهدة',
-            style: GoogleFonts.cairo(
+            style: TextStyle(fontFamily: 'BeIN', 
               fontSize: 13,
               fontWeight: FontWeight.bold,
               color: AppColors.textSecondary,
@@ -239,7 +239,7 @@ class _HandoverDetailsPageState extends State<HandoverDetailsPage> {
                   children: [
                     Text(
                       name,
-                      style: GoogleFonts.cairo(
+                      style: TextStyle(fontFamily: 'BeIN', 
                         fontSize: 15,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
@@ -256,7 +256,7 @@ class _HandoverDetailsPageState extends State<HandoverDetailsPage> {
                           ),
                           child: Text(
                             isTech ? 'فني صيانة ميداني' : 'مستودع فرعي',
-                            style: GoogleFonts.cairo(
+                            style: TextStyle(fontFamily: 'BeIN', 
                               color: isTech ? Colors.indigo[200] : Colors.orange[200],
                               fontSize: 10,
                               fontWeight: FontWeight.bold,
@@ -268,7 +268,7 @@ class _HandoverDetailsPageState extends State<HandoverDetailsPage> {
                         const SizedBox(width: 4),
                         Text(
                           city,
-                          style: GoogleFonts.cairo(
+                          style: TextStyle(fontFamily: 'BeIN', 
                             color: AppColors.textSecondary,
                             fontSize: 11,
                           ),
@@ -300,7 +300,7 @@ class _HandoverDetailsPageState extends State<HandoverDetailsPage> {
         children: [
           Text(
             'الأجهزة المشمولة بالنقل (${devices.length})',
-            style: GoogleFonts.cairo(
+            style: TextStyle(fontFamily: 'BeIN', 
               fontSize: 13,
               fontWeight: FontWeight.bold,
               color: AppColors.textSecondary,
@@ -332,7 +332,7 @@ class _HandoverDetailsPageState extends State<HandoverDetailsPage> {
                       children: [
                         Text(
                           'جهاز نقطة بيع POS',
-                          style: GoogleFonts.cairo(
+                          style: TextStyle(fontFamily: 'BeIN', 
                             fontSize: 13,
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
@@ -343,11 +343,11 @@ class _HandoverDetailsPageState extends State<HandoverDetailsPage> {
                           children: [
                             Text(
                               'رقم تسلسلي: ',
-                              style: GoogleFonts.cairo(color: AppColors.textSecondary, fontSize: 11),
+                              style: TextStyle(fontFamily: 'BeIN', color: AppColors.textSecondary, fontSize: 11),
                             ),
                             Text(
                               dev.serialNumber,
-                              style: GoogleFonts.cairo(
+                              style: TextStyle(fontFamily: 'BeIN', 
                                 color: Colors.white70,
                                 fontSize: 11,
                                 fontWeight: FontWeight.bold,
@@ -368,7 +368,7 @@ class _HandoverDetailsPageState extends State<HandoverDetailsPage> {
                     ),
                     child: Text(
                       '${dev.accessoriesCount} ملحقات',
-                      style: GoogleFonts.cairo(
+                      style: TextStyle(fontFamily: 'BeIN', 
                         color: AppColors.primary,
                         fontSize: 10,
                         fontWeight: FontWeight.bold,
@@ -402,7 +402,7 @@ class _HandoverDetailsPageState extends State<HandoverDetailsPage> {
         children: [
           Text(
             'مراحل خط سير العملية',
-            style: GoogleFonts.cairo(
+            style: TextStyle(fontFamily: 'BeIN', 
               fontSize: 13,
               fontWeight: FontWeight.bold,
               color: AppColors.textSecondary,
@@ -504,7 +504,7 @@ class _HandoverDetailsPageState extends State<HandoverDetailsPage> {
                   Expanded(
                     child: Text(
                       title,
-                      style: GoogleFonts.cairo(
+                      style: TextStyle(fontFamily: 'BeIN', 
                         fontSize: 13,
                         fontWeight: FontWeight.bold,
                         color: isCompleted ? Colors.white : AppColors.textSecondary,
@@ -514,7 +514,7 @@ class _HandoverDetailsPageState extends State<HandoverDetailsPage> {
                   if (date.isNotEmpty)
                     Text(
                       date,
-                      style: GoogleFonts.cairo(
+                      style: TextStyle(fontFamily: 'BeIN', 
                         fontSize: 10,
                         color: AppColors.textSecondary,
                       ),
@@ -524,7 +524,7 @@ class _HandoverDetailsPageState extends State<HandoverDetailsPage> {
               const SizedBox(height: 4),
               Text(
                 subtitle,
-                style: GoogleFonts.cairo(
+                style: TextStyle(fontFamily: 'BeIN', 
                   fontSize: 11,
                   color: isCompleted ? Colors.white70 : AppColors.textSecondary.withOpacity(0.7),
                 ),
@@ -581,7 +581,7 @@ class _HandoverDetailsPageState extends State<HandoverDetailsPage> {
                       backgroundColor: AppColors.surfaceDark,
                       title: Text(
                         'مشاركة المحضر الفني',
-                        style: GoogleFonts.cairo(color: Colors.white, fontWeight: FontWeight.bold),
+                        style: TextStyle(fontFamily: 'BeIN', color: Colors.white, fontWeight: FontWeight.bold),
                         textAlign: TextAlign.center,
                       ),
                       content: Column(
@@ -589,7 +589,7 @@ class _HandoverDetailsPageState extends State<HandoverDetailsPage> {
                         children: [
                           Text(
                             'تم إنشاء نص المشاركة الفوري، يمكنك نسخه ومشاركته عبر الواتساب أو التطبيقات الفنية المعتمدة:',
-                            style: GoogleFonts.cairo(color: Colors.white70, fontSize: 13),
+                            style: TextStyle(fontFamily: 'BeIN', color: Colors.white70, fontSize: 13),
                             textAlign: TextAlign.center,
                           ),
                           const SizedBox(height: 16),
@@ -605,7 +605,7 @@ class _HandoverDetailsPageState extends State<HandoverDetailsPage> {
                                 textDirection: TextDirection.rtl,
                                 child: Text(
                                   buffer.toString(),
-                                  style: GoogleFonts.cairo(color: AppColors.primary, fontSize: 11),
+                                  style: TextStyle(fontFamily: 'BeIN', color: AppColors.primary, fontSize: 11),
                                 ),
                               ),
                             ),
@@ -615,7 +615,7 @@ class _HandoverDetailsPageState extends State<HandoverDetailsPage> {
                       actions: [
                         TextButton(
                           onPressed: () => Get.back(),
-                          child: Text('حسناً', style: GoogleFonts.cairo(color: Colors.white)),
+                          child: Text('حسناً', style: TextStyle(fontFamily: 'BeIN', color: Colors.white)),
                         ),
                       ],
                     ),
@@ -628,7 +628,7 @@ class _HandoverDetailsPageState extends State<HandoverDetailsPage> {
                     const SizedBox(width: 8),
                     Text(
                       'مشاركة النص',
-                      style: GoogleFonts.cairo(
+                      style: TextStyle(fontFamily: 'BeIN', 
                         color: AppColors.primary,
                         fontWeight: FontWeight.bold,
                       ),
@@ -659,7 +659,7 @@ class _HandoverDetailsPageState extends State<HandoverDetailsPage> {
                     const SizedBox(width: 8),
                     Text(
                       'تحميل محضر PDF',
-                      style: GoogleFonts.cairo(
+                      style: TextStyle(fontFamily: 'BeIN', 
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
                       ),
@@ -702,7 +702,7 @@ class _HandoverDetailsPageState extends State<HandoverDetailsPage> {
                     children: [
                       Text(
                         'شركة ناقل والعهدة الوطنية',
-                        style: GoogleFonts.cairo(
+                        style: TextStyle(fontFamily: 'BeIN', 
                           color: Colors.black87,
                           fontWeight: FontWeight.bold,
                           fontSize: 12,
@@ -710,7 +710,7 @@ class _HandoverDetailsPageState extends State<HandoverDetailsPage> {
                       ),
                       Text(
                         'مستند تسليم عهدة رقم #${DateTime.now().millisecond}',
-                        style: GoogleFonts.cairo(color: Colors.grey[600], fontSize: 9),
+                        style: TextStyle(fontFamily: 'BeIN', color: Colors.grey[600], fontSize: 9),
                       ),
                     ],
                   ),
@@ -722,7 +722,7 @@ class _HandoverDetailsPageState extends State<HandoverDetailsPage> {
 
               Text(
                 'محضر تسليم ونقل عهدة أجهزة',
-                style: GoogleFonts.cairo(
+                style: TextStyle(fontFamily: 'BeIN', 
                   color: Colors.black,
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -752,7 +752,7 @@ class _HandoverDetailsPageState extends State<HandoverDetailsPage> {
                 alignment: Alignment.centerRight,
                 child: Text(
                   'الأجهزة المسلمة في هذا المحضر:',
-                  style: GoogleFonts.cairo(color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 11),
+                  style: TextStyle(fontFamily: 'BeIN', color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 11),
                 ),
               ),
               const SizedBox(height: 8),
@@ -777,7 +777,7 @@ class _HandoverDetailsPageState extends State<HandoverDetailsPage> {
                         children: [
                           Text(
                             d.serialNumber,
-                            style: GoogleFonts.cairo(
+                            style: TextStyle(fontFamily: 'BeIN', 
                               color: Colors.black,
                               fontWeight: FontWeight.bold,
                               fontSize: 11,
@@ -785,7 +785,7 @@ class _HandoverDetailsPageState extends State<HandoverDetailsPage> {
                           ),
                           Text(
                             d.terminalId != null ? 'TID: ${d.terminalId}' : 'جهاز POS',
-                            style: GoogleFonts.cairo(color: Colors.black54, fontSize: 10),
+                            style: TextStyle(fontFamily: 'BeIN', color: Colors.black54, fontSize: 10),
                           ),
                         ],
                       ),
@@ -802,14 +802,14 @@ class _HandoverDetailsPageState extends State<HandoverDetailsPage> {
                 children: [
                   Column(
                     children: [
-                      Text('توقيع الفني المسلّم', style: GoogleFonts.cairo(color: Colors.grey[700], fontSize: 9)),
+                      Text('توقيع الفني المسلّم', style: TextStyle(fontFamily: 'BeIN', color: Colors.grey[700], fontSize: 9)),
                       const SizedBox(height: 10),
-                      Text('موقّع رقمياً ✔', style: GoogleFonts.cairo(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 10)),
+                      Text('موقّع رقمياً ✔', style: TextStyle(fontFamily: 'BeIN', color: Colors.green, fontWeight: FontWeight.bold, fontSize: 10)),
                     ],
                   ),
                   Column(
                     children: [
-                      Text('توقيع الطرف المستلم', style: GoogleFonts.cairo(color: Colors.grey[700], fontSize: 9)),
+                      Text('توقيع الطرف المستلم', style: TextStyle(fontFamily: 'BeIN', color: Colors.grey[700], fontSize: 9)),
                       const SizedBox(height: 10),
                       _signatureBytes != null
                           ? Container(
@@ -836,7 +836,7 @@ class _HandoverDetailsPageState extends State<HandoverDetailsPage> {
                               ),
                               child: Text(
                                 'إضافة توقيع إلكتروني',
-                                style: GoogleFonts.cairo(
+                                style: TextStyle(fontFamily: 'BeIN', 
                                   color: AppColors.primary,
                                   fontWeight: FontWeight.bold,
                                   fontSize: 10,
@@ -858,7 +858,7 @@ class _HandoverDetailsPageState extends State<HandoverDetailsPage> {
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                       ),
                       onPressed: () => Get.back(),
-                      child: Text('إغلاق المعاينة', style: GoogleFonts.cairo(color: Colors.black87)),
+                      child: Text('إغلاق المعاينة', style: TextStyle(fontFamily: 'BeIN', color: Colors.black87)),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -872,7 +872,7 @@ class _HandoverDetailsPageState extends State<HandoverDetailsPage> {
                         Get.back();
                         _generateAndPrintPdf(recipientName, dateStr, devices);
                       },
-                      child: Text('تحميل وطباعة PDF', style: GoogleFonts.cairo(color: Colors.white, fontWeight: FontWeight.bold)),
+                      child: Text('تحميل وطباعة PDF', style: TextStyle(fontFamily: 'BeIN', color: Colors.white, fontWeight: FontWeight.bold)),
                     ),
                   ),
                 ],
@@ -908,7 +908,7 @@ class _HandoverDetailsPageState extends State<HandoverDetailsPage> {
                 const SizedBox(width: 8),
                 Text(
                   'الموقع الجغرافي للعملية (GPS)',
-                  style: GoogleFonts.cairo(
+                  style: TextStyle(fontFamily: 'BeIN', 
                     fontSize: 13,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
@@ -943,7 +943,7 @@ class _HandoverDetailsPageState extends State<HandoverDetailsPage> {
                               const SizedBox(height: 8),
                               Text(
                                 'تعذر تحميل الخريطة (غير متصل بالشبكة)',
-                                style: GoogleFonts.cairo(color: Colors.white70, fontSize: 12),
+                                style: TextStyle(fontFamily: 'BeIN', color: Colors.white70, fontSize: 12),
                               ),
                             ],
                           ),
@@ -964,7 +964,7 @@ class _HandoverDetailsPageState extends State<HandoverDetailsPage> {
                         textDirection: TextDirection.ltr,
                         child: Text(
                           '${lat.toStringAsFixed(6)}, ${lng.toStringAsFixed(6)}',
-                          style: GoogleFonts.cairo(
+                          style: TextStyle(fontFamily: 'BeIN', 
                             color: Colors.white,
                             fontSize: 11,
                             fontWeight: FontWeight.bold,
@@ -1001,7 +1001,7 @@ class _HandoverDetailsPageState extends State<HandoverDetailsPage> {
             children: [
               Text(
                 'توقيع الطرف المستلم الإلكتروني',
-                style: GoogleFonts.cairo(
+                style: TextStyle(fontFamily: 'BeIN', 
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
@@ -1038,7 +1038,7 @@ class _HandoverDetailsPageState extends State<HandoverDetailsPage> {
                         side: const BorderSide(color: AppColors.primary),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                       ),
-                      child: Text('مسح المعاينة', style: GoogleFonts.cairo(color: AppColors.primary)),
+                      child: Text('مسح المعاينة', style: TextStyle(fontFamily: 'BeIN', color: AppColors.primary)),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -1063,7 +1063,7 @@ class _HandoverDetailsPageState extends State<HandoverDetailsPage> {
                         backgroundColor: AppColors.primary,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                       ),
-                      child: Text('اعتماد التوقيع', style: GoogleFonts.cairo(color: Colors.white, fontWeight: FontWeight.bold)),
+                      child: Text('اعتماد التوقيع', style: TextStyle(fontFamily: 'BeIN', color: Colors.white, fontWeight: FontWeight.bold)),
                     ),
                   ),
                 ],
@@ -1241,14 +1241,14 @@ class _HandoverDetailsPageState extends State<HandoverDetailsPage> {
       children: [
         Text(
           label,
-          style: GoogleFonts.cairo(
+          style: TextStyle(fontFamily: 'BeIN', 
             color: isDark ? Colors.black54 : Colors.grey[700],
             fontSize: 11,
           ),
         ),
         Text(
           value,
-          style: GoogleFonts.cairo(
+          style: TextStyle(fontFamily: 'BeIN', 
             color: isDark ? Colors.black87 : Colors.black,
             fontWeight: FontWeight.bold,
             fontSize: 11,

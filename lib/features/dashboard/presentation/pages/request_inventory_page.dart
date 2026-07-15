@@ -267,7 +267,7 @@ class _RequestInventoryPageState extends State<RequestInventoryPage>
               Expanded(
                 child: Text(
                   itemType.nameAr,
-                  style: GoogleFonts.cairo(
+                  style: TextStyle(fontFamily: 'BeIN', 
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
@@ -309,10 +309,10 @@ class _RequestInventoryPageState extends State<RequestInventoryPage>
     return TextField(
       controller: controller,
       keyboardType: TextInputType.number,
-      style: GoogleFonts.cairo(color: AppColors.textPrimary),
+      style: TextStyle(fontFamily: 'BeIN', color: AppColors.textPrimary),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: GoogleFonts.cairo(color: AppColors.textSecondary),
+        labelStyle: TextStyle(fontFamily: 'BeIN', color: AppColors.textSecondary),
         prefixIcon: Icon(icon, color: AppColors.primary, size: 20),
         filled: true,
         fillColor: Colors.white,
@@ -344,7 +344,7 @@ class _RequestInventoryPageState extends State<RequestInventoryPage>
       appBar: AppBar(
         title: Text(
           'طلب مخزون',
-          style: GoogleFonts.cairo(
+          style: TextStyle(fontFamily: 'BeIN', 
             fontWeight: FontWeight.bold,
             color: Colors.white,
           ),
@@ -435,7 +435,7 @@ class _RequestInventoryPageState extends State<RequestInventoryPage>
                             children: [
                               Text(
                                 'طلب مخزون من المستودع',
-                                style: GoogleFonts.cairo(
+                                style: TextStyle(fontFamily: 'BeIN', 
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
                                   color: Colors.white,
@@ -444,7 +444,7 @@ class _RequestInventoryPageState extends State<RequestInventoryPage>
                               const SizedBox(height: 4),
                               Text(
                                 '${controller.itemTypes.length} نوع متاح • إجمالي الكمية: $totalItems',
-                                style: GoogleFonts.cairo(
+                                style: TextStyle(fontFamily: 'BeIN', 
                                   fontSize: 12,
                                   color: Colors.white.withOpacity(0.9),
                                 ),
@@ -470,7 +470,7 @@ class _RequestInventoryPageState extends State<RequestInventoryPage>
                             const SizedBox(height: 16),
                             Text(
                               'جاري تحميل الأصناف...',
-                              style: GoogleFonts.cairo(
+                              style: TextStyle(fontFamily: 'BeIN', 
                                 color: AppColors.textSecondary,
                               ),
                             ),
@@ -487,7 +487,7 @@ class _RequestInventoryPageState extends State<RequestInventoryPage>
                   // Notes
                   Text(
                     'ملاحظات (اختياري)',
-                    style: GoogleFonts.cairo(
+                    style: TextStyle(fontFamily: 'BeIN', 
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
@@ -506,10 +506,10 @@ class _RequestInventoryPageState extends State<RequestInventoryPage>
                     child: TextField(
                       controller: _notesController,
                       maxLines: 3,
-                      style: GoogleFonts.cairo(color: Colors.white),
+                      style: TextStyle(fontFamily: 'BeIN', color: Colors.white),
                       decoration: InputDecoration(
                         labelText: 'أضف ملاحظات',
-                        labelStyle: GoogleFonts.cairo(
+                        labelStyle: TextStyle(fontFamily: 'BeIN', 
                             color: AppColors.textSecondary),
                         prefixIcon: const Icon(Icons.note,
                             color: AppColors.primary),
@@ -528,7 +528,7 @@ class _RequestInventoryPageState extends State<RequestInventoryPage>
                       icon: const Icon(Icons.send),
                       label: Text(
                         'إرسال الطلب',
-                        style: GoogleFonts.cairo(
+                        style: TextStyle(fontFamily: 'BeIN', 
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
                         ),
@@ -574,7 +574,7 @@ class _RequestInventoryPageState extends State<RequestInventoryPage>
                       const SizedBox(height: 16),
                       Text(
                         'لا توجد طلبات مخزون سابقة',
-                        style: GoogleFonts.cairo(
+                        style: TextStyle(fontFamily: 'BeIN', 
                           fontSize: 16,
                           color: AppColors.textSecondary,
                         ),
@@ -686,7 +686,7 @@ class _RequestInventoryPageState extends State<RequestInventoryPage>
                                 children: [
                                   Text(
                                     statusText,
-                                    style: GoogleFonts.cairo(
+                                    style: TextStyle(fontFamily: 'BeIN', 
                                       fontWeight: FontWeight.bold,
                                       fontSize: 17,
                                       color: Colors.white,
@@ -703,7 +703,7 @@ class _RequestInventoryPageState extends State<RequestInventoryPage>
                                       const SizedBox(width: 6),
                                       Text(
                                         dateFormatted,
-                                        style: GoogleFonts.cairo(
+                                        style: TextStyle(fontFamily: 'BeIN', 
                                           fontSize: 13,
                                           color: AppColors.textSecondary,
                                         ),
@@ -717,7 +717,7 @@ class _RequestInventoryPageState extends State<RequestInventoryPage>
                                       const SizedBox(width: 4),
                                       Text(
                                         timeFormatted,
-                                        style: GoogleFonts.cairo(
+                                        style: TextStyle(fontFamily: 'BeIN', 
                                           fontSize: 13,
                                           color: AppColors.textSecondary,
                                         ),
@@ -739,7 +739,7 @@ class _RequestInventoryPageState extends State<RequestInventoryPage>
                               ),
                               child: Text(
                                 '${request.totalItems}',
-                                style: GoogleFonts.cairo(
+                                style: TextStyle(fontFamily: 'BeIN', 
                                   fontWeight: FontWeight.bold,
                                   fontSize: 16,
                                   color: statusColor,
@@ -779,7 +779,7 @@ class _RequestInventoryPageState extends State<RequestInventoryPage>
                                     const SizedBox(width: 8),
                                     Text(
                                       'تفاصيل الطلب',
-                                      style: GoogleFonts.cairo(
+                                      style: TextStyle(fontFamily: 'BeIN', 
                                         fontWeight: FontWeight.bold,
                                         fontSize: 14,
                                         color: AppColors.textSecondary,
@@ -905,7 +905,7 @@ class _RequestInventoryPageState extends State<RequestInventoryPage>
           Expanded(
             child: Text(
               label,
-              style: GoogleFonts.cairo(
+              style: TextStyle(fontFamily: 'BeIN', 
                 fontSize: 14,
                 color: Colors.white.withOpacity(0.95),
               ),
@@ -920,7 +920,7 @@ class _RequestInventoryPageState extends State<RequestInventoryPage>
               ),
               child: Text(
                 '$b كرتون',
-                style: GoogleFonts.cairo(
+                style: TextStyle(fontFamily: 'BeIN', 
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
                   color: AppColors.primary,
@@ -937,7 +937,7 @@ class _RequestInventoryPageState extends State<RequestInventoryPage>
               ),
               child: Text(
                 '$u وحدة',
-                style: GoogleFonts.cairo(
+                style: TextStyle(fontFamily: 'BeIN', 
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
                   color: AppColors.success,
@@ -979,7 +979,7 @@ class _RequestInventoryPageState extends State<RequestInventoryPage>
               const SizedBox(width: 12),
               Text(
                 title,
-                style: GoogleFonts.cairo(
+                style: TextStyle(fontFamily: 'BeIN', 
                   fontWeight: FontWeight.bold,
                   fontSize: 14,
                   color: color,
@@ -990,7 +990,7 @@ class _RequestInventoryPageState extends State<RequestInventoryPage>
           const SizedBox(height: 12),
           Text(
             content,
-            style: GoogleFonts.cairo(
+            style: TextStyle(fontFamily: 'BeIN', 
               fontSize: 13,
               height: 1.5,
               color: Colors.white.withOpacity(0.9),

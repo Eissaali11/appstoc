@@ -133,17 +133,17 @@ class DevicesController extends GetxController {
             textDirection: TextDirection.rtl,
             child: AlertDialog(
               backgroundColor: AppColors.surfaceDark,
-              title: Text('مشكلة في الاتصال بالشبكة', style: GoogleFonts.cairo(fontWeight: FontWeight.bold, color: Colors.white)),
-              content: Text('يبدو أنك غير متصل بالإنترنت حالياً. هل تود حفظ عملية التوريد محلياً ومزامنتها لاحقاً؟', style: GoogleFonts.cairo(color: Colors.white70)),
+              title: Text('مشكلة في الاتصال بالشبكة', style: TextStyle(fontFamily: 'BeIN', fontWeight: FontWeight.bold, color: Colors.white)),
+              content: Text('يبدو أنك غير متصل بالإنترنت حالياً. هل تود حفظ عملية التوريد محلياً ومزامنتها لاحقاً؟', style: TextStyle(fontFamily: 'BeIN', color: Colors.white70)),
               actions: [
                 TextButton(
                   onPressed: () => Get.back(result: false),
-                  child: Text('إلغاء', style: GoogleFonts.cairo(color: Colors.grey)),
+                  child: Text('إلغاء', style: TextStyle(fontFamily: 'BeIN', color: Colors.grey)),
                 ),
                 ElevatedButton(
                   onPressed: () => Get.back(result: true),
                   style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
-                  child: Text('حفظ محلياً', style: GoogleFonts.cairo(color: Colors.white, fontWeight: FontWeight.bold)),
+                  child: Text('حفظ محلياً', style: TextStyle(fontFamily: 'BeIN', color: Colors.white, fontWeight: FontWeight.bold)),
                 ),
               ],
             ),
@@ -217,17 +217,17 @@ class DevicesController extends GetxController {
             textDirection: TextDirection.rtl,
             child: AlertDialog(
               backgroundColor: AppColors.surfaceDark,
-              title: Text('مشكلة في الاتصال بالشبكة', style: GoogleFonts.cairo(fontWeight: FontWeight.bold, color: Colors.white)),
-              content: Text('يبدو أنك غير متصل بالإنترنت حالياً. هل تود حفظ عملية السحب محلياً ومزامنتها لاحقاً؟', style: GoogleFonts.cairo(color: Colors.white70)),
+              title: Text('مشكلة في الاتصال بالشبكة', style: TextStyle(fontFamily: 'BeIN', fontWeight: FontWeight.bold, color: Colors.white)),
+              content: Text('يبدو أنك غير متصل بالإنترنت حالياً. هل تود حفظ عملية السحب محلياً ومزامنتها لاحقاً؟', style: TextStyle(fontFamily: 'BeIN', color: Colors.white70)),
               actions: [
                 TextButton(
                   onPressed: () => Get.back(result: false),
-                  child: Text('إلغاء', style: GoogleFonts.cairo(color: Colors.grey)),
+                  child: Text('إلغاء', style: TextStyle(fontFamily: 'BeIN', color: Colors.grey)),
                 ),
                 ElevatedButton(
                   onPressed: () => Get.back(result: true),
                   style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
-                  child: Text('حفظ محلياً', style: GoogleFonts.cairo(color: Colors.white, fontWeight: FontWeight.bold)),
+                  child: Text('حفظ محلياً', style: TextStyle(fontFamily: 'BeIN', color: Colors.white, fontWeight: FontWeight.bold)),
                 ),
               ],
             ),

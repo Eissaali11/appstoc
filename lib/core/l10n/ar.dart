@@ -30,7 +30,7 @@ const Map<String, String> ar = {
   'drawer_profile': 'الملف الشخصي',
   'drawer_about_us': 'من نحن',
   'drawer_user_default': 'مستخدم نظام المخزون',
-  'drawer_badge': 'StockPro المركز',
+  'drawer_badge': 'مركز RASSCO',
 
   // لوحة التحكم
   'dashboard': 'لوحة التحكم',

@@ -32,7 +32,7 @@ class ProfilePage extends StatelessWidget {
                 const SizedBox(height: 16),
                 Text(
                   'user_not_logged_in'.tr,
-                  style: GoogleFonts.cairo(
+                  style: TextStyle(fontFamily: 'BeIN', 
                     fontSize: 18,
                     color: AppColors.textSecondary,
                   ),
@@ -50,7 +50,7 @@ class ProfilePage extends StatelessWidget {
                   ),
                   child: Text(
                     'login'.tr,
-                    style: GoogleFonts.cairo(
+                    style: TextStyle(fontFamily: 'BeIN', 
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -102,7 +102,7 @@ class ProfilePage extends StatelessWidget {
                       child: Center(
                         child: Text(
                           user.fullName.isNotEmpty ? user.fullName[0].toUpperCase() : 'U',
-                          style: GoogleFonts.cairo(
+                          style: TextStyle(fontFamily: 'BeIN', 
                             fontSize: 48,
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
@@ -114,7 +114,7 @@ class ProfilePage extends StatelessWidget {
                     // Name
                     Text(
                       user.fullName,
-                      style: GoogleFonts.cairo(
+                      style: TextStyle(fontFamily: 'BeIN', 
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
@@ -130,7 +130,7 @@ class ProfilePage extends StatelessWidget {
                       ),
                       child: Text(
                         '@${user.username}',
-                        style: GoogleFonts.cairo(
+                        style: TextStyle(fontFamily: 'BeIN', 
                           fontSize: 16,
                           color: Colors.white.withOpacity(0.9),
                         ),
@@ -199,7 +199,7 @@ class ProfilePage extends StatelessWidget {
                           const SizedBox(width: 10),
                           Text(
                             'change_language'.tr,
-                            style: GoogleFonts.cairo(
+                            style: TextStyle(fontFamily: 'BeIN', 
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
                               color: Colors.white,
@@ -250,21 +250,21 @@ class ProfilePage extends StatelessWidget {
                         backgroundColor: AppColors.surfaceDark,
                         title: Text(
                           'confirm'.tr,
-                          style: GoogleFonts.cairo(
+                          style: TextStyle(fontFamily: 'BeIN', 
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
                           ),
                         ),
                         content: Text(
                           'logout_confirm'.tr,
-                          style: GoogleFonts.cairo(color: Colors.white),
+                          style: TextStyle(fontFamily: 'BeIN', color: Colors.white),
                         ),
                         actions: [
                           TextButton(
                             onPressed: () => Get.back(result: false),
                             child: Text(
                               'cancel'.tr,
-                              style: GoogleFonts.cairo(
+                              style: TextStyle(fontFamily: 'BeIN', 
                                 color: AppColors.textSecondary,
                               ),
                             ),
@@ -277,7 +277,7 @@ class ProfilePage extends StatelessWidget {
                             ),
                             child: Text(
                               'logout'.tr,
-                              style: GoogleFonts.cairo(
+                              style: TextStyle(fontFamily: 'BeIN', 
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -296,7 +296,7 @@ class ProfilePage extends StatelessWidget {
                   icon: const Icon(Icons.logout),
                   label: Text(
                     'logout'.tr,
-                    style: GoogleFonts.cairo(
+                    style: TextStyle(fontFamily: 'BeIN', 
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -385,7 +385,7 @@ class _InfoCard extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: GoogleFonts.cairo(
+                  style: TextStyle(fontFamily: 'BeIN', 
                     fontSize: 12,
                     color: AppColors.textSecondary,
                   ),
@@ -393,7 +393,7 @@ class _InfoCard extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   value,
-                  style: GoogleFonts.cairo(
+                  style: TextStyle(fontFamily: 'BeIN', 
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
@@ -443,7 +443,7 @@ class _LanguageChip extends StatelessWidget {
           child: Center(
             child: Text(
               label,
-              style: GoogleFonts.cairo(
+              style: TextStyle(fontFamily: 'BeIN', 
                 fontSize: 15,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
                 color: isSelected ? AppColors.primary : Colors.white70,

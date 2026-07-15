@@ -7,9 +7,10 @@ import '../controllers/devices_controller.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/widgets/app_drawer.dart';
 import '../../../../shared/widgets/barcode_scanner_widget.dart';
+import '../../../../shared/utils/barcode_validator.dart';
 import '../../data/models/received_device.dart';
 import '../../../../shared/models/item_type.dart';
-import '../../../../core/routing/app_pages.dart';
+import '../../../../core/api/api_client.dart';
 
 class SubmitDevicePage extends StatefulWidget {
   const SubmitDevicePage({super.key});
@@ -113,7 +114,18 @@ class _SubmitDevicePageState extends State<SubmitDevicePage> {
     });
   }
 
-  // Smart Custody Lookup Simulation
+  String _translateStatus(String status) {
+    switch (status) {
+      case 'RECEIVED_BY_TECHNICIAN': return 'مستلم بعهدة الفني';
+      case 'PENDING_TECHNICIAN_APPROVAL': return 'بانتظار قبول الفني';
+      case 'IN_WAREHOUSE': return 'في المستودع';
+      case 'INSTALLED': return 'تم تركيبه للعميل';
+      case 'WITHDRAWN': return 'مسحوب/مرتجع';
+      default: return status;
+    }
+  }
+
+  // Smart Custody Lookup from Backend
   Future<void> _lookupCustody() async {
     final serial = _serialNumberController.text.trim();
     if (serial.isEmpty) {
@@ -129,92 +141,55 @@ class _SubmitDevicePageState extends State<SubmitDevicePage> {
       _custodyInfo = null;
     });
 
-    // Simulate Network Request to check custody
-    await Future.delayed(const Duration(milliseconds: 1200));
-
-    setState(() {
-      _isSearchingCustody = false;
-      // Mocked custody info based on serial
-      if (serial.length > 5) {
-        _custodyInfo = {
-          'found': true,
-          'technician': 'مندوب تجريبي',
-          'city': 'جدة',
-          'model': _selectedItemTypeId != null 
-              ? Get.find<DevicesController>().itemTypes.firstWhere((t) => t.id == _selectedItemTypeId).nameAr
-              : 'جهاز N950',
-          'status': 'نشط في العهدة المتحركة',
-        };
-        // Auto fill terminal ID for demonstration
-        if (_terminalIdController.text.isEmpty) {
-          _terminalIdController.text = 'T${serial.substring(serial.length - 4)}';
+    try {
+      final apiClient = Get.find<ApiClient>();
+      final response = await apiClient.get('/api/serialized-items/lookup/$serial');
+      setState(() {
+        _isSearchingCustody = false;
+        if (response.data != null) {
+          final data = response.data as Map<String, dynamic>;
+          _custodyInfo = {
+            'found': true,
+            'technician': data['ownerName'] ?? data['ownerUsername'] ?? 'غير معروف',
+            'city': 'العهد والعمليات',
+            'model': data['itemTypeNameAr'] ?? 'جهاز نقاط البيع',
+            'status': _translateStatus(data['status']?.toString() ?? ''),
+          };
+          if (_terminalIdController.text.isEmpty && data['barcode'] != null) {
+            _terminalIdController.text = data['barcode'].toString();
+          }
+        } else {
+          _custodyInfo = {
+            'found': false,
+            'message': 'الجهاز غير مسجل بعهدة أي فني حالياً (جديد/مستودع)',
+          };
         }
-      } else {
+      });
+    } catch (e) {
+      setState(() {
+        _isSearchingCustody = false;
         _custodyInfo = {
           'found': false,
           'message': 'الجهاز غير مسجل بعهدة أي فني حالياً (جديد/مستودع)',
         };
-      }
-    });
+      });
+    }
   }
 
   bool _validateSerialNumberPattern(String serial, ItemType? selectedItemType) {
     if (selectedItemType == null) return true;
 
-    // 1. Prefix Validation
-    if (selectedItemType.serialPrefix != null && selectedItemType.serialPrefix!.isNotEmpty) {
-      final prefixes = selectedItemType.serialPrefix!.split(',').map((p) => p.trim()).toList();
-      final hasValidPrefix = prefixes.any((prefix) => serial.startsWith(prefix));
-      if (!hasValidPrefix) {
-        Get.snackbar(
-          '❌ الرقم التسلسلي غير صحيح.',
-          'يجب أن يبدأ بـ:\n${prefixes.join(' أو ')}',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: AppColors.error,
-          colorText: Colors.white,
-          duration: const Duration(seconds: 4),
-        );
-        return false;
-      }
-    }
-
-    // 2. Length Validation
-    if (selectedItemType.serialLength != null && selectedItemType.serialLength! > 0) {
-      if (serial.length != selectedItemType.serialLength) {
-        int digitsAfterPrefix = selectedItemType.serialLength!;
-        if (selectedItemType.serialPrefix != null) {
-          final prefixes = selectedItemType.serialPrefix!.split(',').map((p) => p.trim()).toList();
-          final matchedPrefix = prefixes.firstWhere((p) => serial.startsWith(p), orElse: () => '');
-          if (matchedPrefix.isNotEmpty) {
-            digitsAfterPrefix = selectedItemType.serialLength! - matchedPrefix.length;
-          }
-        }
-        Get.snackbar(
-          '❌ طول الرقم التسلسلي غير صحيح.',
-          'المطلوب:\n$digitsAfterPrefix أرقام بعد البادئة.',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: AppColors.error,
-          colorText: Colors.white,
-          duration: const Duration(seconds: 4),
-        );
-        return false;
-      }
-    }
-
-    // 3. Regex Pattern Validation
-    if (selectedItemType.serialRegex != null && selectedItemType.serialRegex!.isNotEmpty) {
-      final regex = RegExp(selectedItemType.serialRegex!);
-      if (!regex.hasMatch(serial)) {
-        Get.snackbar(
-          '❌ الرقم التسلسلي غير صحيح.',
-          'الرقم لا يطابق الصيغة المعتمدة لـ ${selectedItemType.nameAr}.',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: AppColors.error,
-          colorText: Colors.white,
-          duration: const Duration(seconds: 4),
-        );
-        return false;
-      }
+    final validationError = BarcodeValidator.validate(serial, selectedItemType);
+    if (validationError != null) {
+      Get.snackbar(
+        'خطأ في الرقم التسلسلي',
+        validationError,
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: AppColors.error,
+        colorText: Colors.white,
+        duration: const Duration(seconds: 4),
+      );
+      return false;
     }
 
     return true;
@@ -303,17 +278,17 @@ class _SubmitDevicePageState extends State<SubmitDevicePage> {
             children: [
               const Icon(Icons.cloud_off, color: AppColors.warning),
               const SizedBox(width: 8),
-              Text('تم الحفظ كمسودة محلياً', style: GoogleFonts.cairo(color: Colors.white, fontWeight: FontWeight.bold)),
+              Text('تم الحفظ كمسودة محلياً', style: TextStyle(fontFamily: 'BeIN', color: Colors.white, fontWeight: FontWeight.bold)),
             ],
           ),
           content: Text(
             'تم حفظ الجهاز في مسودات التخزين المحلي بنجاح نظراً لأن وضع العمل أوفلاين نشط. سيتم توريدها بمجرد عودة الإنترنت والضغط على مزامنة.',
-            style: GoogleFonts.cairo(color: Colors.white70),
+            style: TextStyle(fontFamily: 'BeIN', color: Colors.white70),
           ),
           actions: [
             TextButton(
               onPressed: () => Get.back(),
-              child: Text('حسناً', style: GoogleFonts.cairo(color: AppColors.primary, fontWeight: FontWeight.bold)),
+              child: Text('حسناً', style: TextStyle(fontFamily: 'BeIN', color: AppColors.primary, fontWeight: FontWeight.bold)),
             ),
           ],
         ),
@@ -476,12 +451,12 @@ class _SubmitDevicePageState extends State<SubmitDevicePage> {
               const SizedBox(height: 12),
               Text(
                 'تم تسجيل التوريد بنجاح',
-                style: GoogleFonts.cairo(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
+                style: TextStyle(fontFamily: 'BeIN', fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
               ),
               const SizedBox(height: 4),
               Text(
                 'معاينة إيصال الاستلام الرقمي',
-                style: GoogleFonts.cairo(fontSize: 13, color: AppColors.textSecondary),
+                style: TextStyle(fontFamily: 'BeIN', fontSize: 13, color: AppColors.textSecondary),
               ),
               const SizedBox(height: 20),
               
@@ -519,7 +494,7 @@ class _SubmitDevicePageState extends State<SubmitDevicePage> {
                         await controller.submitDevice(device);
                       },
                       icon: const Icon(Icons.send),
-                      label: Text('تأكيد وإرسال', style: GoogleFonts.cairo(fontWeight: FontWeight.bold)),
+                      label: Text('تأكيد وإرسال', style: TextStyle(fontFamily: 'BeIN', fontWeight: FontWeight.bold)),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
                         foregroundColor: Colors.white,
@@ -563,8 +538,8 @@ class _SubmitDevicePageState extends State<SubmitDevicePage> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: GoogleFonts.cairo(color: AppColors.textSecondary, fontSize: 12)),
-          Text(value, style: GoogleFonts.cairo(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+          Text(label, style: TextStyle(fontFamily: 'BeIN', color: AppColors.textSecondary, fontSize: 12)),
+          Text(value, style: TextStyle(fontFamily: 'BeIN', color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
         ],
       ),
     );
@@ -580,7 +555,7 @@ class _SubmitDevicePageState extends State<SubmitDevicePage> {
       appBar: AppBar(
         title: Text(
           'إدخال وتوريد الأجهزة الذكي',
-          style: GoogleFonts.cairo(
+          style: TextStyle(fontFamily: 'BeIN', 
             fontWeight: FontWeight.bold,
             color: Colors.white,
           ),
@@ -671,7 +646,7 @@ class _SubmitDevicePageState extends State<SubmitDevicePage> {
                       Expanded(
                         child: Text(
                           'تعمل الآن في وضع عدم الاتصال. سيتم حفظ الأجهزة محلياً.',
-                          style: GoogleFonts.cairo(color: AppColors.warning, fontSize: 12, fontWeight: FontWeight.bold),
+                          style: TextStyle(fontFamily: 'BeIN', color: AppColors.warning, fontSize: 12, fontWeight: FontWeight.bold),
                         ),
                       ),
                     ],
@@ -725,7 +700,7 @@ class _SubmitDevicePageState extends State<SubmitDevicePage> {
                 // Accessories Section (Visual Grid)
                 Text(
                   'الملحقات المستلمة بالجهاز',
-                  style: GoogleFonts.cairo(
+                  style: TextStyle(fontFamily: 'BeIN', 
                     fontSize: 15,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
@@ -747,7 +722,7 @@ class _SubmitDevicePageState extends State<SubmitDevicePage> {
                 // Damage Section (Visual Chips Grid)
                 Text(
                   'تقييم الضرر والكسر للجهاز المستلم',
-                  style: GoogleFonts.cairo(
+                  style: TextStyle(fontFamily: 'BeIN', 
                     fontSize: 15,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
@@ -785,7 +760,7 @@ class _SubmitDevicePageState extends State<SubmitDevicePage> {
                   controller.isLoading 
                       ? 'جاري الإرسال...' 
                       : (_isOfflineMode ? 'حفظ كمسودة محلياً' : 'إرسال وتسجيل التوريد'),
-                  style: GoogleFonts.cairo(
+                  style: TextStyle(fontFamily: 'BeIN', 
                     fontWeight: FontWeight.bold,
                     fontSize: 15,
                   ),
@@ -821,7 +796,7 @@ class _SubmitDevicePageState extends State<SubmitDevicePage> {
       children: [
         Text(
           'تصنيف المنتج',
-          style: GoogleFonts.cairo(
+          style: TextStyle(fontFamily: 'BeIN', 
             fontSize: 15,
             fontWeight: FontWeight.bold,
             color: Colors.white,
@@ -856,7 +831,7 @@ class _SubmitDevicePageState extends State<SubmitDevicePage> {
                       const SizedBox(height: 6),
                       Text(
                         cat['name'] as String,
-                        style: GoogleFonts.cairo(
+                        style: TextStyle(fontFamily: 'BeIN', 
                           fontSize: 12,
                           fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                           color: isSelected ? Colors.white : AppColors.textSecondary,
@@ -879,7 +854,7 @@ class _SubmitDevicePageState extends State<SubmitDevicePage> {
       children: [
         Text(
           'نوع المنتج التفصيلي',
-          style: GoogleFonts.cairo(
+          style: TextStyle(fontFamily: 'BeIN', 
             fontSize: 15,
             fontWeight: FontWeight.bold,
             color: Colors.white,
@@ -897,7 +872,7 @@ class _SubmitDevicePageState extends State<SubmitDevicePage> {
             ),
             child: Text(
               'لا توجد أنواع منتجات معرفة في هذا التصنيف بالخادم',
-              style: GoogleFonts.cairo(color: AppColors.error, fontSize: 14),
+              style: TextStyle(fontFamily: 'BeIN', color: AppColors.error, fontSize: 14),
             ),
           )
         else
@@ -918,7 +893,7 @@ class _SubmitDevicePageState extends State<SubmitDevicePage> {
                   value: type.id,
                   child: Text(
                     type.nameAr,
-                    style: GoogleFonts.cairo(color: Colors.white),
+                    style: TextStyle(fontFamily: 'BeIN', color: Colors.white),
                   ),
                 );
               }).toList(),
@@ -928,7 +903,7 @@ class _SubmitDevicePageState extends State<SubmitDevicePage> {
                 contentPadding: EdgeInsets.zero,
               ),
               dropdownColor: AppColors.surfaceDark,
-              style: GoogleFonts.cairo(color: Colors.white),
+              style: TextStyle(fontFamily: 'BeIN', color: Colors.white),
               icon: Icon(Icons.arrow_drop_down, color: AppColors.primary),
             ),
           ),
@@ -947,7 +922,7 @@ class _SubmitDevicePageState extends State<SubmitDevicePage> {
       children: [
         Text(
           'المستودع المستهدف لتسجيل المخزون',
-          style: GoogleFonts.cairo(
+          style: TextStyle(fontFamily: 'BeIN', 
             fontSize: 15,
             fontWeight: FontWeight.bold,
             color: Colors.white,
@@ -982,7 +957,7 @@ class _SubmitDevicePageState extends State<SubmitDevicePage> {
                       const SizedBox(width: 8),
                       Text(
                         opt['name'] as String,
-                        style: GoogleFonts.cairo(
+                        style: TextStyle(fontFamily: 'BeIN', 
                           fontSize: 13,
                           fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                           color: isSelected ? Colors.white : AppColors.textSecondary,
@@ -1000,12 +975,13 @@ class _SubmitDevicePageState extends State<SubmitDevicePage> {
   }
 
   Widget _buildSmartSerialField() {
+    final controller = Get.find<DevicesController>();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           'الرقم التسلسلي (Serial Number) / باركود المنتج',
-          style: GoogleFonts.cairo(
+          style: TextStyle(fontFamily: 'BeIN', 
             fontSize: 15,
             fontWeight: FontWeight.bold,
             color: Colors.white,
@@ -1023,7 +999,7 @@ class _SubmitDevicePageState extends State<SubmitDevicePage> {
           ),
           child: TextFormField(
             controller: _serialNumberController,
-            style: GoogleFonts.cairo(color: AppColors.textPrimary),
+            style: TextStyle(fontFamily: 'BeIN', color: AppColors.textPrimary),
             validator: (value) {
               if (value == null || value.trim().isEmpty) {
                 return 'يرجى إدخال الرقم التسلسلي أو مسح الباركود';
@@ -1032,7 +1008,7 @@ class _SubmitDevicePageState extends State<SubmitDevicePage> {
             },
             decoration: InputDecoration(
               hintText: 'أدخل الرقم التسلسلي أو امسح الباركود...',
-              hintStyle: GoogleFonts.cairo(color: AppColors.textSecondary.withOpacity(0.6), fontSize: 13),
+              hintStyle: TextStyle(fontFamily: 'BeIN', color: AppColors.textSecondary.withOpacity(0.6), fontSize: 13),
               prefixIcon: const Icon(Icons.qr_code, color: AppColors.primary),
               suffixIcon: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -1051,26 +1027,44 @@ class _SubmitDevicePageState extends State<SubmitDevicePage> {
                             onPressed: _lookupCustody,
                             child: Text(
                               'فحص العهدة',
-                              style: GoogleFonts.cairo(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 12),
+                              style: TextStyle(fontFamily: 'BeIN', color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 12),
                             ),
                           ),
                   IconButton(
                     icon: const Icon(Icons.qr_code_scanner, color: AppColors.primary),
                     onPressed: () async {
-                      final result = await Navigator.push<String>(
+                      final result = await Navigator.push<dynamic>(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => const BarcodeScannerWidget(
+                          builder: (context) => BarcodeScannerWidget(
                             title: 'مسح الرقم التسلسلي',
+                            itemTypes: controller.itemTypes,
+                            selectedItemTypeId: _selectedItemTypeId,
                           ),
                         ),
                       );
                       if (result != null) {
-                        setState(() {
-                          _serialNumberController.text = result;
-                        });
-                        if (_selectedCategory == 'devices') {
-                          _lookupCustody();
+                        String? code;
+                        String? returnedItemTypeId;
+                        if (result is Map) {
+                          code = result['code'] as String?;
+                          returnedItemTypeId = result['itemTypeId'] as String?;
+                        } else if (result is String) {
+                          code = result;
+                        }
+                        
+                        if (code != null) {
+                          setState(() {
+                            _serialNumberController.text = code!;
+                            if (returnedItemTypeId != null) {
+                              _selectedItemTypeId = returnedItemTypeId;
+                              final type = controller.itemTypes.firstWhere((t) => t.id == returnedItemTypeId);
+                              _selectedCategory = type.category ?? 'devices';
+                            }
+                          });
+                          if (_selectedCategory == 'devices') {
+                            _lookupCustody();
+                          }
                         }
                       }
                     },
@@ -1116,27 +1110,27 @@ class _SubmitDevicePageState extends State<SubmitDevicePage> {
                   ? [
                       Text(
                         'جهاز معروف - عهدة نشطة في الميدان',
-                        style: GoogleFonts.cairo(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 13),
+                        style: TextStyle(fontFamily: 'BeIN', fontWeight: FontWeight.bold, color: Colors.white, fontSize: 13),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         'الحائز الحالي: ${info['technician']} (${info['city']})',
-                        style: GoogleFonts.cairo(color: Colors.white70, fontSize: 12),
+                        style: TextStyle(fontFamily: 'BeIN', color: Colors.white70, fontSize: 12),
                       ),
                       Text(
                         'حالة العهدة: ${info['status']}',
-                        style: GoogleFonts.cairo(color: AppColors.success, fontSize: 12, fontWeight: FontWeight.bold),
+                        style: TextStyle(fontFamily: 'BeIN', color: AppColors.success, fontSize: 12, fontWeight: FontWeight.bold),
                       ),
                     ]
                   : [
                       Text(
                         'جهاز غير مدرج بعهدة فني',
-                        style: GoogleFonts.cairo(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 13),
+                        style: TextStyle(fontFamily: 'BeIN', fontWeight: FontWeight.bold, color: Colors.white, fontSize: 13),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         info['message'] as String,
-                        style: GoogleFonts.cairo(color: Colors.white70, fontSize: 12),
+                        style: TextStyle(fontFamily: 'BeIN', color: Colors.white70, fontSize: 12),
                       ),
                     ],
             ),
@@ -1192,7 +1186,7 @@ class _SubmitDevicePageState extends State<SubmitDevicePage> {
             Expanded(
               child: Text(
                 title,
-                style: GoogleFonts.cairo(
+                style: TextStyle(fontFamily: 'BeIN', 
                   fontSize: 13,
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                   color: isSelected ? Colors.white : AppColors.textSecondary,
@@ -1237,7 +1231,7 @@ class _SubmitDevicePageState extends State<SubmitDevicePage> {
             ),
             child: Text(
               entry.value,
-              style: GoogleFonts.cairo(
+              style: TextStyle(fontFamily: 'BeIN', 
                 fontSize: 13,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                 color: isSelected ? Colors.white : AppColors.textSecondary,
@@ -1260,7 +1254,7 @@ class _SubmitDevicePageState extends State<SubmitDevicePage> {
       children: [
         Text(
           label,
-          style: GoogleFonts.cairo(
+          style: TextStyle(fontFamily: 'BeIN', 
             fontSize: 14,
             fontWeight: FontWeight.bold,
             color: Colors.white,
@@ -1283,7 +1277,7 @@ class _SubmitDevicePageState extends State<SubmitDevicePage> {
               isExpanded: true,
               dropdownColor: AppColors.surfaceDark,
               icon: const Icon(Icons.arrow_drop_down, color: AppColors.primary),
-              style: GoogleFonts.cairo(color: Colors.white, fontSize: 14),
+              style: TextStyle(fontFamily: 'BeIN', color: Colors.white, fontSize: 14),
               onChanged: onChanged,
               items: items.map<DropdownMenuItem<String>>((String val) {
                 return DropdownMenuItem<String>(
@@ -1316,11 +1310,11 @@ class _SubmitDevicePageState extends State<SubmitDevicePage> {
       ),
       child: TextFormField(
         controller: controller,
-        style: GoogleFonts.cairo(color: AppColors.textPrimary),
+        style: TextStyle(fontFamily: 'BeIN', color: AppColors.textPrimary),
         maxLines: maxLines,
         decoration: InputDecoration(
           labelText: label,
-          labelStyle: GoogleFonts.cairo(color: AppColors.textSecondary, fontSize: 13),
+          labelStyle: TextStyle(fontFamily: 'BeIN', color: AppColors.textSecondary, fontSize: 13),
           prefixIcon: Icon(icon, color: AppColors.primary),
           suffixIcon: onScanPressed != null
               ? IconButton(

@@ -124,7 +124,7 @@ class DashboardPage extends GetView<DashboardController> {
                             onPressed: () => Get.toNamed(Routes.serializedCustody),
                             child: Text(
                               'عرض التفاصيل',
-                              style: GoogleFonts.cairo(
+                              style: TextStyle(fontFamily: 'BeIN', 
                                 color: AppColors.primary,
                                 fontWeight: FontWeight.bold,
                                 fontSize: 13,
@@ -198,7 +198,7 @@ class DashboardPage extends GetView<DashboardController> {
               children: [
                 Text(
                   'صباح الخير، ${user.fullName}',
-                  style: GoogleFonts.cairo(
+                  style: TextStyle(fontFamily: 'BeIN', 
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
@@ -209,14 +209,14 @@ class DashboardPage extends GetView<DashboardController> {
                   children: [
                     Text(
                       'فني رقم: ',
-                      style: GoogleFonts.cairo(
+                      style: TextStyle(fontFamily: 'BeIN', 
                         fontSize: 13,
                         color: AppColors.textSecondary,
                       ),
                     ),
                     Text(
                       techCode,
-                      style: GoogleFonts.cairo(
+                      style: TextStyle(fontFamily: 'BeIN', 
                         fontSize: 13,
                         fontWeight: FontWeight.bold,
                         color: AppColors.primary,
@@ -269,7 +269,7 @@ class DashboardPage extends GetView<DashboardController> {
                         child: Center(
                           child: Text(
                             '$count',
-                            style: GoogleFonts.cairo(
+                            style: TextStyle(fontFamily: 'BeIN', 
                               color: Colors.white,
                               fontSize: 9,
                               fontWeight: FontWeight.bold,
@@ -303,7 +303,7 @@ class DashboardPage extends GetView<DashboardController> {
                     const SizedBox(width: 6),
                     Text(
                       isOnline ? 'متصل' : 'أوفلاين',
-                      style: GoogleFonts.cairo(
+                      style: TextStyle(fontFamily: 'BeIN', 
                         color: isOnline ? AppColors.success : AppColors.warning,
                         fontSize: 11,
                         fontWeight: FontWeight.bold,
@@ -349,7 +349,7 @@ class DashboardPage extends GetView<DashboardController> {
                 children: [
                   Text(
                     'معدل إنجاز المهام اليومية',
-                    style: GoogleFonts.cairo(
+                    style: TextStyle(fontFamily: 'BeIN', 
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
@@ -358,7 +358,7 @@ class DashboardPage extends GetView<DashboardController> {
                   const SizedBox(height: 2),
                   Text(
                     'تم إنجاز $displayCompleted من أصل $displayTotal طلبات زيارة اليوم',
-                    style: GoogleFonts.cairo(
+                    style: TextStyle(fontFamily: 'BeIN', 
                       fontSize: 12,
                       color: AppColors.textSecondary,
                     ),
@@ -373,7 +373,7 @@ class DashboardPage extends GetView<DashboardController> {
                 ),
                 child: Text(
                   '${(percentage * 100).toInt()}%',
-                  style: GoogleFonts.cairo(
+                  style: TextStyle(fontFamily: 'BeIN', 
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
                     fontSize: 13,
@@ -428,7 +428,7 @@ class DashboardPage extends GetView<DashboardController> {
                   children: [
                     Text(
                       'تنبيه: أنت في وضع عدم الاتصال',
-                      style: GoogleFonts.cairo(
+                      style: TextStyle(fontFamily: 'BeIN', 
                         fontWeight: FontWeight.bold,
                         color: const Color(0xFF78350F),
                         fontSize: 14,
@@ -436,7 +436,7 @@ class DashboardPage extends GetView<DashboardController> {
                     ),
                     Text(
                       'لديك $count عمليات معلقة جاهزة للمزامنة',
-                      style: GoogleFonts.cairo(
+                      style: TextStyle(fontFamily: 'BeIN', 
                         color: const Color(0xFF92400E),
                         fontSize: 12,
                       ),
@@ -450,7 +450,7 @@ class DashboardPage extends GetView<DashboardController> {
               icon: const Icon(Icons.sync_rounded, size: 18, color: Colors.white),
               label: Text(
                 'مزامنة الآن',
-                style: GoogleFonts.cairo(
+                style: TextStyle(fontFamily: 'BeIN', 
                   fontWeight: FontWeight.bold,
                   fontSize: 12,
                   color: Colors.white,
@@ -584,7 +584,7 @@ class DashboardPage extends GetView<DashboardController> {
           const SizedBox(height: 2),
           Text(
             title,
-            style: GoogleFonts.cairo(
+            style: TextStyle(fontFamily: 'BeIN', 
               fontSize: 11,
               color: AppColors.textSecondary,
               fontWeight: FontWeight.bold,
@@ -794,7 +794,7 @@ class DashboardPage extends GetView<DashboardController> {
                     children: [
                       Text(
                         title,
-                        style: GoogleFonts.cairo(
+                        style: TextStyle(fontFamily: 'BeIN', 
                           fontSize: 13.5,
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
@@ -805,7 +805,7 @@ class DashboardPage extends GetView<DashboardController> {
                         children: [
                           Text(
                             '$count',
-                            style: GoogleFonts.cairo(
+                            style: TextStyle(fontFamily: 'BeIN', 
                               color: color,
                               fontWeight: FontWeight.bold,
                               fontSize: 14,
@@ -813,7 +813,7 @@ class DashboardPage extends GetView<DashboardController> {
                           ),
                           Text(
                             '/$totalLimit',
-                            style: GoogleFonts.cairo(
+                            style: TextStyle(fontFamily: 'BeIN', 
                               color: AppColors.textSecondary,
                               fontSize: 11,
                             ),
@@ -843,7 +843,7 @@ class DashboardPage extends GetView<DashboardController> {
                         ),
                         child: Text(
                           isSerialized ? 'رقم تسلسلي' : 'غير تسلسلي',
-                          style: GoogleFonts.cairo(
+                          style: TextStyle(fontFamily: 'BeIN', 
                             fontSize: 9,
                             color: isSerialized ? AppColors.primary : AppColors.textSecondary,
                             fontWeight: FontWeight.bold,
@@ -935,7 +935,7 @@ class DashboardPage extends GetView<DashboardController> {
               children: [
                 Text(
                   'آخر إشعار',
-                  style: GoogleFonts.cairo(
+                  style: TextStyle(fontFamily: 'BeIN', 
                     fontSize: 11,
                     color: AppColors.textSecondary,
                     fontWeight: FontWeight.bold,
@@ -943,7 +943,7 @@ class DashboardPage extends GetView<DashboardController> {
                 ),
                 Text(
                   'تم إرسال عهدة جديدة لك من المستودع الرئيسي.',
-                  style: GoogleFonts.cairo(
+                  style: TextStyle(fontFamily: 'BeIN', 
                     fontSize: 13,
                     color: Colors.white,
                   ),
@@ -956,7 +956,7 @@ class DashboardPage extends GetView<DashboardController> {
           const SizedBox(width: 8),
           Text(
             'منذ ٥ د',
-            style: GoogleFonts.cairo(
+            style: TextStyle(fontFamily: 'BeIN', 
               fontSize: 11,
               color: AppColors.textMuted,
             ),
@@ -988,7 +988,7 @@ class DashboardPage extends GetView<DashboardController> {
             const SizedBox(height: 24),
             Text(
               'حدث خطأ',
-              style: GoogleFonts.cairo(
+              style: TextStyle(fontFamily: 'BeIN', 
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
@@ -997,7 +997,7 @@ class DashboardPage extends GetView<DashboardController> {
             const SizedBox(height: 12),
             Text(
               controller.error ?? 'حدث خطأ في تحميل البيانات',
-              style: GoogleFonts.cairo(
+              style: TextStyle(fontFamily: 'BeIN', 
                 fontSize: 16,
                 color: AppColors.textSecondary,
               ),
@@ -1009,7 +1009,7 @@ class DashboardPage extends GetView<DashboardController> {
               icon: const Icon(Icons.refresh),
               label: Text(
                 'إعادة المحاولة',
-                style: GoogleFonts.cairo(
+                style: TextStyle(fontFamily: 'BeIN', 
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -1044,7 +1044,7 @@ class DashboardPage extends GetView<DashboardController> {
           const SizedBox(height: 16),
           Text(
             'يرجى تسجيل الدخول',
-            style: GoogleFonts.cairo(
+            style: TextStyle(fontFamily: 'BeIN', 
               fontSize: 18,
               color: AppColors.textSecondary,
             ),
@@ -1062,7 +1062,7 @@ class DashboardPage extends GetView<DashboardController> {
             ),
             child: Text(
               'تسجيل الدخول',
-              style: GoogleFonts.cairo(
+              style: TextStyle(fontFamily: 'BeIN', 
                 fontWeight: FontWeight.bold,
               ),
             ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../../core/utils/validators.dart';
 import '../../../../shared/widgets/barcode_scanner_widget.dart';
+import '../../../../shared/utils/barcode_validator.dart';
 
 class DeviceForm extends StatefulWidget {
   final Function(Map<String, dynamic>) onSubmit;
@@ -83,7 +84,11 @@ class _DeviceFormState extends State<DeviceForm> {
                       prefixIcon: const Icon(Icons.qr_code),
                     ),
                     textDirection: TextDirection.rtl,
-                    validator: (value) => Validators.required(value),
+                    validator: (value) {
+                      final req = Validators.required(value);
+                      if (req != null) return req;
+                      return BarcodeValidator.validateAnyDevice(value!);
+                    },
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -99,8 +104,20 @@ class _DeviceFormState extends State<DeviceForm> {
                       ),
                     );
                     if (result != null) {
+                      final cleanResult = result.trim();
+                      final validationError = BarcodeValidator.validateAnyDevice(cleanResult);
+                      if (validationError != null) {
+                        Get.snackbar(
+                          'خطأ في التحقق',
+                          validationError,
+                          snackPosition: SnackPosition.BOTTOM,
+                          backgroundColor: Colors.red,
+                          colorText: Colors.white,
+                        );
+                        return;
+                      }
                       setState(() {
-                        _serialNumberController.text = result;
+                        _serialNumberController.text = cleanResult;
                       });
                     }
                   },

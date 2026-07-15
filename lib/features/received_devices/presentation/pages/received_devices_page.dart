@@ -5,6 +5,7 @@ import 'package:shimmer/shimmer.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/widgets/app_drawer.dart';
 import '../../../../shared/widgets/barcode_scanner_widget.dart';
+import '../../../../shared/utils/barcode_validator.dart';
 import '../../presentation/controllers/devices_controller.dart';
 import '../../data/models/received_device.dart';
 import '../../../../shared/models/item_type.dart';
@@ -139,7 +140,7 @@ class _ReceivedDevicesPageState extends State<ReceivedDevicesPage> with SingleTi
       appBar: AppBar(
         title: Text(
           'سجل الأجهزة المسحوبة',
-          style: GoogleFonts.cairo(
+          style: TextStyle(fontFamily: 'BeIN', 
             fontWeight: FontWeight.bold,
             color: Colors.white,
           ),
@@ -158,8 +159,8 @@ class _ReceivedDevicesPageState extends State<ReceivedDevicesPage> with SingleTi
           indicatorColor: AppColors.primary,
           labelColor: AppColors.primary,
           unselectedLabelColor: AppColors.textSecondary,
-          labelStyle: GoogleFonts.cairo(fontWeight: FontWeight.bold, fontSize: 13),
-          unselectedLabelStyle: GoogleFonts.cairo(fontWeight: FontWeight.normal, fontSize: 13),
+          labelStyle: TextStyle(fontFamily: 'BeIN', fontWeight: FontWeight.bold, fontSize: 13),
+          unselectedLabelStyle: TextStyle(fontFamily: 'BeIN', fontWeight: FontWeight.normal, fontSize: 13),
           tabs: const [
             Tab(text: 'الكل'),
             Tab(text: 'معلق'),
@@ -190,7 +191,7 @@ class _ReceivedDevicesPageState extends State<ReceivedDevicesPage> with SingleTi
                   const SizedBox(height: 16),
                   Text(
                     'لا توجد أجهزة مسحوبة في هذا التبويب',
-                    style: GoogleFonts.cairo(
+                    style: TextStyle(fontFamily: 'BeIN', 
                       fontSize: 16,
                       color: AppColors.textSecondary,
                     ),
@@ -218,7 +219,7 @@ class _ReceivedDevicesPageState extends State<ReceivedDevicesPage> with SingleTi
         onPressed: () => _showDeliveryOptions(context, controller),
         label: Text(
           'تسليم العهدة',
-          style: GoogleFonts.cairo(
+          style: TextStyle(fontFamily: 'BeIN', 
             fontWeight: FontWeight.bold,
             color: Colors.white,
             fontSize: 14,
@@ -258,7 +259,7 @@ class _ReceivedDevicesPageState extends State<ReceivedDevicesPage> with SingleTi
               const SizedBox(height: 20),
               Text(
                 'تسليم العهدة (الأجهزة المسحوبة)',
-                style: GoogleFonts.cairo(
+                style: TextStyle(fontFamily: 'BeIN', 
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
@@ -267,7 +268,7 @@ class _ReceivedDevicesPageState extends State<ReceivedDevicesPage> with SingleTi
               const SizedBox(height: 8),
               Text(
                 'اختر طريقة إدخال بيانات الجهاز لتأكيد التسليم',
-                style: GoogleFonts.cairo(
+                style: TextStyle(fontFamily: 'BeIN', 
                   fontSize: 12,
                   color: AppColors.textSecondary,
                 ),
@@ -287,7 +288,20 @@ class _ReceivedDevicesPageState extends State<ReceivedDevicesPage> with SingleTi
                     ),
                   );
                   if (result != null && result.trim().isNotEmpty) {
-                    await controller.deliverDeviceByBarcode(result.trim());
+                    final cleanResult = result.trim();
+                    final validationError = BarcodeValidator.validateAnyDevice(cleanResult);
+                    if (validationError != null) {
+                      Get.snackbar(
+                        'خطأ في مسح الباركود',
+                        validationError,
+                        snackPosition: SnackPosition.BOTTOM,
+                        backgroundColor: AppColors.error,
+                        colorText: Colors.white,
+                        duration: const Duration(seconds: 4),
+                      );
+                      return;
+                    }
+                    await controller.deliverDeviceByBarcode(cleanResult);
                   }
                 },
                 borderRadius: BorderRadius.circular(16),
@@ -315,7 +329,7 @@ class _ReceivedDevicesPageState extends State<ReceivedDevicesPage> with SingleTi
                           children: [
                             Text(
                               'مسح باركود بالكاميرا',
-                              style: GoogleFonts.cairo(
+                              style: TextStyle(fontFamily: 'BeIN', 
                                 fontSize: 14,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.white,
@@ -323,7 +337,7 @@ class _ReceivedDevicesPageState extends State<ReceivedDevicesPage> with SingleTi
                             ),
                             Text(
                               'استخدم كاميرا الجوال لمسح باركود الجهاز تلقائياً',
-                              style: GoogleFonts.cairo(
+                              style: TextStyle(fontFamily: 'BeIN', 
                                 fontSize: 11,
                                 color: AppColors.textSecondary,
                               ),
@@ -369,7 +383,7 @@ class _ReceivedDevicesPageState extends State<ReceivedDevicesPage> with SingleTi
                           children: [
                             Text(
                               'إدخال يدوي للبيانات',
-                              style: GoogleFonts.cairo(
+                              style: TextStyle(fontFamily: 'BeIN', 
                                 fontSize: 14,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.white,
@@ -377,7 +391,7 @@ class _ReceivedDevicesPageState extends State<ReceivedDevicesPage> with SingleTi
                             ),
                             Text(
                               'كتابة الرقم التسلسلي أو باركود الجهاز يدوياً',
-                              style: GoogleFonts.cairo(
+                              style: TextStyle(fontFamily: 'BeIN', 
                                 fontSize: 11,
                                 color: AppColors.textSecondary,
                               ),
@@ -425,7 +439,7 @@ class _ReceivedDevicesPageState extends State<ReceivedDevicesPage> with SingleTi
               const SizedBox(width: 12),
               Text(
                 'إدخال يدوي للعهد المستلمة',
-                style: GoogleFonts.cairo(
+                style: TextStyle(fontFamily: 'BeIN', 
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
                   fontSize: 16,
@@ -441,7 +455,7 @@ class _ReceivedDevicesPageState extends State<ReceivedDevicesPage> with SingleTi
               children: [
                 Text(
                   'يرجى كتابة الرقم التسلسلي (Serial Number) أو الباركود الخاص بالجهاز المُراد تأكيد تسليمه:',
-                  style: GoogleFonts.cairo(
+                  style: TextStyle(fontFamily: 'BeIN', 
                     color: Colors.white70,
                     fontSize: 12,
                     height: 1.5,
@@ -454,7 +468,7 @@ class _ReceivedDevicesPageState extends State<ReceivedDevicesPage> with SingleTi
                   style: GoogleFonts.poppins(color: Colors.white, fontSize: 14),
                   decoration: InputDecoration(
                     hintText: 'أدخل الرقم التسلسلي هنا...',
-                    hintStyle: GoogleFonts.cairo(color: Colors.white24, fontSize: 13),
+                    hintStyle: TextStyle(fontFamily: 'BeIN', color: Colors.white24, fontSize: 13),
                     filled: true,
                     fillColor: AppColors.backgroundDark,
                     border: OutlineInputBorder(
@@ -475,7 +489,7 @@ class _ReceivedDevicesPageState extends State<ReceivedDevicesPage> with SingleTi
                     if (value == null || value.trim().isEmpty) {
                       return 'حقل الرقم التسلسلي مطلوب';
                     }
-                    return null;
+                    return BarcodeValidator.validateAnyDevice(value);
                   },
                 ),
               ],
@@ -486,7 +500,7 @@ class _ReceivedDevicesPageState extends State<ReceivedDevicesPage> with SingleTi
               onPressed: () => Get.back(),
               child: Text(
                 'إلغاء',
-                style: GoogleFonts.cairo(
+                style: TextStyle(fontFamily: 'BeIN', 
                   color: Colors.white54,
                   fontWeight: FontWeight.bold,
                   fontSize: 13,
@@ -510,7 +524,7 @@ class _ReceivedDevicesPageState extends State<ReceivedDevicesPage> with SingleTi
               ),
               child: Text(
                 'تأكيد التسليم',
-                style: GoogleFonts.cairo(
+                style: TextStyle(fontFamily: 'BeIN', 
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
                   fontSize: 13,
@@ -593,7 +607,7 @@ class _ReceivedDeviceCard extends StatelessWidget {
                       children: [
                         Text(
                           itemName,
-                          style: GoogleFonts.cairo(
+                          style: TextStyle(fontFamily: 'BeIN', 
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
@@ -602,7 +616,7 @@ class _ReceivedDeviceCard extends StatelessWidget {
                         const SizedBox(height: 2),
                         Text(
                           'باركود: ${device.serialNumber}',
-                          style: GoogleFonts.cairo(
+                          style: TextStyle(fontFamily: 'BeIN', 
                             fontSize: 12,
                             color: AppColors.textSecondary,
                           ),
@@ -622,7 +636,7 @@ class _ReceivedDeviceCard extends StatelessWidget {
                         ),
                         child: Text(
                           device.statusText,
-                          style: GoogleFonts.cairo(
+                          style: TextStyle(fontFamily: 'BeIN', 
                             fontSize: 11,
                             fontWeight: FontWeight.bold,
                             color: device.statusColor,
@@ -632,7 +646,7 @@ class _ReceivedDeviceCard extends StatelessWidget {
                       const SizedBox(height: 6),
                       Text(
                         device.inventoryType == 'moving' ? 'مخزون متحرك' : 'مخزون ثابت',
-                        style: GoogleFonts.cairo(
+                        style: TextStyle(fontFamily: 'BeIN', 
                           fontSize: 11,
                           fontWeight: FontWeight.bold,
                           color: device.inventoryType == 'moving'
@@ -664,7 +678,7 @@ class _ReceivedDeviceCard extends StatelessWidget {
                       Expanded(
                         child: Text(
                           device.damagePart!,
-                          style: GoogleFonts.cairo(fontSize: 12, color: Colors.white70),
+                          style: TextStyle(fontFamily: 'BeIN', fontSize: 12, color: Colors.white70),
                         ),
                       ),
                     ],
@@ -681,7 +695,7 @@ class _ReceivedDeviceCard extends StatelessWidget {
                         .toString()
                         .split('.')
                         .first,
-                    style: GoogleFonts.cairo(
+                    style: TextStyle(fontFamily: 'BeIN', 
                       fontSize: 11,
                       color: AppColors.textSecondary.withOpacity(0.5),
                     ),
@@ -690,7 +704,7 @@ class _ReceivedDeviceCard extends StatelessWidget {
                     children: [
                       Text(
                         'عرض التفاصيل',
-                        style: GoogleFonts.cairo(
+                        style: TextStyle(fontFamily: 'BeIN', 
                           fontSize: 12,
                           color: AppColors.primary,
                           fontWeight: FontWeight.bold,

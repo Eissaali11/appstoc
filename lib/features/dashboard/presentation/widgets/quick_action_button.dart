@@ -102,7 +102,7 @@ class _QuickActionButtonState extends State<QuickActionButton>
                           const SizedBox(height: 8),
                           Text(
                             widget.label,
-                            style: GoogleFonts.cairo(
+                            style: TextStyle(fontFamily: 'BeIN', 
                               fontSize: 13,
                               fontWeight: FontWeight.w600,
                               color: Colors.white,

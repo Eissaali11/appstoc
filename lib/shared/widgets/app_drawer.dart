@@ -60,8 +60,8 @@ class AppDrawer extends StatelessWidget {
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(18),
                         child: Image.asset(
-                          'assets/ico1.png',
-                          fit: BoxFit.cover,
+                          'assets/images/rassco_logo.png',
+                          fit: BoxFit.contain,
                         ),
                       ),
                     ),
@@ -74,7 +74,7 @@ class AppDrawer extends StatelessWidget {
                         children: [
                           Text(
                             user?.fullName ?? 'drawer_user_default'.tr,
-                            style: GoogleFonts.cairo(
+                            style: TextStyle(fontFamily: 'BeIN', 
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
                               color: Colors.white,
@@ -85,7 +85,7 @@ class AppDrawer extends StatelessWidget {
                           const SizedBox(height: 4),
                           Text(
                             '@${user?.username ?? 'stockpro'}',
-                            style: GoogleFonts.cairo(
+                            style: TextStyle(fontFamily: 'BeIN', 
                               fontSize: 13,
                               color: Colors.white.withValues(alpha: 0.9),
                             ),
@@ -117,7 +117,7 @@ class AppDrawer extends StatelessWidget {
                                 const SizedBox(width: 6),
                                 Text(
                                   'drawer_badge'.tr,
-                                  style: GoogleFonts.cairo(
+                                  style: TextStyle(fontFamily: 'BeIN', 
                                     fontSize: 11,
                                     color: Colors.white,
                                   ),
@@ -308,21 +308,21 @@ class AppDrawer extends StatelessWidget {
                             backgroundColor: AppColors.surfaceDark,
                             title: Text(
                               'confirm'.tr,
-                              style: GoogleFonts.cairo(
+                              style: TextStyle(fontFamily: 'BeIN', 
                                 fontWeight: FontWeight.bold,
                                 color: Colors.white,
                               ),
                             ),
                             content: Text(
                               'logout_confirm'.tr,
-                              style: GoogleFonts.cairo(color: Colors.white),
+                              style: TextStyle(fontFamily: 'BeIN', color: Colors.white),
                             ),
                             actions: [
                               TextButton(
                                 onPressed: () => Get.back(),
                                 child: Text(
                                   'cancel'.tr,
-                                  style: GoogleFonts.cairo(
+                                  style: TextStyle(fontFamily: 'BeIN', 
                                     color: AppColors.textSecondary,
                                   ),
                                 ),
@@ -339,7 +339,7 @@ class AppDrawer extends StatelessWidget {
                                 ),
                                 child: Text(
                                   'تسجيل الخروج',
-                                  style: GoogleFonts.cairo(
+                                  style: TextStyle(fontFamily: 'BeIN', 
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
@@ -364,7 +364,7 @@ class AppDrawer extends StatelessWidget {
                             const SizedBox(width: 12),
                             Text(
                               'logout'.tr,
-                              style: GoogleFonts.cairo(
+                              style: TextStyle(fontFamily: 'BeIN', 
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.white,
@@ -400,7 +400,7 @@ class AppDrawer extends StatelessWidget {
           const SizedBox(width: 8),
           Text(
             title,
-            style: GoogleFonts.cairo(
+            style: TextStyle(fontFamily: 'BeIN', 
               fontSize: 11,
               fontWeight: FontWeight.bold,
               color: AppColors.textSecondary,
@@ -488,7 +488,7 @@ class _DrawerItem extends StatelessWidget {
                 Expanded(
                   child: Text(
                     title,
-                    style: GoogleFonts.cairo(
+                    style: TextStyle(fontFamily: 'BeIN', 
                       fontSize: 16,
                       fontWeight: isActive ? FontWeight.bold : FontWeight.w600,
                       color: isActive ? Colors.white : AppColors.textSecondary,
@@ -507,7 +507,7 @@ class _DrawerItem extends StatelessWidget {
                     ),
                     child: Text(
                       badge! > 9 ? '9+' : badge.toString(),
-                      style: GoogleFonts.cairo(
+                      style: TextStyle(fontFamily: 'BeIN', 
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,

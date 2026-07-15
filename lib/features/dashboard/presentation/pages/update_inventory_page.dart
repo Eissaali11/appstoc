@@ -152,7 +152,7 @@ class _UpdateInventoryPageState extends State<UpdateInventoryPage> {
           widget.inventoryType == 'fixed' 
               ? 'update_fixed_title'.tr
               : 'update_moving_title'.tr,
-          style: GoogleFonts.cairo(
+          style: TextStyle(fontFamily: 'BeIN', 
             fontWeight: FontWeight.bold,
             color: Colors.white,
           ),
@@ -212,7 +212,7 @@ class _UpdateInventoryPageState extends State<UpdateInventoryPage> {
                         widget.inventoryType == 'fixed'
                             ? 'update_fixed_title'.tr
                             : 'update_moving_title'.tr,
-                        style: GoogleFonts.cairo(
+                        style: TextStyle(fontFamily: 'BeIN', 
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
@@ -221,7 +221,7 @@ class _UpdateInventoryPageState extends State<UpdateInventoryPage> {
                       const SizedBox(height: 4),
                       Text(
                         '${widget.itemTypes.length} ${'types_available'.tr}',
-                        style: GoogleFonts.cairo(
+                        style: TextStyle(fontFamily: 'BeIN', 
                           fontSize: 12,
                           color: Colors.white.withOpacity(0.8),
                         ),
@@ -281,7 +281,7 @@ class _UpdateInventoryPageState extends State<UpdateInventoryPage> {
                     : const Icon(Icons.save),
                 label: Text(
                   _isSaving ? 'saving'.tr : 'save_changes'.tr,
-                  style: GoogleFonts.cairo(
+                  style: TextStyle(fontFamily: 'BeIN', 
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
                   ),
@@ -348,7 +348,7 @@ class _UpdateInventoryPageState extends State<UpdateInventoryPage> {
                   children: [
                     Text(
                       itemType.nameAr,
-                      style: GoogleFonts.cairo(
+                      style: TextStyle(fontFamily: 'BeIN', 
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
@@ -357,7 +357,7 @@ class _UpdateInventoryPageState extends State<UpdateInventoryPage> {
                     if (itemType.nameEn.isNotEmpty)
                       Text(
                         itemType.nameEn,
-                        style: GoogleFonts.cairo(
+                        style: TextStyle(fontFamily: 'BeIN', 
                           fontSize: 12,
                           color: AppColors.textSecondary,
                         ),
@@ -404,10 +404,10 @@ class _UpdateInventoryPageState extends State<UpdateInventoryPage> {
     return TextField(
       controller: controller,
       keyboardType: TextInputType.number,
-      style: GoogleFonts.cairo(color: Colors.white),
+      style: TextStyle(fontFamily: 'BeIN', color: Colors.white),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: GoogleFonts.cairo(color: AppColors.textSecondary),
+        labelStyle: TextStyle(fontFamily: 'BeIN', color: AppColors.textSecondary),
         prefixIcon: Icon(icon, color: color, size: 20),
         filled: true,
         fillColor: AppColors.backgroundDark,
@@ -549,7 +549,7 @@ class _TransferBottomSheetState extends State<_TransferBottomSheet> {
         children: [
           Text(
             'transfer_stock_tooltip'.tr,
-            style: GoogleFonts.cairo(
+            style: TextStyle(fontFamily: 'BeIN', 
               fontSize: 20,
               fontWeight: FontWeight.bold,
               color: Colors.white,
@@ -563,7 +563,7 @@ class _TransferBottomSheetState extends State<_TransferBottomSheet> {
             value: _selectedItemType,
             decoration: InputDecoration(
               labelText: 'item_type_label'.tr,
-              labelStyle: GoogleFonts.cairo(color: AppColors.textSecondary),
+              labelStyle: TextStyle(fontFamily: 'BeIN', color: AppColors.textSecondary),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -571,7 +571,7 @@ class _TransferBottomSheetState extends State<_TransferBottomSheet> {
               fillColor: AppColors.backgroundDark,
             ),
             dropdownColor: AppColors.surfaceDark,
-            style: GoogleFonts.cairo(color: Colors.white),
+            style: TextStyle(fontFamily: 'BeIN', color: Colors.white),
             items: widget.itemTypes.map((type) {
               final entry = widget.currentInventory
                   .firstWhere((e) => e.itemTypeId == type.id, orElse: () => InventoryEntry(
@@ -588,7 +588,7 @@ class _TransferBottomSheetState extends State<_TransferBottomSheet> {
                     Expanded(child: Text(type.nameAr)),
                     Text(
                       '($available متاح)',
-                      style: GoogleFonts.cairo(
+                      style: TextStyle(fontFamily: 'BeIN', 
                         fontSize: 12,
                         color: AppColors.textSecondary,
                       ),
@@ -608,14 +608,14 @@ class _TransferBottomSheetState extends State<_TransferBottomSheet> {
                 value: 'fixed',
                 label: Text(
                   'from_fixed_to_moving'.tr,
-                  style: GoogleFonts.cairo(fontSize: 12),
+                  style: TextStyle(fontFamily: 'BeIN', fontSize: 12),
                 ),
               ),
               ButtonSegment(
                 value: 'moving',
                 label: Text(
                   'from_moving_to_fixed'.tr,
-                  style: GoogleFonts.cairo(fontSize: 12),
+                  style: TextStyle(fontFamily: 'BeIN', fontSize: 12),
                 ),
               ),
             ],
@@ -629,11 +629,11 @@ class _TransferBottomSheetState extends State<_TransferBottomSheet> {
             segments: [
               ButtonSegment(
                 value: 'unit',
-                label: Text('units'.tr, style: GoogleFonts.cairo(fontSize: 12)),
+                label: Text('units'.tr, style: TextStyle(fontFamily: 'BeIN', fontSize: 12)),
               ),
               ButtonSegment(
                 value: 'box',
-                label: Text('boxes'.tr, style: GoogleFonts.cairo(fontSize: 12)),
+                label: Text('boxes'.tr, style: TextStyle(fontFamily: 'BeIN', fontSize: 12)),
               ),
             ],
             selected: {_packagingType},
@@ -646,7 +646,7 @@ class _TransferBottomSheetState extends State<_TransferBottomSheet> {
             children: [
               Text(
                 '${'quantity'.tr}:',
-                style: GoogleFonts.cairo(
+                style: TextStyle(fontFamily: 'BeIN', 
                   fontSize: 16,
                   color: Colors.white,
                 ),
@@ -663,7 +663,7 @@ class _TransferBottomSheetState extends State<_TransferBottomSheet> {
                 alignment: Alignment.center,
                 child: Text(
                   _quantity.toString(),
-                  style: GoogleFonts.cairo(
+                  style: TextStyle(fontFamily: 'BeIN', 
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
@@ -681,10 +681,10 @@ class _TransferBottomSheetState extends State<_TransferBottomSheet> {
           // سبب النقل (اختياري)
           TextField(
             controller: _reasonController,
-            style: GoogleFonts.cairo(color: Colors.white),
+            style: TextStyle(fontFamily: 'BeIN', color: Colors.white),
             decoration: InputDecoration(
               labelText: 'سبب النقل (اختياري)',
-              labelStyle: GoogleFonts.cairo(color: AppColors.textSecondary),
+              labelStyle: TextStyle(fontFamily: 'BeIN', color: AppColors.textSecondary),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -720,7 +720,7 @@ class _TransferBottomSheetState extends State<_TransferBottomSheet> {
                     )
                   : Text(
                       'execute_transfer'.tr,
-                      style: GoogleFonts.cairo(
+                      style: TextStyle(fontFamily: 'BeIN', 
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
                       ),

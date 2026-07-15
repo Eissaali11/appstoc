@@ -39,7 +39,7 @@ class QuickActionsSection extends StatelessWidget {
                 const SizedBox(width: 12),
                 Text(
                   'quick_actions'.tr,
-                  style: GoogleFonts.cairo(
+                  style: TextStyle(fontFamily: 'BeIN', 
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,

@@ -63,7 +63,7 @@ class CourierReceivingSuccessPage extends GetView<CourierRequestsController> {
 
               Text(
                 'تم نقل العهدة بنجاح',
-                style: GoogleFonts.cairo(
+                style: TextStyle(fontFamily: 'BeIN', 
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
@@ -72,7 +72,7 @@ class CourierReceivingSuccessPage extends GetView<CourierRequestsController> {
               const SizedBox(height: 8),
               Text(
                 'تمت مطابقة الأصول ونقل مسؤولية الأجهزة والشرائح إلى ذمتك الميدانية بنجاح.',
-                style: GoogleFonts.cairo(
+                style: TextStyle(fontFamily: 'BeIN', 
                   fontSize: 14,
                   color: AppColors.textSecondary,
                 ),
@@ -87,8 +87,8 @@ class CourierReceivingSuccessPage extends GetView<CourierRequestsController> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text('رقم العملية', style: GoogleFonts.cairo(color: AppColors.textSecondary, fontSize: 13)),
-                        Text(trxRef, style: GoogleFonts.cairo(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
+                        Text('رقم العملية', style: TextStyle(fontFamily: 'BeIN', color: AppColors.textSecondary, fontSize: 13)),
+                        Text(trxRef, style: TextStyle(fontFamily: 'BeIN', color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
                       ],
                     ),
                     const Divider(color: AppColors.border, height: 24),
@@ -130,7 +130,7 @@ class CourierReceivingSuccessPage extends GetView<CourierRequestsController> {
                     },
                     child: Text(
                       'العودة إلى قائمة الطلبات',
-                      style: GoogleFonts.cairo(
+                      style: TextStyle(fontFamily: 'BeIN', 
                         color: AppColors.textSecondary,
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
@@ -152,14 +152,14 @@ class CourierReceivingSuccessPage extends GetView<CourierRequestsController> {
       children: [
         Text(
           label,
-          style: GoogleFonts.cairo(
+          style: TextStyle(fontFamily: 'BeIN', 
             color: AppColors.textSecondary,
             fontSize: 13,
           ),
         ),
         Text(
           value,
-          style: GoogleFonts.cairo(
+          style: TextStyle(fontFamily: 'BeIN', 
             color: color ?? Colors.white,
             fontWeight: FontWeight.w600,
             fontSize: 14,

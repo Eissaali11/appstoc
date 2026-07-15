@@ -37,7 +37,7 @@ class DashboardChart extends StatelessWidget {
                   children: [
                     Text(
                       'النشاط الميداني الأسبوعي',
-                      style: GoogleFonts.cairo(
+                      style: TextStyle(fontFamily: 'BeIN', 
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
                         color: Colors.white,
@@ -45,7 +45,7 @@ class DashboardChart extends StatelessWidget {
                     ),
                     Text(
                       'معدل توريد وتسليم الأجهزة',
-                      style: GoogleFonts.cairo(
+                      style: TextStyle(fontFamily: 'BeIN', 
                         fontSize: 12,
                         color: AppColors.textSecondary,
                       ),
@@ -60,7 +60,7 @@ class DashboardChart extends StatelessWidget {
                   ),
                   child: Text(
                     'آخر 7 أيام',
-                    style: GoogleFonts.cairo(
+                    style: TextStyle(fontFamily: 'BeIN', 
                       color: AppColors.primary,
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
@@ -108,7 +108,7 @@ class DashboardChart extends StatelessWidget {
         const SizedBox(width: 8),
         Text(
           label,
-          style: GoogleFonts.cairo(
+          style: TextStyle(fontFamily: 'BeIN', 
             color: Colors.white70,
             fontSize: 12,
           ),

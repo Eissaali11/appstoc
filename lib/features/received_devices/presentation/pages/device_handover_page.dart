@@ -5,6 +5,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/routing/app_pages.dart';
 import '../../../../shared/widgets/app_drawer.dart';
 import '../../../../shared/widgets/barcode_scanner_widget.dart';
+import '../../../../shared/utils/barcode_validator.dart';
 import '../../../../shared/widgets/lottie_feedback_dialog.dart';
 import '../controllers/device_handover_controller.dart';
 import '../../data/models/received_device.dart';
@@ -22,7 +23,7 @@ class DeviceHandoverPage extends StatelessWidget {
       appBar: AppBar(
         title: Text(
           'تسليم ونقل عهدة الأجهزة',
-          style: GoogleFonts.cairo(
+          style: TextStyle(fontFamily: 'BeIN', 
             fontWeight: FontWeight.bold,
             color: Colors.white,
           ),
@@ -43,11 +44,24 @@ class DeviceHandoverPage extends StatelessWidget {
               );
 
               if (scannedValue != null && scannedValue.isNotEmpty) {
-                final success = controller.scanAndSelectDevice(scannedValue);
+                final cleanValue = scannedValue.trim();
+                final validationError = BarcodeValidator.validateAnyDevice(cleanValue);
+                if (validationError != null) {
+                  Get.snackbar(
+                    'خطأ في التحقق من الباركود',
+                    validationError,
+                    snackPosition: SnackPosition.BOTTOM,
+                    backgroundColor: AppColors.error,
+                    colorText: Colors.white,
+                    margin: const EdgeInsets.all(16),
+                  );
+                  return;
+                }
+                final success = controller.scanAndSelectDevice(cleanValue);
                 if (success) {
                   Get.snackbar(
                     'تم تحديد الجهاز',
-                    'تم التعرف على الرقم التسلسلي $scannedValue وتحديده من العهدة',
+                    'تم التعرف على الرقم التسلسلي $cleanValue وتحديده من العهدة',
                     snackPosition: SnackPosition.BOTTOM,
                     backgroundColor: AppColors.success,
                     colorText: Colors.white,
@@ -56,7 +70,7 @@ class DeviceHandoverPage extends StatelessWidget {
                 } else {
                   Get.snackbar(
                     'تنبيه',
-                    'الجهاز ذو الرقم التسلسلي $scannedValue غير موجود في عهدتك النشطة أو تم تحديده بالفعل',
+                    'الجهاز ذو الرقم التسلسلي $cleanValue غير موجود في عهدتك النشطة أو تم تحديده بالفعل',
                     snackPosition: SnackPosition.BOTTOM,
                     backgroundColor: AppColors.warning,
                     colorText: Colors.white,
@@ -92,7 +106,7 @@ class DeviceHandoverPage extends StatelessWidget {
                 children: [
                   Text(
                     'الأجهزة المتوفرة في عهدتك (${controller.myCustodyDevices.length})',
-                    style: GoogleFonts.cairo(
+                    style: TextStyle(fontFamily: 'BeIN', 
                       fontSize: 15,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
@@ -103,7 +117,7 @@ class DeviceHandoverPage extends StatelessWidget {
                       onPressed: () => controller.clearSelection(),
                       child: Text(
                         'إلغاء التحديد (${controller.selectedDevices.length})',
-                        style: GoogleFonts.cairo(
+                        style: TextStyle(fontFamily: 'BeIN', 
                           color: AppColors.error,
                           fontWeight: FontWeight.bold,
                         ),
@@ -153,7 +167,7 @@ class DeviceHandoverPage extends StatelessWidget {
         children: [
           Text(
             'وجهة نقل العهدة والتسليم',
-            style: GoogleFonts.cairo(
+            style: TextStyle(fontFamily: 'BeIN', 
               fontSize: 14,
               fontWeight: FontWeight.bold,
               color: AppColors.textSecondary,
@@ -197,7 +211,7 @@ class DeviceHandoverPage extends StatelessWidget {
                           const SizedBox(width: 8),
                           Text(
                             'إلى فني آخر',
-                            style: GoogleFonts.cairo(
+                            style: TextStyle(fontFamily: 'BeIN', 
                               fontWeight: FontWeight.bold,
                               color: controller.handoverType == 'technician' ? Colors.white : AppColors.textSecondary,
                             ),
@@ -242,7 +256,7 @@ class DeviceHandoverPage extends StatelessWidget {
                           const SizedBox(width: 8),
                           Text(
                             'إلى مستودع',
-                            style: GoogleFonts.cairo(
+                            style: TextStyle(fontFamily: 'BeIN', 
                               fontWeight: FontWeight.bold,
                               color: controller.handoverType == 'warehouse' ? Colors.white : AppColors.textSecondary,
                             ),
@@ -261,7 +275,7 @@ class DeviceHandoverPage extends StatelessWidget {
           // قائمة الاختيار المنسدلة للجهة المستلمة
           Text(
             controller.handoverType == 'technician' ? 'اختر الفني المستلم للعهدة' : 'اختر المستودع المستلم للأجهزة',
-            style: GoogleFonts.cairo(
+            style: TextStyle(fontFamily: 'BeIN', 
               fontSize: 13,
               color: Colors.white70,
             ),
@@ -277,9 +291,9 @@ class DeviceHandoverPage extends StatelessWidget {
               isExpanded: true,
               hint: Text(
                 controller.handoverType == 'technician' ? 'حدد الفني المستلم...' : 'حدد المستودع المستهدف...',
-                style: GoogleFonts.cairo(color: AppColors.textSecondary),
+                style: TextStyle(fontFamily: 'BeIN', color: AppColors.textSecondary),
               ),
-              style: GoogleFonts.cairo(color: Colors.white, fontWeight: FontWeight.bold),
+              style: TextStyle(fontFamily: 'BeIN', color: Colors.white, fontWeight: FontWeight.bold),
               decoration: InputDecoration(
                 filled: true,
                 fillColor: AppColors.cardColor.withOpacity(0.5),
@@ -313,7 +327,7 @@ class DeviceHandoverPage extends StatelessWidget {
                             const Spacer(),
                             Text(
                               tech['city'] ?? '',
-                              style: GoogleFonts.cairo(color: AppColors.textSecondary, fontSize: 11),
+                              style: TextStyle(fontFamily: 'BeIN', color: AppColors.textSecondary, fontSize: 11),
                             ),
                           ],
                         ),
@@ -334,7 +348,7 @@ class DeviceHandoverPage extends StatelessWidget {
                             const Spacer(),
                             Text(
                               wh['city'] ?? '',
-                              style: GoogleFonts.cairo(color: AppColors.textSecondary, fontSize: 11),
+                              style: TextStyle(fontFamily: 'BeIN', color: AppColors.textSecondary, fontSize: 11),
                             ),
                           ],
                         ),
@@ -365,7 +379,7 @@ class DeviceHandoverPage extends StatelessWidget {
           const SizedBox(height: 16),
           Text(
             'لا توجد أجهزة في عهدتك حالياً',
-            style: GoogleFonts.cairo(
+            style: TextStyle(fontFamily: 'BeIN', 
               color: Colors.white70,
               fontSize: 16,
               fontWeight: FontWeight.bold,
@@ -374,7 +388,7 @@ class DeviceHandoverPage extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             'قم بمسح واستلام أجهزة جديدة أولاً لتظهر هنا',
-            style: GoogleFonts.cairo(
+            style: TextStyle(fontFamily: 'BeIN', 
               color: AppColors.textSecondary,
               fontSize: 13,
             ),
@@ -446,7 +460,7 @@ class DeviceHandoverPage extends StatelessWidget {
                     children: [
                       Text(
                         'جهاز نقطة بيع POS',
-                        style: GoogleFonts.cairo(
+                        style: TextStyle(fontFamily: 'BeIN', 
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
                           fontSize: 14,
@@ -462,7 +476,7 @@ class DeviceHandoverPage extends StatelessWidget {
                         ),
                         child: Text(
                           'عهدة متحركة',
-                          style: GoogleFonts.cairo(
+                          style: TextStyle(fontFamily: 'BeIN', 
                             color: Colors.purple[200],
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
@@ -478,11 +492,11 @@ class DeviceHandoverPage extends StatelessWidget {
                     children: [
                       Text(
                         'رقم تسلسلي: ',
-                        style: GoogleFonts.cairo(color: AppColors.textSecondary, fontSize: 12),
+                        style: TextStyle(fontFamily: 'BeIN', color: AppColors.textSecondary, fontSize: 12),
                       ),
                       Text(
                         device.serialNumber,
-                        style: GoogleFonts.cairo(
+                        style: TextStyle(fontFamily: 'BeIN', 
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
                           fontSize: 12,
@@ -498,11 +512,11 @@ class DeviceHandoverPage extends StatelessWidget {
                         children: [
                           Text(
                             'رقم الجهاز (TID): ',
-                            style: GoogleFonts.cairo(color: AppColors.textSecondary, fontSize: 12),
+                            style: TextStyle(fontFamily: 'BeIN', color: AppColors.textSecondary, fontSize: 12),
                           ),
                           Text(
                             device.terminalId!,
-                            style: GoogleFonts.cairo(
+                            style: TextStyle(fontFamily: 'BeIN', 
                               color: Colors.white70,
                               fontWeight: FontWeight.bold,
                               fontSize: 12,
@@ -521,7 +535,7 @@ class DeviceHandoverPage extends StatelessWidget {
                     children: [
                       Text(
                         'الملحقات بالعهدة: ',
-                        style: GoogleFonts.cairo(color: AppColors.textSecondary, fontSize: 11),
+                        style: TextStyle(fontFamily: 'BeIN', color: AppColors.textSecondary, fontSize: 11),
                       ),
                       const SizedBox(width: 4),
                       _buildMiniAccessoryChip('بطارية', device.battery),
@@ -557,7 +571,7 @@ class DeviceHandoverPage extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: GoogleFonts.cairo(
+        style: TextStyle(fontFamily: 'BeIN', 
           color: isPresent ? AppColors.primary : AppColors.textSecondary,
           fontSize: 9,
           fontWeight: isPresent ? FontWeight.bold : FontWeight.normal,
@@ -595,12 +609,12 @@ class DeviceHandoverPage extends StatelessWidget {
                 children: [
                   Text(
                     'الأجهزة المحددة للتسليم',
-                    style: GoogleFonts.cairo(color: AppColors.textSecondary, fontSize: 11),
+                    style: TextStyle(fontFamily: 'BeIN', color: AppColors.textSecondary, fontSize: 11),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     '${controller.selectedDevices.length} جهاز / أجهزة',
-                    style: GoogleFonts.cairo(
+                    style: TextStyle(fontFamily: 'BeIN', 
                       color: Colors.white,
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -671,7 +685,7 @@ class DeviceHandoverPage extends StatelessWidget {
                       )
                     : Text(
                         'إجراء نقل العهدة',
-                        style: GoogleFonts.cairo(
+                        style: TextStyle(fontFamily: 'BeIN', 
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
                           color: (hasSelection && hasRecipient) ? Colors.white : Colors.white30,

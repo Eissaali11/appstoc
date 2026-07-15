@@ -23,7 +23,7 @@ class NotificationsPage extends GetView<NotificationsController> {
       appBar: AppBar(
         title: Text(
           'الإشعارات',
-          style: GoogleFonts.cairo(
+          style: TextStyle(fontFamily: 'BeIN', 
             fontWeight: FontWeight.bold,
             color: Colors.white,
           ),
@@ -77,7 +77,7 @@ class NotificationsPage extends GetView<NotificationsController> {
                     ),
                     Text(
                       'تحديد الكل',
-                      style: GoogleFonts.cairo(
+                      style: TextStyle(fontFamily: 'BeIN', 
                         color: Colors.white,
                         fontWeight: FontWeight.w600,
                       ),
@@ -92,7 +92,7 @@ class NotificationsPage extends GetView<NotificationsController> {
                           icon: const Icon(Icons.check, size: 18),
                           label: Text(
                             'قبول (${controller.selectedIds.length})',
-                            style: GoogleFonts.cairo(fontWeight: FontWeight.bold),
+                            style: TextStyle(fontFamily: 'BeIN', fontWeight: FontWeight.bold),
                           ),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.success,
@@ -113,7 +113,7 @@ class NotificationsPage extends GetView<NotificationsController> {
                           icon: const Icon(Icons.close, size: 18),
                           label: Text(
                             'رفض (${controller.selectedIds.length})',
-                            style: GoogleFonts.cairo(fontWeight: FontWeight.bold),
+                            style: TextStyle(fontFamily: 'BeIN', fontWeight: FontWeight.bold),
                           ),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.error,
@@ -162,7 +162,7 @@ class NotificationsPage extends GetView<NotificationsController> {
                           onToggleSelection: () => controller.toggleSelection(transfer.id),
                           onAccept: () {
                             final isSerialized = itemType != null
-                                ? (itemType.category == 'devices' || itemType.category == 'sim')
+                                ? (itemType.category == 'devices' || itemType.category == 'sim' || itemType.requiresSerial == true)
                                 : (transfer.itemType.toLowerCase().contains('pos') ||
                                    transfer.itemType.toLowerCase().contains('sim') ||
                                    transfer.itemType.toLowerCase().contains('n950') ||
@@ -206,7 +206,7 @@ class NotificationsPage extends GetView<NotificationsController> {
         final itemType = ctrl.itemTypesMap[t.itemType];
         final id = t.itemType.toLowerCase();
         final isSer = itemType != null
-            ? (itemType.category == 'devices' || itemType.category == 'sim')
+            ? (itemType.category == 'devices' || itemType.category == 'sim' || itemType.requiresSerial == true)
             : (id.contains('pos') || id.contains('sim') || id.contains('n950') || id.contains('i9000') || id.contains('i9100'));
         return isSer;
       }
@@ -235,17 +235,17 @@ class NotificationsPage extends GetView<NotificationsController> {
         backgroundColor: AppColors.surfaceDark,
         title: Text(
           'رفض الطلبات المحددة (${ctrl.selectedIds.length})',
-          style: GoogleFonts.cairo(
+          style: TextStyle(fontFamily: 'BeIN', 
             fontWeight: FontWeight.bold,
             color: Colors.white,
           ),
         ),
         content: TextField(
           controller: reasonController,
-          style: GoogleFonts.cairo(color: Colors.white),
+          style: TextStyle(fontFamily: 'BeIN', color: Colors.white),
           decoration: InputDecoration(
             labelText: 'سبب الرفض (اختياري)',
-            labelStyle: GoogleFonts.cairo(color: AppColors.textSecondary),
+            labelStyle: TextStyle(fontFamily: 'BeIN', color: AppColors.textSecondary),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
             ),
@@ -261,7 +261,7 @@ class NotificationsPage extends GetView<NotificationsController> {
             onPressed: () => Get.back(),
             child: Text(
               'إلغاء',
-              style: GoogleFonts.cairo(color: AppColors.textSecondary),
+              style: TextStyle(fontFamily: 'BeIN', color: AppColors.textSecondary),
             ),
           ),
           ElevatedButton(
@@ -278,7 +278,7 @@ class NotificationsPage extends GetView<NotificationsController> {
             ),
             child: Text(
               'رفض المحدد',
-              style: GoogleFonts.cairo(fontWeight: FontWeight.bold),
+              style: TextStyle(fontFamily: 'BeIN', fontWeight: FontWeight.bold),
             ),
           ),
         ],
@@ -294,17 +294,17 @@ class NotificationsPage extends GetView<NotificationsController> {
         backgroundColor: AppColors.surfaceDark,
         title: Text(
           'رفض طلب النقل',
-          style: GoogleFonts.cairo(
+          style: TextStyle(fontFamily: 'BeIN', 
             fontWeight: FontWeight.bold,
             color: Colors.white,
           ),
         ),
         content: TextField(
           controller: reasonController,
-          style: GoogleFonts.cairo(color: Colors.white),
+          style: TextStyle(fontFamily: 'BeIN', color: Colors.white),
           decoration: InputDecoration(
             labelText: 'سبب الرفض (اختياري)',
-            labelStyle: GoogleFonts.cairo(color: AppColors.textSecondary),
+            labelStyle: TextStyle(fontFamily: 'BeIN', color: AppColors.textSecondary),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
             ),
@@ -320,7 +320,7 @@ class NotificationsPage extends GetView<NotificationsController> {
             onPressed: () => Get.back(),
             child: Text(
               'إلغاء',
-              style: GoogleFonts.cairo(color: AppColors.textSecondary),
+              style: TextStyle(fontFamily: 'BeIN', color: AppColors.textSecondary),
             ),
           ),
           ElevatedButton(
@@ -334,7 +334,7 @@ class NotificationsPage extends GetView<NotificationsController> {
             ),
             child: Text(
               'رفض',
-              style: GoogleFonts.cairo(fontWeight: FontWeight.bold),
+              style: TextStyle(fontFamily: 'BeIN', fontWeight: FontWeight.bold),
             ),
           ),
         ],
@@ -364,7 +364,7 @@ class NotificationsPage extends GetView<NotificationsController> {
             const SizedBox(height: 24),
             Text(
               'حدث خطأ',
-              style: GoogleFonts.cairo(
+              style: TextStyle(fontFamily: 'BeIN', 
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
@@ -373,7 +373,7 @@ class NotificationsPage extends GetView<NotificationsController> {
             const SizedBox(height: 12),
             Text(
               controller.error ?? 'حدث خطأ في تحميل البيانات',
-              style: GoogleFonts.cairo(
+              style: TextStyle(fontFamily: 'BeIN', 
                 fontSize: 16,
                 color: AppColors.textSecondary,
               ),
@@ -385,7 +385,7 @@ class NotificationsPage extends GetView<NotificationsController> {
               icon: const Icon(Icons.refresh),
               label: Text(
                 'إعادة المحاولة',
-                style: GoogleFonts.cairo(
+                style: TextStyle(fontFamily: 'BeIN', 
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -427,7 +427,7 @@ class NotificationsPage extends GetView<NotificationsController> {
           const SizedBox(height: 24),
           Text(
             'لا توجد إشعارات',
-            style: GoogleFonts.cairo(
+            style: TextStyle(fontFamily: 'BeIN', 
               fontSize: 20,
               fontWeight: FontWeight.bold,
               color: Colors.white,
@@ -436,7 +436,7 @@ class NotificationsPage extends GetView<NotificationsController> {
           const SizedBox(height: 8),
           Text(
             'لا توجد طلبات نقل معلقة حالياً',
-            style: GoogleFonts.cairo(
+            style: TextStyle(fontFamily: 'BeIN', 
               fontSize: 14,
               color: AppColors.textSecondary,
             ),
@@ -543,7 +543,7 @@ class _TransferCard extends StatelessWidget {
                     children: [
                       Text(
                         transfer.warehouseName ?? 'مستودع غير محدد',
-                        style: GoogleFonts.cairo(
+                        style: TextStyle(fontFamily: 'BeIN', 
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
@@ -552,7 +552,7 @@ class _TransferCard extends StatelessWidget {
                       const SizedBox(height: 4),
                       Text(
                         DateFormat('yyyy-MM-dd HH:mm', 'ar').format(transfer.createdAt),
-                        style: GoogleFonts.cairo(
+                        style: TextStyle(fontFamily: 'BeIN', 
                           fontSize: 12,
                           color: AppColors.textSecondary,
                         ),
@@ -570,7 +570,7 @@ class _TransferCard extends StatelessWidget {
                   ),
                   child: Text(
                     'معلق',
-                    style: GoogleFonts.cairo(
+                    style: TextStyle(fontFamily: 'BeIN', 
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
@@ -603,7 +603,7 @@ class _TransferCard extends StatelessWidget {
                     Expanded(
                       child: Text(
                         itemType!.nameAr,
-                        style: GoogleFonts.cairo(
+                        style: TextStyle(fontFamily: 'BeIN', 
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
                           color: Colors.white,
@@ -618,7 +618,7 @@ class _TransferCard extends StatelessWidget {
                       ),
                       child: Text(
                         '${transfer.quantity} ${transfer.packagingType == "boxes" ? "كراتين" : "وحدات"}',
-                        style: GoogleFonts.cairo(
+                        style: TextStyle(fontFamily: 'BeIN', 
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
                           color: AppColors.primary,
@@ -632,7 +632,7 @@ class _TransferCard extends StatelessWidget {
               const SizedBox(height: 12),
               Text(
                 'ملاحظات: ${transfer.notes}',
-                style: GoogleFonts.cairo(
+                style: TextStyle(fontFamily: 'BeIN', 
                   fontSize: 14,
                   color: AppColors.textSecondary,
                 ),
@@ -648,7 +648,7 @@ class _TransferCard extends StatelessWidget {
                     icon: const Icon(Icons.check, size: 20),
                     label: Text(
                       'قبول',
-                      style: GoogleFonts.cairo(fontWeight: FontWeight.bold),
+                      style: TextStyle(fontFamily: 'BeIN', fontWeight: FontWeight.bold),
                     ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.success,
@@ -667,7 +667,7 @@ class _TransferCard extends StatelessWidget {
                     icon: const Icon(Icons.close, size: 20),
                     label: Text(
                       'رفض',
-                      style: GoogleFonts.cairo(fontWeight: FontWeight.bold),
+                      style: TextStyle(fontFamily: 'BeIN', fontWeight: FontWeight.bold),
                     ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.error,
@@ -891,7 +891,7 @@ class _SerializedScanBottomSheetState extends State<_SerializedScanBottomSheet> 
                       children: [
                         Text(
                           'مسح الأرقام التسلسلية المستلمة',
-                          style: GoogleFonts.cairo(
+                          style: TextStyle(fontFamily: 'BeIN', 
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
@@ -900,7 +900,7 @@ class _SerializedScanBottomSheetState extends State<_SerializedScanBottomSheet> 
                         const SizedBox(height: 4),
                         Text(
                           'الصنف: ${widget.itemType.nameAr} | الكمية المطلوبة: ${widget.transfer.quantity}',
-                          style: GoogleFonts.cairo(
+                          style: TextStyle(fontFamily: 'BeIN', 
                             fontSize: 13,
                             color: AppColors.textSecondary,
                           ),
@@ -941,7 +941,7 @@ class _SerializedScanBottomSheetState extends State<_SerializedScanBottomSheet> 
                             children: [
                               Text(
                                 'حالة المسح',
-                                style: GoogleFonts.cairo(
+                                style: TextStyle(fontFamily: 'BeIN', 
                                   color: Colors.white,
                                   fontWeight: FontWeight.bold,
                                   fontSize: 14,
@@ -986,7 +986,7 @@ class _SerializedScanBottomSheetState extends State<_SerializedScanBottomSheet> 
                 onFieldSubmitted: (_) => _addSerial(),
                 decoration: InputDecoration(
                   hintText: isSim ? 'أدخل ICCID للشريحة' : 'أدخل الرقم التسلسلي للجهاز',
-                  hintStyle: GoogleFonts.cairo(color: AppColors.textSecondary, fontSize: 14),
+                  hintStyle: TextStyle(fontFamily: 'BeIN', color: AppColors.textSecondary, fontSize: 14),
                   filled: true,
                   fillColor: AppColors.surfaceDark,
                   border: OutlineInputBorder(
@@ -1089,7 +1089,7 @@ class _SerializedScanBottomSheetState extends State<_SerializedScanBottomSheet> 
                 const SizedBox(height: 8),
                 Text(
                   _error!,
-                  style: GoogleFonts.cairo(color: AppColors.error, fontSize: 13, fontWeight: FontWeight.w600),
+                  style: TextStyle(fontFamily: 'BeIN', color: AppColors.error, fontSize: 13, fontWeight: FontWeight.w600),
                   textAlign: TextAlign.center,
                 ),
               ],
@@ -1102,7 +1102,7 @@ class _SerializedScanBottomSheetState extends State<_SerializedScanBottomSheet> 
                   children: [
                     Text(
                       'الأرقام الممسوحة مؤخراً:',
-                      style: GoogleFonts.cairo(
+                      style: TextStyle(fontFamily: 'BeIN', 
                         color: AppColors.textSecondary,
                         fontSize: 13,
                         fontWeight: FontWeight.bold,
@@ -1118,7 +1118,7 @@ class _SerializedScanBottomSheetState extends State<_SerializedScanBottomSheet> 
                       },
                       child: Text(
                         'حذف الكل',
-                        style: GoogleFonts.cairo(color: AppColors.error, fontSize: 12),
+                        style: TextStyle(fontFamily: 'BeIN', color: AppColors.error, fontSize: 12),
                       ),
                     ),
                   ],
@@ -1202,7 +1202,7 @@ class _SerializedScanBottomSheetState extends State<_SerializedScanBottomSheet> 
                           : const Icon(Icons.check, size: 20),
                       label: Text(
                         _isSaving ? 'جاري الحفظ...' : 'حفظ وتأكيد الاستلام',
-                        style: GoogleFonts.cairo(fontWeight: FontWeight.bold),
+                        style: TextStyle(fontFamily: 'BeIN', fontWeight: FontWeight.bold),
                       ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.success,
@@ -1225,7 +1225,7 @@ class _SerializedScanBottomSheetState extends State<_SerializedScanBottomSheet> 
                     ),
                     child: Text(
                       'إلغاء',
-                      style: GoogleFonts.cairo(fontWeight: FontWeight.bold),
+                      style: TextStyle(fontFamily: 'BeIN', fontWeight: FontWeight.bold),
                     ),
                   ),
                 ],

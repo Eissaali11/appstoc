@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/widgets/design_system.dart';
 import '../../../../shared/widgets/lottie_feedback_dialog.dart';
@@ -20,6 +22,7 @@ class _CourierVisitExecutionPageState
     extends State<CourierVisitExecutionPage> {
   final CourierRequestsController controller =
       Get.find<CourierRequestsController>();
+  final ImagePicker _picker = ImagePicker();
   late int requestId;
 
   bool isSuccess = true;
@@ -27,7 +30,23 @@ class _CourierVisitExecutionPageState
   final TextEditingController notesController = TextEditingController();
   final TextEditingController posSnController = TextEditingController();
   final TextEditingController simSerialController = TextEditingController();
+  final TextEditingController paperRollQtyController = TextEditingController(text: '0');
+  final TextEditingController stickersQtyController = TextEditingController(text: '0');
+  final TextEditingController nulipCardsQtyController = TextEditingController(text: '0');
+
+  final FocusNode _snFocusNode = FocusNode();
+  final FocusNode _simFocusNode = FocusNode();
+
+  // Serial lookup states
+  Map<String, dynamic>? _deviceLookup;
+  Map<String, dynamic>? _simLookup;
+  bool _snLookupLoading = false;
+  bool _simLookupLoading = false;
+
+  // Stores base64-encoded photos
   final List<String> _evidencePhotos = [];
+  bool _isSubmitting = false;
+
   final DateTime _startTime =
       DateTime.now().subtract(const Duration(minutes: 15));
   final DateTime _arrivalTime =
@@ -47,16 +66,67 @@ class _CourierVisitExecutionPageState
     requestId = Get.arguments as int;
     selectedFailureReason = failureReasons.first['code'];
 
-    final posItem = controller.currentItems
-        .firstWhereOrNull((i) => i.itemType == 'POS');
+    // Pre-fill SN/SIM from previously scanned items
+    final posItem =
+        controller.currentItems.firstWhereOrNull((i) => i.itemType == 'POS');
     if (posItem?.serialNumber != null) {
       posSnController.text = posItem!.serialNumber!;
     }
-    final simItem = controller.currentItems
-        .firstWhereOrNull((i) => i.itemType == 'SIM');
+    final simItem =
+        controller.currentItems.firstWhereOrNull((i) => i.itemType == 'SIM');
     if (simItem?.simSerial != null) {
       simSerialController.text = simItem!.simSerial!;
     }
+
+    _snFocusNode.addListener(() {
+      if (!_snFocusNode.hasFocus) {
+        _doSerialLookup(posSnController.text, 'device');
+      }
+    });
+    _simFocusNode.addListener(() {
+      if (!_simFocusNode.hasFocus) {
+        _doSerialLookup(simSerialController.text, 'sim');
+      }
+    });
+
+    posSnController.addListener(() {
+      final text = posSnController.text.trim();
+      if (text.length >= 9) {
+        if (!_snLookupLoading && (_deviceLookup == null || _deviceLookup!['serial'] != text)) {
+          _doSerialLookup(text, 'device');
+        }
+      } else {
+        if (_deviceLookup != null) {
+          setState(() {
+            _deviceLookup = null;
+          });
+        }
+      }
+    });
+
+    simSerialController.addListener(() {
+      final text = simSerialController.text.trim();
+      if (text.length >= 18) {
+        if (!_simLookupLoading && (_simLookup == null || _simLookup!['serial'] != text)) {
+          _doSerialLookup(text, 'sim');
+        }
+      } else {
+        if (_simLookup != null) {
+          setState(() {
+            _simLookup = null;
+          });
+        }
+      }
+    });
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (posSnController.text.isNotEmpty) {
+        _doSerialLookup(posSnController.text, 'device');
+      }
+      if (simSerialController.text.isNotEmpty) {
+        _doSerialLookup(simSerialController.text, 'sim');
+      }
+    });
   }
 
   @override
@@ -64,45 +134,153 @@ class _CourierVisitExecutionPageState
     notesController.dispose();
     posSnController.dispose();
     simSerialController.dispose();
+    paperRollQtyController.dispose();
+    stickersQtyController.dispose();
+    nulipCardsQtyController.dispose();
+    _snFocusNode.dispose();
+    _simFocusNode.dispose();
     super.dispose();
   }
 
-  // ============================================================
-  // Photo Capture
-  // ============================================================
-  void _addPhoto() {
-    // Mock: In production use image_picker
-    const mockBase64 =
-        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
-    setState(() => _evidencePhotos.add(mockBase64));
-    Get.snackbar(
-      '📷 تم الالتقاط',
-      'تم إرفاق صورة إثبات بنجاح',
-      snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: AppColors.success,
-      colorText: Colors.white,
-      margin: const EdgeInsets.all(16),
-      borderRadius: 12,
-    );
+  bool get _hasOwnershipMismatch {
+    if (_deviceLookup == null || _simLookup == null) return false;
+    final devFound = _deviceLookup!['found'] == true;
+    final simFound = _simLookup!['found'] == true;
+    if (!devFound || !simFound) return false;
+    
+    final devTechId = _deviceLookup!['technician']?['id']?.toString();
+    final simTechId = _simLookup!['technician']?['id']?.toString();
+    
+    if (devTechId != null && simTechId != null && devTechId != simTechId) {
+      return true;
+    }
+    return false;
   }
 
-  Future<void> _scanBarcode(TextEditingController tc) async {
-    final result = await Navigator.push<String>(
-      context,
-      MaterialPageRoute(
-        builder: (_) => const BarcodeScannerWidget(
-          title: 'مسح الباركود',
+  Future<void> _doSerialLookup(String serial, String role) async {
+    if (serial.trim().isEmpty) return;
+    setState(() {
+      if (role == 'device') {
+        _snLookupLoading = true;
+        _deviceLookup = null;
+      } else {
+        _simLookupLoading = true;
+        _simLookup = null;
+      }
+    });
+
+    try {
+      final res = await controller.serialLookup(serial.trim());
+      setState(() {
+        if (role == 'device') {
+          _deviceLookup = res;
+        } else {
+          _simLookup = res;
+        }
+      });
+    } catch (e) {
+      debugPrint('Serial lookup failed: $e');
+    } finally {
+      setState(() {
+        if (role == 'device') {
+          _snLookupLoading = false;
+        } else {
+          _simLookupLoading = false;
+        }
+      });
+    }
+  }
+
+  // ─── Photo capture (camera or gallery) ───────────────────────────────────
+
+  Future<void> _showPhotoSourceDialog() async {
+    await showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.surfaceDark,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (_) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('إضافة صورة إثبات',
+                  style: TextStyle(fontFamily: 'BeIN', 
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold)),
+              const SizedBox(height: 16),
+              ListTile(
+                leading: const Icon(Icons.camera_alt, color: AppColors.primary),
+                title: Text('الكاميرا',
+                    style: TextStyle(fontFamily: 'BeIN', color: Colors.white)),
+                onTap: () {
+                  Get.back();
+                  _capturePhoto(ImageSource.camera);
+                },
+              ),
+              ListTile(
+                leading:
+                    const Icon(Icons.photo_library, color: AppColors.primary),
+                title: Text('المعرض',
+                    style: TextStyle(fontFamily: 'BeIN', color: Colors.white)),
+                onTap: () {
+                  Get.back();
+                  _capturePhoto(ImageSource.gallery);
+                },
+              ),
+            ],
+          ),
         ),
       ),
     );
-    if (result != null) tc.text = result;
   }
 
-  // ============================================================
-  // Submit
-  // ============================================================
+  Future<void> _capturePhoto(ImageSource source) async {
+    try {
+      final XFile? file = await _picker.pickImage(
+        source: source,
+        imageQuality: 70,
+        maxWidth: 1024,
+      );
+      if (file == null) return;
+      final bytes = await file.readAsBytes();
+      final base64Str = base64Encode(bytes);
+      setState(() => _evidencePhotos.add(base64Str));
+      Get.snackbar('📷 تم الالتقاط', 'تم إرفاق صورة إثبات بنجاح',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: AppColors.success,
+          colorText: Colors.white,
+          margin: const EdgeInsets.all(16),
+          borderRadius: 12);
+    } catch (e) {
+      Get.snackbar('خطأ', 'فشل التقاط الصورة: ${e.toString()}',
+          backgroundColor: AppColors.error, colorText: Colors.white);
+    }
+  }
+
+  Future<void> _scanBarcode(TextEditingController tc, String role) async {
+    final result = await Navigator.push<String>(
+      context,
+      MaterialPageRoute(
+          builder: (_) => const BarcodeScannerWidget(title: 'مسح الباركود')),
+    );
+    if (result != null) {
+      final normalized = role == 'device'
+          ? result.trim().toUpperCase().replaceAll(RegExp(r'[\s\-_.]'), '')
+          : result.trim();
+      setState(() => tc.text = normalized);
+      _doSerialLookup(normalized, role);
+    }
+  }
+
+  // ─── Submit ───────────────────────────────────────────────────────────────
+
   Future<void> _submit() async {
-    if (_evidencePhotos.length < 2 && isSuccess) {
+    // Validation
+    if (isSuccess && _evidencePhotos.length < 2) {
       Get.snackbar(
         '⚠️ يجب التقاط صور الإثبات',
         'التقط صورتين على الأقل قبل إغلاق المهمة (${_evidencePhotos.length}/2)',
@@ -115,6 +293,27 @@ class _CourierVisitExecutionPageState
       return;
     }
 
+    if (isSuccess && posSnController.text.trim().isEmpty) {
+      Get.snackbar('تنبيه', 'يرجى إدخال الرقم التسلسلي لجهاز POS',
+          backgroundColor: AppColors.warning, colorText: Colors.white);
+      return;
+    }
+
+    if (isSuccess && _hasOwnershipMismatch) {
+      Get.snackbar(
+        '⚠️ تعارض في العهدة',
+        'الجهاز والشريحة ينتميان لفنيين مختلفين. لا يمكن إغلاق الطلب.',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: AppColors.error,
+        colorText: Colors.white,
+        margin: const EdgeInsets.all(16),
+        borderRadius: 12,
+      );
+      return;
+    }
+
+    setState(() => _isSubmitting = true);
+
     final success = await controller.submitExecutionAttempt(
       requestId,
       status: isSuccess ? 'SUCCESS' : 'FAILED',
@@ -124,18 +323,22 @@ class _CourierVisitExecutionPageState
           : notesController.text.trim(),
       snInstalled: posSnController.text.trim().isEmpty
           ? null
-          : posSnController.text.trim(),
+          : posSnController.text.trim().toUpperCase().replaceAll(RegExp(r'[\s\-_.]'), ''),
       simInstalled: simSerialController.text.trim().isEmpty
           ? null
           : simSerialController.text.trim(),
+      paperRollQty: int.tryParse(paperRollQtyController.text.trim()) ?? 0,
+      stickersQty: int.tryParse(stickersQtyController.text.trim()) ?? 0,
+      nulipCardsQty: int.tryParse(nulipCardsQtyController.text.trim()) ?? 0,
       photos: _evidencePhotos,
       startTime: _startTime,
       arrivalTime: _arrivalTime,
     );
 
+    setState(() => _isSubmitting = false);
+
     if (success) {
       if (isSuccess) {
-        // Build WhatsApp message
         final req = controller.currentRequest;
         final waMsg = '✅ *تم التركيب والتسليم*\n'
             'العميل: ${req?.customerName ?? "-"}\n'
@@ -148,8 +351,8 @@ class _CourierVisitExecutionPageState
           isSuccess: true,
           title: '✅ تم إغلاق المهمة بنجاح!',
           message: 'تم رفع تقرير التنفيذ. شارك التقرير مع المشرف عبر الواتساب.',
-          onComplete: () {
-            _shareWhatsApp(waMsg);
+          onComplete: () async {
+            await _shareWhatsApp(waMsg);
             Get.until((route) => route.isFirst);
           },
         );
@@ -174,20 +377,20 @@ class _CourierVisitExecutionPageState
     }
   }
 
-  void _shareWhatsApp(String msg) {
+  Future<void> _shareWhatsApp(String msg) async {
     try {
       final encoded = Uri.encodeComponent(msg);
-      final url = 'https://wa.me/?text=$encoded';
-      // In production: use url_launcher package
-      debugPrint('WhatsApp URL: $url');
+      final uri = Uri.parse('https://wa.me/?text=$encoded');
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      }
     } catch (e) {
       debugPrint('WhatsApp share error: $e');
     }
   }
 
-  // ============================================================
-  // Build
-  // ============================================================
+  // ─── Build ────────────────────────────────────────────────────────────────
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -203,6 +406,8 @@ class _CourierVisitExecutionPageState
                 const SizedBox(height: 20),
                 if (isSuccess) ...[
                   _buildSerialInputs(),
+                  const SizedBox(height: 20),
+                  _buildConsumablesSection(),
                   const SizedBox(height: 20),
                   _buildPhotoGrid(),
                   const SizedBox(height: 20),
@@ -235,10 +440,7 @@ class _CourierVisitExecutionPageState
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [
-                Color(0x3000D9FF),
-                AppColors.backgroundDark,
-              ],
+              colors: [Color(0x3000D9FF), AppColors.backgroundDark],
             ),
           ),
           padding: const EdgeInsets.fromLTRB(20, 70, 20, 12),
@@ -246,18 +448,15 @@ class _CourierVisitExecutionPageState
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              Text(
-                'تنفيذ الزيارة الميدانية',
-                style: GoogleFonts.cairo(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+              Text('تنفيذ الزيارة الميدانية',
+                  style: TextStyle(fontFamily: 'BeIN', 
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold)),
               if (req != null)
                 Text(
                   '${req.retailerName ?? req.customerName ?? ""} — طلب #$requestId',
-                  style: GoogleFonts.cairo(
+                  style: TextStyle(fontFamily: 'BeIN', 
                       color: AppColors.textSecondary, fontSize: 12),
                 ),
             ],
@@ -331,17 +530,17 @@ class _CourierVisitExecutionPageState
         ),
         child: Column(
           children: [
-            Icon(icon, color: isSelected ? color : AppColors.textMuted, size: 28),
+            Icon(icon,
+                color: isSelected ? color : AppColors.textMuted, size: 28),
             const SizedBox(height: 6),
-            Text(
-              label,
-              textAlign: TextAlign.center,
-              style: GoogleFonts.cairo(
-                color: isSelected ? color : AppColors.textSecondary,
-                fontSize: 12,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-              ),
-            ),
+            Text(label,
+                textAlign: TextAlign.center,
+                style: TextStyle(fontFamily: 'BeIN', 
+                  color: isSelected ? color : AppColors.textSecondary,
+                  fontSize: 12,
+                  fontWeight:
+                      isSelected ? FontWeight.bold : FontWeight.normal,
+                )),
           ],
         ),
       ),
@@ -354,23 +553,177 @@ class _CourierVisitExecutionPageState
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SectionHeader(
-            title: 'أرقام التسلسل المركبة',
-            icon: Icons.qr_code_2,
-          ),
+              title: 'أرقام التسلسل المركبة', icon: Icons.qr_code_2),
           const SizedBox(height: 12),
+
+          if (_hasOwnershipMismatch) ...[
+            Container(
+              padding: const EdgeInsets.all(12),
+              margin: const EdgeInsets.only(bottom: 16),
+              decoration: BoxDecoration(
+                color: AppColors.error.withOpacity(0.1),
+                border: Border.all(color: AppColors.error.withOpacity(0.3)),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.warning_amber_rounded, color: AppColors.error, size: 20),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'تعارض في العهدة: الجهاز والشريحة ينتميان لفنيين مختلفين. لا يمكن إغلاق الطلب.',
+                      style: TextStyle(fontFamily: 'BeIN', 
+                        color: AppColors.error,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+
           _buildSerialField(
-            label: 'سيريال جهاز POS',
+            label: 'سيريال جهاز POS *',
             controller: posSnController,
             icon: Icons.tablet_android,
             color: AppColors.accentPurple,
+            role: 'device',
+            focusNode: _snFocusNode,
           ),
-          const SizedBox(height: 12),
+          _buildLookupStatus('device'),
+          _buildResolvedTechnicianCard(),
+
+          const SizedBox(height: 16),
           _buildSerialField(
             label: 'رقم شريحة SIM (ICCID)',
             controller: simSerialController,
             icon: Icons.sim_card,
             color: AppColors.primary,
+            role: 'sim',
+            focusNode: _simFocusNode,
           ),
+          _buildLookupStatus('sim'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLookupStatus(String role) {
+    final isLoading = role == 'device' ? _snLookupLoading : _simLookupLoading;
+    final lookup = role == 'device' ? _deviceLookup : _simLookup;
+    
+    if (isLoading) {
+      return const Padding(
+        padding: EdgeInsets.only(top: 6, right: 4),
+        child: SizedBox(
+          width: 14,
+          height: 14,
+          child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+        ),
+      );
+    }
+    
+    if (lookup == null) return const SizedBox.shrink();
+    
+    final found = lookup['found'] == true;
+    final inActiveCustody = lookup['inActiveCustody'] == true;
+    final custodyStatus = lookup['custodyStatus']?.toString() ?? '';
+    final itemTypeName = lookup['itemType']?['nameAr']?.toString() ?? (role == 'device' ? 'جهاز' : 'شريحة');
+    
+    // Resolve carrier name if present (especially for SIMs)
+    final carrierName = lookup['itemType']?['carrierName']?.toString() ?? '';
+    final displayName = carrierName.isNotEmpty ? '$itemTypeName ($carrierName)' : itemTypeName;
+    
+    final message = lookup['message']?.toString() ?? (found ? '' : 'الرقم التسلسلي غير موجود بالمنظومة');
+    
+    final isOk = found && inActiveCustody;
+    
+    return Padding(
+      padding: const EdgeInsets.only(top: 6, right: 4),
+      child: Row(
+        children: [
+          Icon(
+            isOk ? Icons.check_circle_outline : Icons.error_outline_rounded,
+            color: isOk ? AppColors.success : AppColors.error,
+            size: 14,
+          ),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              isOk
+                  ? '$displayName · عهدة صالحة نشطة ($custodyStatus)'
+                  : (message.isNotEmpty ? message : 'عهدة غير صالحة ($custodyStatus)'),
+              style: TextStyle(fontFamily: 'BeIN', 
+                color: isOk ? AppColors.success : AppColors.error,
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildResolvedTechnicianCard() {
+    if (_deviceLookup == null) return const SizedBox.shrink();
+    final tech = _deviceLookup!['technician'];
+    if (tech == null) return const SizedBox.shrink();
+    final techName = tech['fullName']?.toString() ?? 'غير محدد';
+    final techCode = tech['technicianCode']?.toString() ?? tech['username']?.toString() ?? '';
+
+    return Container(
+      margin: const EdgeInsets.only(top: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.lock_outline, color: AppColors.primary, size: 18),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'الفني المسؤول (من عهدة الجهاز)',
+                  style: TextStyle(fontFamily: 'BeIN', 
+                    color: AppColors.textMuted,
+                    fontSize: 10,
+                  ),
+                ),
+                Text(
+                  techName,
+                  style: TextStyle(fontFamily: 'BeIN', 
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (techCode.isNotEmpty)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: AppColors.backgroundDark,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                techCode,
+                style: GoogleFonts.ibmPlexMono(
+                  color: AppColors.primary,
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -381,30 +734,45 @@ class _CourierVisitExecutionPageState
     required TextEditingController controller,
     required IconData icon,
     required Color color,
+    required String role,
+    FocusNode? focusNode,
   }) {
+    final isLoading = role == 'device' ? _snLookupLoading : _simLookupLoading;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: GoogleFonts.cairo(
-            color: AppColors.textSecondary,
-            fontSize: 12,
-          ),
-        ),
+        Text(label,
+            style: TextStyle(fontFamily: 'BeIN', 
+                color: AppColors.textSecondary, fontSize: 12)),
         const SizedBox(height: 6),
         Row(
           children: [
             Expanded(
               child: TextField(
                 controller: controller,
-                style: GoogleFonts.cairo(color: Colors.white, fontSize: 14),
+                focusNode: focusNode,
+                style: TextStyle(fontFamily: 'BeIN', color: Colors.white, fontSize: 14),
                 textDirection: TextDirection.ltr,
+                textCapitalization: role == 'device'
+                    ? TextCapitalization.characters
+                    : TextCapitalization.none,
+                onChanged: role == 'device'
+                    ? (val) {
+                        final upper = val.toUpperCase();
+                        if (val != upper) {
+                          final sel = controller.selection;
+                          controller.value = TextEditingValue(
+                            text: upper,
+                            selection: sel,
+                          );
+                        }
+                      }
+                    : null,
                 decoration: InputDecoration(
                   prefixIcon: Icon(icon, color: color, size: 20),
                   hintText: 'أدخل الرقم أو امسح',
-                  hintStyle: GoogleFonts.cairo(
-                      color: AppColors.textMuted, fontSize: 12),
+                  hintStyle:
+                      TextStyle(fontFamily: 'BeIN', color: AppColors.textMuted, fontSize: 12),
                   filled: true,
                   fillColor: AppColors.backgroundMid,
                   border: OutlineInputBorder(
@@ -416,7 +784,29 @@ class _CourierVisitExecutionPageState
             ),
             const SizedBox(width: 8),
             GestureDetector(
-              onTap: () => _scanBarcode(controller),
+              onTap: isLoading ? null : () => _doSerialLookup(controller.text, role),
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: color.withOpacity(0.3)),
+                ),
+                child: isLoading
+                    ? SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(color),
+                        ),
+                      )
+                    : Icon(Icons.search, color: color, size: 22),
+              ),
+            ),
+            const SizedBox(width: 8),
+            GestureDetector(
+              onTap: () => _scanBarcode(controller, role),
               child: Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
@@ -430,6 +820,95 @@ class _CourierVisitExecutionPageState
           ],
         ),
       ],
+    );
+  }
+
+  Widget _buildConsumablesSection() {
+    Widget qtyField({
+      required String label,
+      required TextEditingController controller,
+      String? hint,
+    }) {
+      return Expanded(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: TextStyle(fontFamily: 'BeIN', 
+                color: AppColors.textSecondary,
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 6),
+            TextField(
+              controller: controller,
+              keyboardType: TextInputType.number,
+              style: TextStyle(fontFamily: 'BeIN', color: Colors.white, fontSize: 14),
+              decoration: InputDecoration(
+                hintText: hint ?? '0',
+                hintStyle: TextStyle(fontFamily: 'BeIN', color: AppColors.textSecondary),
+                filled: true,
+                fillColor: AppColors.backgroundDark,
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.white.withOpacity(0.08)),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.white.withOpacity(0.08)),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: AppColors.primary),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return GlassCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SectionHeader(
+            title: 'المواد المستهلكة المسلّمة',
+            icon: Icons.inventory_2_outlined,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'تُخصم تلقائياً من مخزون الفني عند إكمال التسليم',
+            style: TextStyle(fontFamily: 'BeIN', 
+              color: AppColors.textSecondary,
+              fontSize: 11,
+            ),
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              qtyField(
+                label: 'عدد الرول',
+                controller: paperRollQtyController,
+              ),
+              const SizedBox(width: 10),
+              qtyField(
+                label: 'الملصقات',
+                controller: stickersQtyController,
+              ),
+              const SizedBox(width: 10),
+              qtyField(
+                label: 'نيوليب (اختياري)',
+                controller: nulipCardsQtyController,
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
@@ -455,7 +934,7 @@ class _CourierVisitExecutionPageState
           const SizedBox(height: 4),
           Text(
             'صوّر: ظهر الجهاز · شاشة TID · استمارة موقّعة · الشريحة',
-            style: GoogleFonts.cairo(
+            style: TextStyle(fontFamily: 'BeIN', 
                 color: AppColors.textMuted, fontSize: 11),
           ),
           const SizedBox(height: 12),
@@ -466,38 +945,41 @@ class _CourierVisitExecutionPageState
             crossAxisSpacing: 8,
             mainAxisSpacing: 8,
             children: [
-              ..._evidencePhotos.map((photo) => Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(10),
-                        child: Image.memory(
-                          base64Decode(photo),
-                          fit: BoxFit.cover,
-                        ),
+              ..._evidencePhotos.asMap().entries.map((entry) {
+                final photo = entry.value;
+                return Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: Image.memory(
+                        base64Decode(photo),
+                        fit: BoxFit.cover,
                       ),
-                      Positioned(
-                        top: 4,
-                        right: 4,
-                        child: GestureDetector(
-                          onTap: () =>
-                              setState(() => _evidencePhotos.remove(photo)),
-                          child: Container(
-                            padding: const EdgeInsets.all(3),
-                            decoration: const BoxDecoration(
-                              color: AppColors.error,
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(Icons.close,
-                                color: Colors.white, size: 12),
+                    ),
+                    Positioned(
+                      top: 4,
+                      right: 4,
+                      child: GestureDetector(
+                        onTap: () => setState(
+                            () => _evidencePhotos.removeAt(entry.key)),
+                        child: Container(
+                          padding: const EdgeInsets.all(3),
+                          decoration: const BoxDecoration(
+                            color: AppColors.error,
+                            shape: BoxShape.circle,
                           ),
+                          child: const Icon(Icons.close,
+                              color: Colors.white, size: 12),
                         ),
                       ),
-                    ],
-                  )),
+                    ),
+                  ],
+                );
+              }),
               if (_evidencePhotos.length < 6)
                 GestureDetector(
-                  onTap: _addPhoto,
+                  onTap: _showPhotoSourceDialog,
                   child: Container(
                     decoration: BoxDecoration(
                       color: AppColors.backgroundMid,
@@ -506,7 +988,6 @@ class _CourierVisitExecutionPageState
                         color: isSufficient
                             ? AppColors.border
                             : AppColors.warning.withOpacity(0.4),
-                        style: BorderStyle.solid,
                       ),
                     ),
                     child: Column(
@@ -520,15 +1001,13 @@ class _CourierVisitExecutionPageState
                           size: 26,
                         ),
                         const SizedBox(height: 4),
-                        Text(
-                          'إضافة صورة',
-                          style: GoogleFonts.cairo(
-                            color: isSufficient
-                                ? AppColors.textMuted
-                                : AppColors.warning,
-                            fontSize: 10,
-                          ),
-                        ),
+                        Text('إضافة صورة',
+                            style: TextStyle(fontFamily: 'BeIN', 
+                              color: isSufficient
+                                  ? AppColors.textMuted
+                                  : AppColors.warning,
+                              fontSize: 10,
+                            )),
                       ],
                     ),
                   ),
@@ -564,7 +1043,7 @@ class _CourierVisitExecutionPageState
                 isExpanded: true,
                 dropdownColor: AppColors.surfaceMid,
                 value: selectedFailureReason,
-                style: GoogleFonts.cairo(color: Colors.white, fontSize: 14),
+                style: TextStyle(fontFamily: 'BeIN', color: Colors.white, fontSize: 14),
                 items: failureReasons
                     .map((r) => DropdownMenuItem(
                           value: r['code'],
@@ -593,12 +1072,12 @@ class _CourierVisitExecutionPageState
           const SizedBox(height: 10),
           TextField(
             controller: notesController,
-            style: GoogleFonts.cairo(color: Colors.white, fontSize: 13),
+            style: TextStyle(fontFamily: 'BeIN', color: Colors.white, fontSize: 13),
             maxLines: 3,
             decoration: InputDecoration(
               hintText: 'أي ملاحظات ميدانية إضافية للمشرف...',
               hintStyle:
-                  GoogleFonts.cairo(color: AppColors.textMuted, fontSize: 12),
+                  TextStyle(fontFamily: 'BeIN', color: AppColors.textMuted, fontSize: 12),
               filled: true,
               fillColor: AppColors.backgroundMid,
               border: OutlineInputBorder(
@@ -631,14 +1110,12 @@ class _CourierVisitExecutionPageState
             children: [
               const Icon(Icons.message, color: Color(0xFF25D366), size: 20),
               const SizedBox(width: 8),
-              Text(
-                'رسالة WhatsApp للمشرف (تُرسل بعد الإغلاق)',
-                style: GoogleFonts.cairo(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 13,
-                ),
-              ),
+              Text('رسالة WhatsApp للمشرف (تُرسل بعد الإغلاق)',
+                  style: TextStyle(fontFamily: 'BeIN', 
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                  )),
             ],
           ),
           const SizedBox(height: 10),
@@ -648,11 +1125,11 @@ class _CourierVisitExecutionPageState
               color: AppColors.backgroundMid,
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Text(
-              message,
-              style: GoogleFonts.cairo(
-                  color: AppColors.textSecondary, fontSize: 12, height: 1.6),
-            ),
+            child: Text(message,
+                style: TextStyle(fontFamily: 'BeIN', 
+                    color: AppColors.textSecondary,
+                    fontSize: 12,
+                    height: 1.6)),
           ),
         ],
       ),
@@ -689,7 +1166,7 @@ class _CourierVisitExecutionPageState
                     const SizedBox(width: 8),
                     Text(
                       'التقط ${2 - _evidencePhotos.length} صورة إثبات أخرى قبل الإغلاق',
-                      style: GoogleFonts.cairo(
+                      style: TextStyle(fontFamily: 'BeIN', 
                           color: AppColors.warning,
                           fontSize: 12,
                           fontWeight: FontWeight.bold),
@@ -701,15 +1178,14 @@ class _CourierVisitExecutionPageState
                   label: isSuccess
                       ? 'إغلاق المهمة ومشاركة التقرير'
                       : 'تسجيل الإخفاق وإعادة الجدولة',
-                  icon:
-                      isSuccess ? Icons.send : Icons.report_problem_outlined,
+                  icon: isSuccess ? Icons.send : Icons.report_problem_outlined,
                   gradient: isSuccess
                       ? AppColors.gradientSuccess
                       : AppColors.gradientError,
                   onPressed: canSubmit
-                      ? (controller.isLoading ? null : _submit)
+                      ? (controller.isLoading || _isSubmitting ? null : _submit)
                       : null,
-                  isLoading: controller.isLoading,
+                  isLoading: controller.isLoading || _isSubmitting,
                   height: 52,
                 )),
           ],

@@ -56,13 +56,13 @@ class InventoryFilterBar extends StatelessWidget {
             ),
             child: TextField(
               controller: searchController,
-              style: GoogleFonts.cairo(
+              style: TextStyle(fontFamily: 'BeIN', 
                 color: AppColors.textPrimary,
                 fontSize: 14,
               ),
               decoration: InputDecoration(
                 hintText: 'ابحث عن صنف...',
-                hintStyle: GoogleFonts.cairo(
+                hintStyle: TextStyle(fontFamily: 'BeIN', 
                   color: AppColors.textSecondary,
                 ),
                 prefixIcon: Icon(
@@ -186,7 +186,7 @@ class _FilterChip extends StatelessWidget {
             const SizedBox(width: 6),
             Text(
               label,
-              style: GoogleFonts.cairo(
+              style: TextStyle(fontFamily: 'BeIN', 
                 fontSize: 12,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                 color: isSelected ? chipColor : AppColors.textSecondary,

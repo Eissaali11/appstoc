@@ -238,10 +238,11 @@ class _SplashPageState extends State<SplashPage>
                             ),
                           ],
                         ),
-                        child: ClipOval(
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
                           child: Image.asset(
-                            'assets/banr.png',
-                            fit: BoxFit.cover,
+                            'assets/images/rassco_logo.png',
+                            fit: BoxFit.contain,
                           ),
                         ),
                       ),
@@ -259,9 +260,9 @@ class _SplashPageState extends State<SplashPage>
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     const Text(
-                      'StockPro',
+                      'RASSCO',
                       style: TextStyle(
-                        fontFamily: 'Tajawal',
+                        fontFamily: 'BeIN',
                         fontSize: 22,
                         fontWeight: FontWeight.w700,
                         color: Colors.white,

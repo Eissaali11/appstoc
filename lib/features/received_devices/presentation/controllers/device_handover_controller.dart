@@ -1,6 +1,9 @@
+import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import '../../data/models/received_device.dart';
 import '../../../../core/utils/gps_helper.dart';
+import '../../../../core/api/api_client.dart';
+import '../../../auth/presentation/controllers/auth_controller.dart';
 
 class DeviceHandoverController extends GetxController {
   final _isLoading = false.obs;
@@ -76,64 +79,76 @@ class DeviceHandoverController extends GetxController {
   Future<void> loadData() async {
     try {
       _isLoading.value = true;
-      await Future.delayed(const Duration(milliseconds: 1000)); // Simulate network
+      final ApiClient apiClient = Get.find<ApiClient>();
 
-      // Mock Custody Devices (representing devices in technician's moving custody)
-      _myCustodyDevices.value = [
-        ReceivedDevice(
-          id: 'dev-1',
-          serialNumber: 'SN-950-8821',
-          terminalId: 'T8821',
-          battery: true,
-          chargerCable: true,
-          chargerHead: true,
-          hasSim: true,
-          simCardType: 'STC',
-          status: 'approved',
-          inventoryType: 'moving',
-          createdAt: DateTime.now().subtract(const Duration(days: 3)),
-        ),
-        ReceivedDevice(
-          id: 'dev-2',
-          serialNumber: 'SN-950-7612',
-          terminalId: 'T7612',
-          battery: true,
-          chargerCable: true,
-          chargerHead: false,
-          hasSim: true,
-          simCardType: 'موبايلي',
-          status: 'approved',
-          inventoryType: 'moving',
-          createdAt: DateTime.now().subtract(const Duration(days: 5)),
-        ),
-        ReceivedDevice(
-          id: 'dev-3',
-          serialNumber: 'SN-i90-5044',
-          terminalId: 'T5044',
-          battery: true,
-          chargerCable: false,
-          chargerHead: false,
-          hasSim: false,
-          status: 'approved',
-          inventoryType: 'moving',
-          createdAt: DateTime.now().subtract(const Duration(days: 8)),
-        ),
-      ];
+      // 1. Fetch technician's moving custody
+      try {
+        final custodyResponse = await apiClient.get('/api/my-serialized-custody');
+        if (custodyResponse.data is List) {
+          final List<dynamic> list = custodyResponse.data;
+          _myCustodyDevices.value = list.map((item) {
+            final isSim = item['carrierName'] != null;
+            return ReceivedDevice(
+              id: item['id']?.toString() ?? '',
+              serialNumber: item['serialNumber']?.toString() ?? '',
+              itemTypeId: item['itemTypeId']?.toString(),
+              terminalId: '',
+              battery: !isSim,
+              chargerCable: !isSim,
+              chargerHead: !isSim,
+              hasSim: isSim,
+              simCardType: item['carrierName']?.toString(),
+              status: 'approved',
+              inventoryType: 'moving',
+              createdAt: item['createdAt'] != null 
+                  ? DateTime.tryParse(item['createdAt'].toString()) 
+                  : DateTime.now(),
+            );
+          }).toList();
+        }
+      } catch (e) {
+        debugPrint('Failed to load custody from server: $e');
+        _myCustodyDevices.clear();
+      }
 
-      // Mock Technicians
-      _technicians.value = [
-        {'id': 'tech-101', 'name': 'أحمد محمد العتيبي', 'city': 'الرياض'},
-        {'id': 'tech-102', 'name': 'عيسى علي البشري', 'city': 'مكة المكرمة'},
-        {'id': 'tech-103', 'name': 'عمر عبد الله المطيري', 'city': 'الدمام'},
-      ];
+      // 2. Fetch technicians
+      try {
+        final techResponse = await apiClient.get('/api/technicians');
+        if (techResponse.data is List) {
+          final List<dynamic> list = techResponse.data;
+          _technicians.value = list.map((item) {
+            final name = item['name']?.toString() ?? item['username']?.toString() ?? 'فني';
+            return {
+              'id': item['id']?.toString() ?? '',
+              'name': name,
+              'city': item['city']?.toString() ?? 'الرياض',
+            };
+          }).toList();
+        }
+      } catch (e) {
+        debugPrint('Failed to load technicians from server: $e');
+        _technicians.value = [];
+      }
 
-      // Mock Warehouses
-      _warehouses.value = [
-        {'id': 'wh-1', 'name': 'مستودع جدة الرئيسي', 'city': 'جدة'},
-        {'id': 'wh-2', 'name': 'مستودع الرياض الإقليمي', 'city': 'الرياض'},
-      ];
+      // 3. Fetch warehouses
+      try {
+        final whResponse = await apiClient.get('/api/warehouses');
+        if (whResponse.data is List) {
+          final List<dynamic> list = whResponse.data;
+          _warehouses.value = list.map((item) {
+            return {
+              'id': item['id']?.toString() ?? '',
+              'name': item['name']?.toString() ?? 'مستودع',
+              'city': item['city']?.toString() ?? 'جدة',
+            };
+          }).toList();
+        }
+      } catch (e) {
+        debugPrint('Failed to load warehouses from server: $e');
+        _warehouses.value = [];
+      }
     } catch (e) {
-      // error handling
+      debugPrint('Error loading handover data: $e');
     } finally {
       _isLoading.value = false;
     }
@@ -153,20 +168,55 @@ class DeviceHandoverController extends GetxController {
         _latitude.value = position.latitude;
         _longitude.value = position.longitude;
       } else {
-        // Mock fallback if GPS is unavailable or disabled in testing
         _latitude.value = 24.7136;
         _longitude.value = 46.6753;
       }
 
-      await Future.delayed(const Duration(milliseconds: 1500)); // Simulate network
+      final ApiClient apiClient = Get.find<ApiClient>();
+      final AuthController authController = Get.find<AuthController>();
+      final currentUser = authController.user;
 
-      // Remove transferred devices from custody for demonstration
+      for (final device in _selectedDevices) {
+        if (_handoverType.value == 'technician') {
+          final payload = {
+            'technicianId': _selectedRecipientId.value,
+            'serialNumber': device.serialNumber,
+            'itemTypeId': device.itemTypeId,
+            'terminalId': device.terminalId,
+            'inventoryType': 'moving',
+            'battery': device.battery,
+            'chargerCable': device.chargerCable,
+            'chargerHead': device.chargerHead,
+            'hasSim': device.hasSim,
+            'simCardType': device.simCardType,
+            'status': 'pending',
+          };
+          await apiClient.post('/api/received-devices', data: payload);
+        } else {
+          final payload = {
+            'city': currentUser?.city ?? 'الرياض',
+            'technicianName': currentUser?.fullName ?? currentUser?.username ?? 'فني',
+            'terminalId': device.terminalId ?? 'N/A',
+            'serialNumber': device.serialNumber,
+            'battery': device.battery ? 'yes' : 'no',
+            'chargerCable': device.chargerCable ? 'yes' : 'no',
+            'chargerHead': device.chargerHead ? 'yes' : 'no',
+            'hasSim': device.hasSim ? 'yes' : 'no',
+            if (device.simCardType != null) 'simCardType': device.simCardType,
+            'notes': 'تم إرجاع الجهاز للمستودع عبر التطبيق',
+          };
+          await apiClient.post('/api/withdrawn-devices', data: payload);
+        }
+      }
+
+      // Remove transferred devices from custody
       _myCustodyDevices.removeWhere((d) => _selectedDevices.contains(d));
       _selectedDevices.clear();
       _selectedRecipientId.value = null;
 
       return true;
     } catch (e) {
+      debugPrint('Error during submitHandover: $e');
       return false;
     } finally {
       _isLoading.value = false;

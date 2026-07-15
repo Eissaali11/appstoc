@@ -79,7 +79,7 @@ class InventorySummaryCard extends StatelessWidget {
               const SizedBox(height: 16),
               Text(
                 'لا توجد عناصر في المخزون',
-                style: GoogleFonts.cairo(
+                style: TextStyle(fontFamily: 'BeIN', 
                   fontSize: 16,
                   color: AppColors.textSecondary,
                 ),
@@ -115,7 +115,7 @@ class InventorySummaryCard extends StatelessWidget {
                 const SizedBox(width: 12),
                 Text(
                   'ملخص المخزون',
-                  style: GoogleFonts.cairo(
+                  style: TextStyle(fontFamily: 'BeIN', 
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
@@ -197,7 +197,7 @@ class _InventoryItemRow extends StatelessWidget {
           Expanded(
             child: Text(
               item.itemType.nameAr,
-              style: GoogleFonts.cairo(
+              style: TextStyle(fontFamily: 'BeIN', 
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
                 color: Colors.white,
@@ -213,7 +213,7 @@ class _InventoryItemRow extends StatelessWidget {
             ),
             child: Text(
               'كراتين: $totalBoxes',
-              style: GoogleFonts.cairo(
+              style: TextStyle(fontFamily: 'BeIN', 
                 fontSize: 14,
                 color: AppColors.primary,
                 fontWeight: FontWeight.w600,
@@ -230,7 +230,7 @@ class _InventoryItemRow extends StatelessWidget {
             ),
             child: Text(
               'وحدات: $totalUnits',
-              style: GoogleFonts.cairo(
+              style: TextStyle(fontFamily: 'BeIN', 
                 fontSize: 14,
                 color: AppColors.success,
                 fontWeight: FontWeight.w600,

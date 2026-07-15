@@ -30,7 +30,7 @@ const Map<String, String> en = {
   'drawer_profile': 'Profile',
   'drawer_about_us': 'About Us',
   'drawer_user_default': 'Stock system user',
-  'drawer_badge': 'StockPro Center',
+  'drawer_badge': 'RASSCO Center',
 
   // Dashboard
   'dashboard': 'Dashboard',

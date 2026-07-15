@@ -147,7 +147,7 @@ class _MySerializedInventoryPageState extends State<MySerializedInventoryPage>
         elevation: 0,
         title: Text(
           'أرقامي التسلسلية',
-          style: GoogleFonts.cairo(
+          style: TextStyle(fontFamily: 'BeIN', 
             fontWeight: FontWeight.bold,
             color: Colors.white,
             fontSize: 17,
@@ -267,7 +267,7 @@ class _MySerializedInventoryPageState extends State<MySerializedInventoryPage>
                   ),
                   Text(
                     label,
-                    style: GoogleFonts.cairo(
+                    style: TextStyle(fontFamily: 'BeIN', 
                         color: Colors.white38, fontSize: 10),
                   ),
                 ],
@@ -296,7 +296,7 @@ class _MySerializedInventoryPageState extends State<MySerializedInventoryPage>
             decoration: InputDecoration(
               hintText: 'ابحث برقم تسلسلي، ICCID، أو نوع الجهاز...',
               hintStyle:
-                  GoogleFonts.cairo(color: Colors.white30, fontSize: 12),
+                  TextStyle(fontFamily: 'BeIN', color: Colors.white30, fontSize: 12),
               prefixIcon: const Icon(Icons.search, color: Colors.white38, size: 20),
               suffixIcon: _searchQuery.isNotEmpty
                   ? IconButton(
@@ -357,7 +357,7 @@ class _MySerializedInventoryPageState extends State<MySerializedInventoryPage>
                     ),
                     child: Text(
                       cat.$2,
-                      style: GoogleFonts.cairo(
+                      style: TextStyle(fontFamily: 'BeIN', 
                         color: isSelected ? AppColors.primary : Colors.white54,
                         fontSize: 12,
                         fontWeight: isSelected
@@ -437,7 +437,7 @@ class _MySerializedInventoryPageState extends State<MySerializedInventoryPage>
                 Expanded(
                   child: Text(
                     typeName,
-                    style: GoogleFonts.cairo(
+                    style: TextStyle(fontFamily: 'BeIN', 
                       fontSize: 15,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
@@ -455,7 +455,7 @@ class _MySerializedInventoryPageState extends State<MySerializedInventoryPage>
                   ),
                   child: Text(
                     '${items.length} وحدة',
-                    style: GoogleFonts.cairo(
+                    style: TextStyle(fontFamily: 'BeIN', 
                       color: color,
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
@@ -555,7 +555,7 @@ class _MySerializedInventoryPageState extends State<MySerializedInventoryPage>
                 ),
                 child: Text(
                   carrierLabel,
-                  style: GoogleFonts.cairo(
+                  style: TextStyle(fontFamily: 'BeIN', 
                     color: carrierColor,
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
@@ -585,7 +585,7 @@ class _MySerializedInventoryPageState extends State<MySerializedInventoryPage>
             _searchQuery.isNotEmpty
                 ? 'لا توجد نتائج للبحث'
                 : 'لا توجد أرقام تسلسلية في عهدتك',
-            style: GoogleFonts.cairo(
+            style: TextStyle(fontFamily: 'BeIN', 
                 color: Colors.white38, fontSize: 15),
           ),
           if (_searchQuery.isEmpty)
@@ -593,7 +593,7 @@ class _MySerializedInventoryPageState extends State<MySerializedInventoryPage>
               padding: const EdgeInsets.only(top: 8),
               child: Text(
                 'استلم عهدة وامسح الأجهزة لتظهر هنا',
-                style: GoogleFonts.cairo(
+                style: TextStyle(fontFamily: 'BeIN', 
                     color: Colors.white24, fontSize: 12),
               ),
             ),
@@ -611,20 +611,20 @@ class _MySerializedInventoryPageState extends State<MySerializedInventoryPage>
           const SizedBox(height: 16),
           Text(
             'تعذّر تحميل البيانات',
-            style: GoogleFonts.cairo(
+            style: TextStyle(fontFamily: 'BeIN', 
                 color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
           Text(
             _error ?? '',
             textAlign: TextAlign.center,
-            style: GoogleFonts.cairo(color: Colors.white38, fontSize: 12),
+            style: TextStyle(fontFamily: 'BeIN', color: Colors.white38, fontSize: 12),
           ),
           const SizedBox(height: 24),
           ElevatedButton.icon(
             onPressed: _loadSerializedItems,
             icon: const Icon(Icons.refresh, size: 18),
-            label: Text('إعادة المحاولة', style: GoogleFonts.cairo()),
+            label: Text('إعادة المحاولة', style: TextStyle(fontFamily: 'BeIN', )),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,

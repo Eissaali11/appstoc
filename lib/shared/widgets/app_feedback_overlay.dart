@@ -108,7 +108,7 @@ class _AppFeedbackOverlayState extends State<AppFeedbackOverlay>
             const SizedBox(height: 16),
             Text(
               widget.title,
-              style: GoogleFonts.cairo(
+              style: TextStyle(fontFamily: 'BeIN', 
                 color: Colors.white,
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -119,7 +119,7 @@ class _AppFeedbackOverlayState extends State<AppFeedbackOverlay>
               const SizedBox(height: 8),
               Text(
                 widget.subtitle!,
-                style: GoogleFonts.cairo(
+                style: TextStyle(fontFamily: 'BeIN', 
                   color: AppColors.textSecondary,
                   fontSize: 13,
                 ),
@@ -258,7 +258,7 @@ class AppStatusBadge extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: GoogleFonts.cairo(
+        style: TextStyle(fontFamily: 'BeIN', 
           color: color,
           fontSize: 12,
           fontWeight: FontWeight.bold,

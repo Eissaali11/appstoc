@@ -214,11 +214,24 @@ class NotificationsController extends GetxController {
       final dioInstance = Get.find<dio.Dio>();
       
       // 1. Submit batch scan in
+      // Determine the correct carrier name based on the actual item type
+      String? _resolveCarrierName(String itemTypeId) {
+        const carrierMap = {
+          'zainSim': 'Zain',
+          'mobilySim': 'Mobily',
+          'stcSim': 'STC',
+          'lebaraSim': 'Lebara',
+          'lebara': 'Lebara',
+        };
+        return carrierMap[itemTypeId];
+      }
+
+      final resolvedCarrier = _resolveCarrierName(itemType.id);
       final body = {
         'items': serials.map((serial) => {
           'serialNumber': serial,
           'itemTypeId': itemType.id,
-          if (itemType.category == 'sim') 'carrierName': 'STC',
+          if (itemType.category == 'sim' && resolvedCarrier != null) 'carrierName': resolvedCarrier,
         }).toList(),
       };
       

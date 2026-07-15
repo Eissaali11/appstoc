@@ -207,8 +207,8 @@ class _HeroSectionState extends State<_HeroSection>
                     ),
                     child: ClipOval(
                       child: Image.asset(
-                        'assets/ico1.png',
-                        fit: BoxFit.cover,
+                        'assets/images/rassco_logo.png',
+                        fit: BoxFit.contain,
                         errorBuilder: (context, error, stack) => Container(
                           color: AppColors.surfaceDark,
                           child: const Icon(
@@ -224,24 +224,24 @@ class _HeroSectionState extends State<_HeroSection>
                   const SizedBox(height: 24),
 
                   // App name
-                  ShaderMask(
-                    shaderCallback: (rect) => LinearGradient(
-                      colors: [
-                        AppColors.primary,
-                        Colors.white,
-                        AppColors.accentPurple,
-                      ],
-                      begin: Alignment.centerRight,
-                      end: Alignment.centerLeft,
-                    ).createShader(rect),
-                    child: Text(
-                      'StockPro',
-                      style: GoogleFonts.poppins(
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                        letterSpacing: 1.5,
-                      ),
+                  Text(
+                    'RASSCO',
+                    style: TextStyle(
+                      fontFamily: 'BeIN',
+                      fontSize: 36,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.primary,
+                      letterSpacing: 1.5,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'شركة راس السعودية المحدودة',
+                    style: TextStyle(
+                      fontFamily: 'BeIN',
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.textSecondary,
                     ),
                   ),
 
@@ -250,7 +250,7 @@ class _HeroSectionState extends State<_HeroSection>
                   // Tagline
                   Text(
                     'إدارة مخزون ذكية وسهلة',
-                    style: GoogleFonts.cairo(
+                    style: TextStyle(fontFamily: 'BeIN', 
                       fontSize: 14,
                       color: Colors.white38,
                       fontWeight: FontWeight.w500,
@@ -421,7 +421,7 @@ class _FormCardState extends State<_FormCard>
                           children: [
                             Text(
                               'تسجيل الدخول',
-                              style: GoogleFonts.cairo(
+                              style: TextStyle(fontFamily: 'BeIN', 
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.white,
@@ -429,7 +429,7 @@ class _FormCardState extends State<_FormCard>
                             ),
                             Text(
                               'أدخل بياناتك للمتابعة',
-                              style: GoogleFonts.cairo(
+                              style: TextStyle(fontFamily: 'BeIN', 
                                 fontSize: 12,
                                 color: Colors.white38,
                               ),
@@ -449,7 +449,7 @@ class _FormCardState extends State<_FormCard>
                     // Footer note
                     Center(
                       child: Text(
-                        'StockPro Enterprise v3.2',
+                        'RASSCO Enterprise',
                         style: GoogleFonts.robotoMono(
                           fontSize: 10,
                           color: Colors.white12,

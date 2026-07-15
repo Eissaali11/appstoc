@@ -191,7 +191,8 @@ class CourierRequestsController extends GetxController {
   // ----------------------------------------------------
 
   String? scanItemLocal(String serial) {
-    if (serial.trim().isEmpty) return 'الرجاء إدخال رقم تسلسلي صالح';
+    serial = serial.trim().toUpperCase().replaceAll(RegExp(r'[\s\-_.]'), '');
+    if (serial.isEmpty) return 'الرجاء إدخال رقم تسلسلي صالح';
 
     // 1. Check if already scanned
     if (scannedSerials.contains(serial)) {
@@ -203,11 +204,13 @@ class CourierRequestsController extends GetxController {
     
     // First, try matching by exact serial if already populated (for backward compatibility / pre-assigned serials)
     for (var item in _currentItems) {
-      if (item.itemType == 'POS' && item.serialNumber == serial) {
+      if (item.itemType == 'POS' &&
+          (item.serialNumber ?? '').toUpperCase() == serial) {
         matchedItem = item;
         break;
       }
-      if (item.itemType == 'SIM' && item.simSerial == serial) {
+      if (item.itemType == 'SIM' &&
+          (item.simSerial ?? '').toUpperCase() == serial) {
         matchedItem = item;
         break;
       }
@@ -247,7 +250,8 @@ class CourierRequestsController extends GetxController {
   }
 
   String? scanSpecificItemLocal(int itemId, String serial) {
-    if (serial.trim().isEmpty) return 'الرجاء إدخال رقم تسلسلي صالح';
+    serial = serial.trim().toUpperCase().replaceAll(RegExp(r'[\s\-_.]'), '');
+    if (serial.isEmpty) return 'الرجاء إدخال رقم تسلسلي صالح';
     _error.value = null;
 
     // 1. Check if already scanned in this session
@@ -263,12 +267,12 @@ class CourierRequestsController extends GetxController {
 
     // 3. If the item has a pre-assigned serial number from the warehouse, validate it
     if (item.itemType == 'POS' && item.serialNumber != null && item.serialNumber!.isNotEmpty) {
-      if (item.serialNumber != serial) {
+      if (item.serialNumber!.toUpperCase() != serial) {
         return 'الرقم الممسوح ($serial) لا يطابق الرقم المخصص للجهاز (${item.serialNumber})';
       }
     }
     if (item.itemType == 'SIM' && item.simSerial != null && item.simSerial!.isNotEmpty) {
-      if (item.simSerial != serial) {
+      if (item.simSerial!.toUpperCase() != serial) {
         return 'رقم الشريحة الممسوح ($serial) لا يطابق الرقم المخصص للشريحة (${item.simSerial})';
       }
     }
@@ -588,6 +592,9 @@ class CourierRequestsController extends GetxController {
     String? snInstalled,
     String? simInstalled,
     String? customerSignature,
+    int paperRollQty = 0,
+    int stickersQty = 0,
+    int nulipCardsQty = 0,
     List<String>? photos,
     DateTime? startTime,
     DateTime? arrivalTime,
@@ -615,6 +622,9 @@ class CourierRequestsController extends GetxController {
         'notes': notes,
         'snInstalled': snInstalled,
         'simInstalled': simInstalled,
+        'paperRollQty': paperRollQty,
+        'stickersQty': stickersQty,
+        'nulipCardsQty': nulipCardsQty,
         'gpsLatitude': lat ?? 24.7136,
         'gpsLongitude': lng ?? 46.6753,
         'batteryLevel': 88, // Mock battery level
@@ -640,6 +650,9 @@ class CourierRequestsController extends GetxController {
           'notes': notes,
           'snInstalled': snInstalled,
           'simInstalled': simInstalled,
+          'paperRollQty': paperRollQty,
+          'stickersQty': stickersQty,
+          'nulipCardsQty': nulipCardsQty,
           'gpsLatitude': 24.7136,
           'gpsLongitude': 46.6753,
           'batteryLevel': 88,
@@ -669,6 +682,17 @@ class CourierRequestsController extends GetxController {
       }
     } finally {
       _isLoading.value = false;
+    }
+  }
+
+  Future<Map<String, dynamic>?> serialLookup(String serial) async {
+    try {
+      _error.value = null;
+      final result = await repository.serialLookup(serial);
+      return result;
+    } catch (e) {
+      _error.value = e.toString().replaceAll('Exception: ', '');
+      return null;
     }
   }
 }

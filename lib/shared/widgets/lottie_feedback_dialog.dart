@@ -45,7 +45,7 @@ class AppLottieFeedback {
               const SizedBox(height: 16),
               Text(
                 title,
-                style: GoogleFonts.cairo(
+                style: TextStyle(fontFamily: 'BeIN', 
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
@@ -55,7 +55,7 @@ class AppLottieFeedback {
               const SizedBox(height: 8),
               Text(
                 message,
-                style: GoogleFonts.cairo(
+                style: TextStyle(fontFamily: 'BeIN', 
                   fontSize: 13,
                   color: AppColors.textSecondary,
                 ),
@@ -79,7 +79,7 @@ class AppLottieFeedback {
                   ),
                   child: Text(
                     'موافق',
-                    style: GoogleFonts.cairo(
+                    style: TextStyle(fontFamily: 'BeIN', 
                       fontWeight: FontWeight.bold,
                       fontSize: 14,
                     ),

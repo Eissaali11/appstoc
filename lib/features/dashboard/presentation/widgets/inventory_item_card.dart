@@ -159,7 +159,7 @@ class InventoryItemCard extends StatelessWidget {
                         children: [
                           Text(
                             itemType.nameAr,
-                            style: GoogleFonts.cairo(
+                            style: TextStyle(fontFamily: 'BeIN', 
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
                               color: Colors.white,
@@ -170,7 +170,7 @@ class InventoryItemCard extends StatelessWidget {
                           const SizedBox(height: 4),
                           Text(
                             itemType.nameEn,
-                            style: GoogleFonts.cairo(
+                            style: TextStyle(fontFamily: 'BeIN', 
                               fontSize: 12,
                               color: AppColors.textSecondary,
                             ),
@@ -214,7 +214,7 @@ class InventoryItemCard extends StatelessWidget {
                             const SizedBox(width: 4),
                             Text(
                               isLowStock ? 'منخفض' : 'متوفر',
-                              style: GoogleFonts.cairo(
+                              style: TextStyle(fontFamily: 'BeIN', 
                                 fontSize: 11,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.white,
@@ -324,7 +324,7 @@ class _QuantityCard extends StatelessWidget {
               Flexible(
                 child: Text(
                   title,
-                  style: GoogleFonts.cairo(
+                  style: TextStyle(fontFamily: 'BeIN', 
                     fontSize: 10,
                     color: color,
                     fontWeight: FontWeight.bold,
@@ -356,7 +356,7 @@ class _QuantityCard extends StatelessWidget {
               const SizedBox(width: 6),
               Text(
                 boxes.toString(),
-                style: GoogleFonts.cairo(
+                style: TextStyle(fontFamily: 'BeIN', 
                   fontSize: isTotal ? 18 : 16,
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
@@ -384,7 +384,7 @@ class _QuantityCard extends StatelessWidget {
               const SizedBox(width: 6),
               Text(
                 units.toString(),
-                style: GoogleFonts.cairo(
+                style: TextStyle(fontFamily: 'BeIN', 
                   fontSize: isTotal ? 18 : 16,
                   fontWeight: FontWeight.bold,
                   color: Colors.white,

@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/widgets/design_system.dart';
 import '../../../../shared/widgets/barcode_scanner_widget.dart';
+import '../../../../shared/utils/barcode_validator.dart';
 import '../../../moving_inventory/data/models/warehouse_transfer.dart';
 import '../../../dashboard/presentation/controllers/dashboard_controller.dart';
 
@@ -37,16 +38,22 @@ class _CustodyConfirmReceiptPageState extends State<CustodyConfirmReceiptPage>
 
   final DashboardController _controller = Get.find<DashboardController>();
 
-  bool get isSerialized => [
-        'n950',
-        'i9000s',
-        'i9100',
-        'mobilySim',
-        'stcSim',
-        'zainSim',
-        'lebara',
-        'lebaraSim',
-      ].contains(widget.transfer.itemType);
+  bool get isSerialized {
+    final type = _controller.itemTypesMap[widget.transfer.itemType];
+    if (type != null) {
+      return type.requiresSerial == true || type.category == 'devices' || type.category == 'sim';
+    }
+    return [
+      'n950',
+      'i9000s',
+      'i9100',
+      'mobilySim',
+      'stcSim',
+      'zainSim',
+      'lebara',
+      'lebaraSim',
+    ].contains(widget.transfer.itemType);
+  }
 
   bool get isComplete =>
       !isSerialized || _confirmedSerials.length >= widget.transfer.quantity;
@@ -58,10 +65,28 @@ class _CustodyConfirmReceiptPageState extends State<CustodyConfirmReceiptPage>
     super.dispose();
   }
 
-  // ─── Core: scan a single serial and send to API immediately ───
   Future<void> _scanSerial(String rawSn) async {
     final sn = rawSn.trim();
     if (sn.isEmpty) return;
+
+    // التحقق من صحة الرقم التسلسلي باستخدام البينات الخاصة بنوع الصنف
+    final selectedType = _controller.itemTypesMap[widget.transfer.itemType];
+    if (selectedType != null) {
+      final validationError = BarcodeValidator.validate(sn, selectedType);
+      if (validationError != null) {
+        HapticFeedback.heavyImpact();
+        setState(() => _lastError = validationError);
+        Get.snackbar(
+          'خطأ في التحقق',
+          validationError,
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: AppColors.error,
+          colorText: Colors.white,
+          duration: const Duration(seconds: 4),
+        );
+        return;
+      }
+    }
 
     // Duplicate check (local)
     if (_confirmedSerials.any((s) => s.serialNumber == sn)) {
@@ -128,9 +153,12 @@ class _CustodyConfirmReceiptPageState extends State<CustodyConfirmReceiptPage>
   }
 
   Future<void> _openCameraScanner() async {
+    final selectedType = _controller.itemTypesMap[widget.transfer.itemType];
     final result = await Get.to(() => BarcodeScannerWidget(
           title: 'مسح الأرقام التسلسلية',
           isMultiScan: true,
+          itemTypes: selectedType != null ? [selectedType] : null,
+          selectedItemTypeId: selectedType?.id,
         ));
 
     if (result != null) {
@@ -180,7 +208,7 @@ class _CustodyConfirmReceiptPageState extends State<CustodyConfirmReceiptPage>
       appBar: AppBar(
         title: Text(
           'استلام العهدة',
-          style: GoogleFonts.cairo(fontWeight: FontWeight.bold, color: Colors.white),
+          style: TextStyle(fontFamily: 'BeIN', fontWeight: FontWeight.bold, color: Colors.white),
         ),
         backgroundColor: AppColors.surfaceDark,
         elevation: 0,
@@ -232,7 +260,7 @@ class _CustodyConfirmReceiptPageState extends State<CustodyConfirmReceiptPage>
                                   children: [
                                     Text(
                                       itemTypeName,
-                                      style: GoogleFonts.cairo(
+                                      style: TextStyle(fontFamily: 'BeIN', 
                                         fontSize: 16,
                                         fontWeight: FontWeight.bold,
                                         color: Colors.white,
@@ -240,7 +268,7 @@ class _CustodyConfirmReceiptPageState extends State<CustodyConfirmReceiptPage>
                                     ),
                                     Text(
                                       widget.transfer.warehouseName ?? 'المستودع الرئيسي',
-                                      style: GoogleFonts.cairo(
+                                      style: TextStyle(fontFamily: 'BeIN', 
                                           fontSize: 12, color: AppColors.textSecondary),
                                     ),
                                   ],
@@ -262,7 +290,7 @@ class _CustodyConfirmReceiptPageState extends State<CustodyConfirmReceiptPage>
                                     ),
                                     Text(
                                       'تم الاستلام',
-                                      style: GoogleFonts.cairo(
+                                      style: TextStyle(fontFamily: 'BeIN', 
                                           fontSize: 11, color: AppColors.textMuted),
                                     ),
                                   ],
@@ -287,7 +315,7 @@ class _CustodyConfirmReceiptPageState extends State<CustodyConfirmReceiptPage>
                                   const SizedBox(width: 8),
                                   Text(
                                     'يتبقى ${widget.transfer.quantity - successCount} وحدة للمسح',
-                                    style: GoogleFonts.cairo(
+                                    style: TextStyle(fontFamily: 'BeIN', 
                                       fontSize: 13,
                                       color: AppColors.accentOrange,
                                     ),
@@ -325,7 +353,7 @@ class _CustodyConfirmReceiptPageState extends State<CustodyConfirmReceiptPage>
                                   color: Colors.white, fontSize: 14),
                               decoration: InputDecoration(
                                 hintText: 'أدخل الرقم يدوياً...',
-                                hintStyle: GoogleFonts.cairo(
+                                hintStyle: TextStyle(fontFamily: 'BeIN', 
                                     color: Colors.white30, fontSize: 13),
                                 fillColor: AppColors.surfaceDark,
                                 filled: true,
@@ -361,7 +389,7 @@ class _CustodyConfirmReceiptPageState extends State<CustodyConfirmReceiptPage>
                             ),
                             child: Text(
                               'إضافة',
-                              style: GoogleFonts.cairo(
+                              style: TextStyle(fontFamily: 'BeIN', 
                                   fontWeight: FontWeight.bold, color: Colors.white),
                             ),
                           ),
@@ -388,7 +416,7 @@ class _CustodyConfirmReceiptPageState extends State<CustodyConfirmReceiptPage>
                               Expanded(
                                 child: Text(
                                   _lastError!,
-                                  style: GoogleFonts.cairo(
+                                  style: TextStyle(fontFamily: 'BeIN', 
                                       color: AppColors.error, fontSize: 12),
                                 ),
                               ),
@@ -403,7 +431,7 @@ class _CustodyConfirmReceiptPageState extends State<CustodyConfirmReceiptPage>
                         children: [
                           Text(
                             'الأرقام المستلمة (${_confirmedSerials.length})',
-                            style: GoogleFonts.cairo(
+                            style: TextStyle(fontFamily: 'BeIN', 
                               fontSize: 13,
                               fontWeight: FontWeight.bold,
                               color: AppColors.textSecondary,
@@ -412,7 +440,7 @@ class _CustodyConfirmReceiptPageState extends State<CustodyConfirmReceiptPage>
                           if (_confirmedSerials.isNotEmpty)
                             Text(
                               isComplete ? '✓ اكتملت الكمية' : '',
-                              style: GoogleFonts.cairo(
+                              style: TextStyle(fontFamily: 'BeIN', 
                                   color: AppColors.success,
                                   fontSize: 13,
                                   fontWeight: FontWeight.bold),
@@ -436,7 +464,7 @@ class _CustodyConfirmReceiptPageState extends State<CustodyConfirmReceiptPage>
                               const SizedBox(height: 12),
                               Text(
                                 'ابدأ المسح لتظهر الأرقام هنا',
-                                style: GoogleFonts.cairo(
+                                style: TextStyle(fontFamily: 'BeIN', 
                                     color: Colors.white24, fontSize: 13),
                               ),
                             ],
@@ -473,7 +501,7 @@ class _CustodyConfirmReceiptPageState extends State<CustodyConfirmReceiptPage>
                             const SizedBox(height: 16),
                             Text(
                               'صنف غير مسلسّل',
-                              style: GoogleFonts.cairo(
+                              style: TextStyle(fontFamily: 'BeIN', 
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.white,
@@ -483,7 +511,7 @@ class _CustodyConfirmReceiptPageState extends State<CustodyConfirmReceiptPage>
                             Text(
                               'هذا الصنف (${itemTypeName}) لا يحتاج أرقاماً تسلسلية.\nيمكنك تأكيد الاستلام مباشرة.',
                               textAlign: TextAlign.center,
-                              style: GoogleFonts.cairo(
+                              style: TextStyle(fontFamily: 'BeIN', 
                                 fontSize: 13,
                                 color: AppColors.textSecondary,
                               ),
@@ -498,7 +526,7 @@ class _CustodyConfirmReceiptPageState extends State<CustodyConfirmReceiptPage>
                               ),
                               child: Text(
                                 '${widget.transfer.quantity} ${widget.transfer.packagingType == "boxes" ? "كرتون" : "وحدة"}',
-                                style: GoogleFonts.cairo(
+                                style: TextStyle(fontFamily: 'BeIN', 
                                   color: AppColors.success,
                                   fontWeight: FontWeight.bold,
                                   fontSize: 15,
@@ -590,7 +618,7 @@ class _CustodyConfirmReceiptPageState extends State<CustodyConfirmReceiptPage>
                 if (!serial.isSuccess && serial.errorMessage != null)
                   Text(
                     serial.errorMessage!,
-                    style: GoogleFonts.cairo(
+                    style: TextStyle(fontFamily: 'BeIN', 
                         color: AppColors.error, fontSize: 11),
                   ),
               ],
@@ -598,7 +626,7 @@ class _CustodyConfirmReceiptPageState extends State<CustodyConfirmReceiptPage>
           ),
           Text(
             serial.isSuccess ? '✓ مسجل' : 'فشل',
-            style: GoogleFonts.cairo(
+            style: TextStyle(fontFamily: 'BeIN', 
               fontSize: 11,
               color: serial.isSuccess
                   ? AppColors.success

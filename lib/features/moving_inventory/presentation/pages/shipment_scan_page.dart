@@ -194,14 +194,9 @@ class _ShipmentScanPageState extends State<ShipmentScanPage>
   }
 
   void _addToScannedBatch() {
-    var serial = (_isSim ? _iccidController.text : _serialController.text).trim();
-    if (serial.startsWith(']C1')) {
-      serial = serial.substring(3);
-    } else if (serial.toLowerCase().startsWith('c1')) {
-      serial = serial.substring(2);
-    }
+    final raw = (_isSim ? _iccidController.text : _serialController.text).trim();
 
-    if (serial.isEmpty) {
+    if (raw.isEmpty) {
       setState(() {
         _scanError = 'الرجاء إدخال الرقم التسلسلي أو مسحه';
         _scanSuccess = null;
@@ -216,8 +211,14 @@ class _ShipmentScanPageState extends State<ShipmentScanPage>
       return;
     }
 
+    final selectedType = _itemTypes.firstWhere((t) => t.id == _selectedItemTypeId);
+    // Keep full uppercase form with letter prefix (e.g. NCC303042220)
+    final serial = BarcodeValidator.toDisplaySerial(raw, selectedType);
+
     // Check for duplicates in local list
-    final isDuplicate = _scannedBatchItems.any((item) => item.serialNumber.toLowerCase() == serial.toLowerCase());
+    final isDuplicate = _scannedBatchItems.any(
+      (item) => BarcodeValidator.serialsMatch(item.serialNumber, serial, selectedType),
+    );
     if (isDuplicate) {
       HapticFeedback.vibrate();
       setState(() {
@@ -228,7 +229,9 @@ class _ShipmentScanPageState extends State<ShipmentScanPage>
     }
 
     // Check for duplicates in actual custody
-    final isInCustody = _custodyItems.any((item) => item.serialNumber.toLowerCase() == serial.toLowerCase());
+    final isInCustody = _custodyItems.any(
+      (item) => BarcodeValidator.serialsMatch(item.serialNumber, serial, selectedType),
+    );
     if (isInCustody) {
       HapticFeedback.vibrate();
       setState(() {
@@ -237,8 +240,6 @@ class _ShipmentScanPageState extends State<ShipmentScanPage>
       });
       return;
     }
-
-    final selectedType = _itemTypes.firstWhere((t) => t.id == _selectedItemTypeId);
 
     // التحقق من صحة الرقم المكتوب يدوياً أو الممسوح
     final validationError = BarcodeValidator.validate(serial, selectedType);
@@ -324,7 +325,7 @@ class _ShipmentScanPageState extends State<ShipmentScanPage>
         elevation: 0,
         title: Text(
           'استلام شحنة جديدة',
-          style: GoogleFonts.cairo(fontWeight: FontWeight.bold, color: Colors.white),
+          style: TextStyle(fontFamily: 'BeIN', fontWeight: FontWeight.bold, color: Colors.white),
         ),
         centerTitle: true,
         bottom: TabBar(
@@ -332,7 +333,7 @@ class _ShipmentScanPageState extends State<ShipmentScanPage>
           indicatorColor: AppColors.primary,
           labelColor: Colors.white,
           unselectedLabelColor: Colors.white38,
-          labelStyle: GoogleFonts.cairo(fontWeight: FontWeight.bold, fontSize: 14),
+          labelStyle: TextStyle(fontFamily: 'BeIN', fontWeight: FontWeight.bold, fontSize: 14),
           tabs: [
             Tab(
               icon: const Icon(Icons.qr_code_scanner, size: 20),
@@ -494,7 +495,7 @@ class _ShipmentScanPageState extends State<ShipmentScanPage>
             const SizedBox(width: 8),
             Text(
               label,
-              style: GoogleFonts.cairo(
+              style: TextStyle(fontFamily: 'BeIN', 
                 color: active ? Colors.white : Colors.white.withOpacity(0.5),
                 fontWeight: active ? FontWeight.bold : FontWeight.w500,
                 fontSize: 14,
@@ -524,7 +525,7 @@ class _ShipmentScanPageState extends State<ShipmentScanPage>
             const SizedBox(width: 12),
             Text(
               'جاري تحميل الأصناف...',
-              style: GoogleFonts.cairo(color: Colors.white38, fontSize: 13),
+              style: TextStyle(fontFamily: 'BeIN', color: Colors.white38, fontSize: 13),
             ),
           ],
         ),
@@ -542,7 +543,7 @@ class _ShipmentScanPageState extends State<ShipmentScanPage>
         ),
         child: Text(
           'لا توجد أصناف نشطة لهذا القسم',
-          style: GoogleFonts.cairo(color: AppColors.error, fontSize: 13),
+          style: TextStyle(fontFamily: 'BeIN', color: AppColors.error, fontSize: 13),
         ),
       );
     }
@@ -559,7 +560,7 @@ class _ShipmentScanPageState extends State<ShipmentScanPage>
           value: _selectedItemTypeId,
           dropdownColor: AppColors.backgroundDark,
           icon: const Icon(Icons.keyboard_arrow_down, color: Colors.white38),
-          style: GoogleFonts.cairo(color: Colors.white, fontSize: 14),
+          style: TextStyle(fontFamily: 'BeIN', color: Colors.white, fontSize: 14),
           isExpanded: true,
           items: filtered.map((t) {
             final isSelected = t.id == _selectedItemTypeId;
@@ -582,7 +583,7 @@ class _ShipmentScanPageState extends State<ShipmentScanPage>
                   const SizedBox(width: 12),
                   Text(
                     t.nameAr,
-                    style: GoogleFonts.cairo(
+                    style: TextStyle(fontFamily: 'BeIN', 
                       color: isSelected ? Colors.white : Colors.white70,
                       fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                     ),
@@ -688,16 +689,10 @@ class _ShipmentScanPageState extends State<ShipmentScanPage>
                       setState(() {
                         int addedCount = 0;
                         for (var code in codes) {
-                          var serial = code.trim();
-                          if (serial.startsWith(']C1')) {
-                            serial = serial.substring(3);
-                          } else if (serial.toLowerCase().startsWith('c1')) {
-                            serial = serial.substring(2);
-                          }
-                          if (serial.isEmpty) continue;
-                          
-                          // تطبيع الكود الخام أولاً
-                          final normalized = BarcodeValidator.normalizeRawBarcode(serial);
+                          if (code.trim().isEmpty) continue;
+
+                          // تطبيع الكود الخام أولاً (أحرف كبيرة + إزالة فواصل)
+                          final normalized = BarcodeValidator.normalizeRawBarcode(code);
 
                           // التحقق من نوع الصنف الأنسب لكل كود ممسوح
                           ItemType? targetType;
@@ -722,21 +717,34 @@ class _ShipmentScanPageState extends State<ShipmentScanPage>
                           }
 
                           if (targetType != null) {
-                            // استخراج الرقم التسلسلي النظيف بناءً على الصنف المكتشف
-                            final cleanSerial = BarcodeValidator.extractCleanSerialForType(normalized, targetType);
+                            // احتفظ بالرقم كاملاً مع البادئة (NCC303042220) وليس الأرقام فقط
+                            final displaySerial =
+                                BarcodeValidator.toDisplaySerial(normalized, targetType);
 
                             // Check for duplicates in local list
-                            final isDuplicate = _scannedBatchItems.any((item) => item.serialNumber.toLowerCase() == cleanSerial.toLowerCase());
+                            final isDuplicate = _scannedBatchItems.any(
+                              (item) => BarcodeValidator.serialsMatch(
+                                item.serialNumber,
+                                displaySerial,
+                                targetType,
+                              ),
+                            );
                             if (isDuplicate) continue;
 
                             // Check for duplicates in actual custody
-                            final isInCustody = _custodyItems.any((item) => item.serialNumber.toLowerCase() == cleanSerial.toLowerCase());
+                            final isInCustody = _custodyItems.any(
+                              (item) => BarcodeValidator.serialsMatch(
+                                item.serialNumber,
+                                displaySerial,
+                                targetType,
+                              ),
+                            );
                             if (isInCustody) continue;
 
                             final isTargetSim = targetType.category == 'sim';
                             final resolvedCarrier = isTargetSim ? _resolveCarrierName(targetType, _carrierName) : null;
                             _scannedBatchItems.add(ScannedBatchItem(
-                              serialNumber: cleanSerial,
+                              serialNumber: displaySerial,
                               itemTypeId: targetType.id,
                               itemTypeName: targetType.nameAr,
                               isSim: isTargetSim,
@@ -785,7 +793,7 @@ class _ShipmentScanPageState extends State<ShipmentScanPage>
           value: _carrierName ?? 'STC',
           dropdownColor: AppColors.backgroundDark,
           icon: const Icon(Icons.keyboard_arrow_down, color: Colors.white38),
-          style: GoogleFonts.cairo(color: Colors.white, fontSize: 14),
+          style: TextStyle(fontFamily: 'BeIN', color: Colors.white, fontSize: 14),
           isExpanded: true,
           items: const [
             DropdownMenuItem(value: 'STC', child: Text('STC')),
@@ -829,7 +837,7 @@ class _ShipmentScanPageState extends State<ShipmentScanPage>
           Expanded(
             child: Text(
               msg,
-              style: GoogleFonts.cairo(
+              style: TextStyle(fontFamily: 'BeIN', 
                 color: Colors.white.withOpacity(0.9),
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
@@ -875,12 +883,12 @@ class _ShipmentScanPageState extends State<ShipmentScanPage>
             const SizedBox(height: 16),
             Text(
               'القائمة المؤقتة فارغة',
-              style: GoogleFonts.cairo(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.bold),
+              style: TextStyle(fontFamily: 'BeIN', color: Colors.white70, fontSize: 14, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 6),
             Text(
               'امسح الأجهزة أو الشرائح لإضافتها للقائمة قبل الحفظ',
-              style: GoogleFonts.cairo(color: Colors.white30, fontSize: 12),
+              style: TextStyle(fontFamily: 'BeIN', color: Colors.white30, fontSize: 12),
               textAlign: TextAlign.center,
             ),
           ],
@@ -913,7 +921,7 @@ class _ShipmentScanPageState extends State<ShipmentScanPage>
               },
               child: Text(
                 'مَسح الكل',
-                style: GoogleFonts.cairo(color: AppColors.error, fontSize: 12, fontWeight: FontWeight.bold),
+                style: TextStyle(fontFamily: 'BeIN', color: AppColors.error, fontSize: 12, fontWeight: FontWeight.bold),
               ),
             ),
           ],
@@ -988,7 +996,7 @@ class _ShipmentScanPageState extends State<ShipmentScanPage>
                           const SizedBox(height: 2),
                           Text(
                             '${item.itemTypeName}${item.carrierName != null ? " (${item.carrierName})" : ""}',
-                            style: GoogleFonts.cairo(color: Colors.white38, fontSize: 11),
+                            style: TextStyle(fontFamily: 'BeIN', color: Colors.white38, fontSize: 11),
                           ),
                         ],
                       ),
@@ -1040,7 +1048,7 @@ class _ShipmentScanPageState extends State<ShipmentScanPage>
               const SizedBox(width: 10),
               Text(
                 'كيفية الاستخدام',
-                style: GoogleFonts.cairo(
+                style: TextStyle(fontFamily: 'BeIN', 
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
                   fontSize: 14,
@@ -1074,7 +1082,7 @@ class _ShipmentScanPageState extends State<ShipmentScanPage>
             child: Center(
               child: Text(
                 num,
-                style: GoogleFonts.cairo(
+                style: TextStyle(fontFamily: 'BeIN', 
                   color: AppColors.primary,
                   fontSize: 11,
                   fontWeight: FontWeight.bold,
@@ -1086,7 +1094,7 @@ class _ShipmentScanPageState extends State<ShipmentScanPage>
           Expanded(
             child: Text(
               text,
-              style: GoogleFonts.cairo(color: Colors.white60, fontSize: 12),
+              style: TextStyle(fontFamily: 'BeIN', color: Colors.white60, fontSize: 12),
             ),
           ),
         ],
@@ -1108,7 +1116,7 @@ class _ShipmentScanPageState extends State<ShipmentScanPage>
       ),
       child: TextField(
         controller: _custodySearchController,
-        style: GoogleFonts.cairo(color: Colors.white, fontSize: 14),
+        style: TextStyle(fontFamily: 'BeIN', color: Colors.white, fontSize: 14),
         onChanged: (val) {
           setState(() {
             _custodySearchQuery = val.trim();
@@ -1116,7 +1124,7 @@ class _ShipmentScanPageState extends State<ShipmentScanPage>
         },
         decoration: InputDecoration(
           hintText: 'ابحث بالرقم التسلسلي أو ICCID...',
-          hintStyle: GoogleFonts.cairo(color: Colors.white24, fontSize: 13),
+          hintStyle: TextStyle(fontFamily: 'BeIN', color: Colors.white24, fontSize: 13),
           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           border: InputBorder.none,
           prefixIcon: const Icon(
@@ -1197,12 +1205,12 @@ class _ShipmentScanPageState extends State<ShipmentScanPage>
           children: [
             const Icon(Icons.error_outline, color: AppColors.error, size: 48),
             const SizedBox(height: 16),
-            Text('فشل التحميل', style: GoogleFonts.cairo(color: Colors.white)),
+            Text('فشل التحميل', style: TextStyle(fontFamily: 'BeIN', color: Colors.white)),
             const SizedBox(height: 8),
             ElevatedButton(
               onPressed: _loadCustody,
               style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
-              child: Text('إعادة المحاولة', style: GoogleFonts.cairo()),
+              child: Text('إعادة المحاولة', style: TextStyle(fontFamily: 'BeIN', )),
             ),
           ],
         ),
@@ -1216,10 +1224,10 @@ class _ShipmentScanPageState extends State<ShipmentScanPage>
             const Icon(Icons.inventory_2_outlined, color: Colors.white24, size: 64),
             const SizedBox(height: 16),
             Text('لا توجد عهدة مسجلة',
-                style: GoogleFonts.cairo(color: Colors.white38, fontSize: 16)),
+                style: TextStyle(fontFamily: 'BeIN', color: Colors.white38, fontSize: 16)),
             const SizedBox(height: 8),
             Text('امسح الأجهزة والشرائح لإضافتها',
-                style: GoogleFonts.cairo(color: Colors.white24, fontSize: 13)),
+                style: TextStyle(fontFamily: 'BeIN', color: Colors.white24, fontSize: 13)),
           ],
         ),
       );
@@ -1255,7 +1263,7 @@ class _ShipmentScanPageState extends State<ShipmentScanPage>
                   const Icon(Icons.search_off_rounded, color: Colors.white24, size: 64),
                   const SizedBox(height: 16),
                   Text('لا توجد نتائج مطابقة لـ "$_custodySearchQuery"',
-                      style: GoogleFonts.cairo(color: Colors.white38, fontSize: 14)),
+                      style: TextStyle(fontFamily: 'BeIN', color: Colors.white38, fontSize: 14)),
                   const SizedBox(height: 12),
                   ElevatedButton(
                     onPressed: () {
@@ -1265,7 +1273,7 @@ class _ShipmentScanPageState extends State<ShipmentScanPage>
                       });
                     },
                     style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
-                    child: Text('إعادة تعيين البحث', style: GoogleFonts.cairo(color: Colors.white)),
+                    child: Text('إعادة تعيين البحث', style: TextStyle(fontFamily: 'BeIN', color: Colors.white)),
                   ),
                 ],
               ),
@@ -1349,7 +1357,7 @@ class _ShipmentScanPageState extends State<ShipmentScanPage>
           ),
           Text(
             label,
-            style: GoogleFonts.cairo(
+            style: TextStyle(fontFamily: 'BeIN', 
               color: Colors.white60,
               fontSize: 12,
               fontWeight: FontWeight.w500,
@@ -1373,7 +1381,7 @@ class _ShipmentScanPageState extends State<ShipmentScanPage>
         ),
         const SizedBox(width: 10),
         Text('$title ($count)',
-            style: GoogleFonts.cairo(
+            style: TextStyle(fontFamily: 'BeIN', 
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
                 fontSize: 15)),
@@ -1431,7 +1439,7 @@ class _ShipmentScanPageState extends State<ShipmentScanPage>
               children: [
                 Text(
                   item.displayName,
-                  style: GoogleFonts.cairo(
+                  style: TextStyle(fontFamily: 'BeIN', 
                     color: Colors.white,
                     fontSize: 13,
                     fontWeight: FontWeight.bold,
@@ -1450,7 +1458,7 @@ class _ShipmentScanPageState extends State<ShipmentScanPage>
                   const SizedBox(height: 2),
                   Text(
                     'المزود: ${item.carrierName}',
-                    style: GoogleFonts.cairo(color: AppColors.success, fontSize: 11, fontWeight: FontWeight.bold),
+                    style: TextStyle(fontFamily: 'BeIN', color: AppColors.success, fontSize: 11, fontWeight: FontWeight.bold),
                   ),
                 ],
               ],
@@ -1465,7 +1473,7 @@ class _ShipmentScanPageState extends State<ShipmentScanPage>
             ),
             child: Text(
               'في العهدة',
-              style: GoogleFonts.cairo(
+              style: TextStyle(fontFamily: 'BeIN', 
                 color: AppColors.success,
                 fontSize: 10,
                 fontWeight: FontWeight.bold,

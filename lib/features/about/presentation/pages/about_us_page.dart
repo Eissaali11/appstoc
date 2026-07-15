@@ -50,7 +50,7 @@ class AboutUsPage extends StatelessWidget {
         appBar: AppBar(
           title: Text(
             'about_title'.tr,
-            style: GoogleFonts.cairo(
+            style: TextStyle(fontFamily: 'BeIN', 
               fontWeight: FontWeight.bold,
               color: Colors.white,
             ),
@@ -118,7 +118,7 @@ class AboutUsPage extends StatelessWidget {
           const SizedBox(height: 16),
           Text(
             'نُظم',
-            style: GoogleFonts.cairo(
+            style: TextStyle(fontFamily: 'BeIN', 
               fontSize: 32,
               fontWeight: FontWeight.bold,
               color: Colors.white,
@@ -128,7 +128,7 @@ class AboutUsPage extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             'شركة بناء الأنظمة والتطبيقات',
-            style: GoogleFonts.cairo(
+            style: TextStyle(fontFamily: 'BeIN', 
               fontSize: 16,
               color: Colors.white.withOpacity(0.95),
               fontWeight: FontWeight.w500,
@@ -147,7 +147,7 @@ class AboutUsPage extends StatelessWidget {
             ),
             child: Text(
               'نبني الأنظمة التي تبني أعمالكم',
-              style: GoogleFonts.cairo(
+              style: TextStyle(fontFamily: 'BeIN', 
                 fontSize: 14,
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
@@ -165,7 +165,7 @@ class AboutUsPage extends StatelessWidget {
       title: 'من نحن',
       child: Text(
         'نحن شركة نُظم المتخصصة في تصميم وتطوير الأنظمة والتطبيقات الذكية التي تُحدث فرقاً حقيقياً في أعمالكم. نؤمن بأن التقنية ليست مجرد أدوات، بل هي شريك استراتيجي في نجاح مؤسستكم.',
-        style: GoogleFonts.cairo(
+        style: TextStyle(fontFamily: 'BeIN', 
           fontSize: 15,
           height: 1.7,
           color: _cardTextPrimary,
@@ -184,7 +184,7 @@ class AboutUsPage extends StatelessWidget {
         children: [
           Text(
             'تمكين المؤسسات العربية من التحول الرقمي الكامل من خلال حلول تقنية مبتكرة ومستدامة.',
-            style: GoogleFonts.cairo(
+            style: TextStyle(fontFamily: 'BeIN', 
               fontSize: 15,
               height: 1.7,
               color: _cardTextPrimary,
@@ -193,7 +193,7 @@ class AboutUsPage extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             'نسعى لأن نكون الشريك التقني الأول للمؤسسات الطموحة التي تبحث عن التميز والابتكار في منطقة الخليج والشرق الأوسط.',
-            style: GoogleFonts.cairo(
+            style: TextStyle(fontFamily: 'BeIN', 
               fontSize: 14,
               height: 1.6,
               color: _cardTextSecondary,
@@ -214,7 +214,7 @@ class AboutUsPage extends StatelessWidget {
         children: [
           Text(
             'نقدم حلولاً تقنية متكاملة تجمع بين:',
-            style: GoogleFonts.cairo(
+            style: TextStyle(fontFamily: 'BeIN', 
               fontSize: 15,
               fontWeight: FontWeight.bold,
               color: AppColors.textPrimary,
@@ -343,7 +343,7 @@ class AboutUsPage extends StatelessWidget {
                       children: [
                         Text(
                           item.$1,
-                          style: GoogleFonts.cairo(
+                          style: TextStyle(fontFamily: 'BeIN', 
                             fontWeight: FontWeight.bold,
                             fontSize: 14,
                             color: _cardTextPrimary,
@@ -352,7 +352,7 @@ class AboutUsPage extends StatelessWidget {
                         const SizedBox(height: 2),
                         Text(
                           item.$2,
-                          style: GoogleFonts.cairo(
+                          style: TextStyle(fontFamily: 'BeIN', 
                             fontSize: 13,
                             color: _cardTextSecondary,
                             height: 1.4,
@@ -404,7 +404,7 @@ class AboutUsPage extends StatelessWidget {
                   const SizedBox(height: 6),
                   Text(
                     s.$2,
-                    style: GoogleFonts.cairo(
+                    style: TextStyle(fontFamily: 'BeIN', 
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
                       color: AppColors.textPrimary,
@@ -412,7 +412,7 @@ class AboutUsPage extends StatelessWidget {
                   ),
                   Text(
                     s.$3,
-                    style: GoogleFonts.cairo(
+                    style: TextStyle(fontFamily: 'BeIN', 
                       fontSize: 12,
                       color: AppColors.textSecondary,
                     ),
@@ -451,7 +451,7 @@ class AboutUsPage extends StatelessWidget {
               children: [
                 Text(
                   'تفضل بزيارة موقعنا',
-                  style: GoogleFonts.cairo(
+                  style: TextStyle(fontFamily: 'BeIN', 
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                     color: _cardTextPrimary,
@@ -460,7 +460,7 @@ class AboutUsPage extends StatelessWidget {
                 const SizedBox(height: 8),
                 Text(
                   _websiteUrl,
-                  style: GoogleFonts.cairo(
+                  style: TextStyle(fontFamily: 'BeIN', 
                     fontSize: 13,
                     color: AppColors.primary,
                     decoration: TextDecoration.underline,
@@ -474,7 +474,7 @@ class AboutUsPage extends StatelessWidget {
                     icon: const Icon(Icons.open_in_browser_rounded, size: 22),
                     label: Text(
                       'فتح الموقع nuzum.life',
-                      style: GoogleFonts.cairo(
+                      style: TextStyle(fontFamily: 'BeIN', 
                         fontWeight: FontWeight.bold,
                         fontSize: 15,
                       ),
@@ -494,7 +494,7 @@ class AboutUsPage extends StatelessWidget {
                 const SizedBox(height: 12),
                 Text(
                   'نبني الأنظمة التي تبني أعمالكم',
-                  style: GoogleFonts.cairo(
+                  style: TextStyle(fontFamily: 'BeIN', 
                     fontSize: 13,
                     fontStyle: FontStyle.italic,
                     color: _cardTextSecondary,
@@ -563,7 +563,7 @@ class _SectionCard extends StatelessWidget {
                 const SizedBox(width: 12),
                 Text(
                   title,
-                  style: GoogleFonts.cairo(
+                  style: TextStyle(fontFamily: 'BeIN', 
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
@@ -600,7 +600,7 @@ class _BulletItem extends StatelessWidget {
           Expanded(
             child: Text(
               text,
-              style: GoogleFonts.cairo(
+              style: TextStyle(fontFamily: 'BeIN', 
                 fontSize: 14,
                 color: _cardTextPrimary,
                 height: 1.5,
@@ -653,7 +653,7 @@ class _ServiceItem extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: GoogleFonts.cairo(
+                  style: TextStyle(fontFamily: 'BeIN', 
                     fontWeight: FontWeight.bold,
                     fontSize: 14,
                     color: _cardTextPrimary,
@@ -662,7 +662,7 @@ class _ServiceItem extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   desc,
-                  style: GoogleFonts.cairo(
+                  style: TextStyle(fontFamily: 'BeIN', 
                     fontSize: 13,
                     color: _cardTextSecondary,
                     height: 1.45,

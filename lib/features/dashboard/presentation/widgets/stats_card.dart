@@ -111,7 +111,7 @@ class _StatsCardState extends State<StatsCard>
                             children: [
                               Text(
                                 widget.value,
-                                style: GoogleFonts.cairo(
+                                style: TextStyle(fontFamily: 'BeIN', 
                                   fontSize: 20,
                                   fontWeight: FontWeight.bold,
                                   color: Colors.white,
@@ -122,7 +122,7 @@ class _StatsCardState extends State<StatsCard>
                               const SizedBox(height: 2),
                               Text(
                                 widget.title,
-                                style: GoogleFonts.cairo(
+                                style: TextStyle(fontFamily: 'BeIN', 
                                   fontSize: 12,
                                   color: Colors.white.withOpacity(0.9),
                                 ),

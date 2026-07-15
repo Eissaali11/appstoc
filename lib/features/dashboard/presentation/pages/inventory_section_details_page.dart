@@ -354,7 +354,7 @@ class _InventorySectionDetailsPageState extends State<InventorySectionDetailsPag
             Flexible(
               child: Text(
                 itemType.nameAr,
-                style: GoogleFonts.cairo(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 16),
+                style: TextStyle(fontFamily: 'BeIN', fontWeight: FontWeight.bold, color: Colors.white, fontSize: 16),
                 overflow: TextOverflow.ellipsis,
               ),
             ),
@@ -388,8 +388,8 @@ class _InventorySectionDetailsPageState extends State<InventorySectionDetailsPag
                     indicatorColor: AppColors.primary,
                     labelColor: AppColors.primary,
                     unselectedLabelColor: AppColors.textSecondary,
-                    labelStyle: GoogleFonts.cairo(fontWeight: FontWeight.bold, fontSize: 14),
-                    unselectedLabelStyle: GoogleFonts.cairo(fontWeight: FontWeight.normal, fontSize: 14),
+                    labelStyle: TextStyle(fontFamily: 'BeIN', fontWeight: FontWeight.bold, fontSize: 14),
+                    unselectedLabelStyle: TextStyle(fontFamily: 'BeIN', fontWeight: FontWeight.normal, fontSize: 14),
                     tabs: [
                       Tab(text: itemType.category == 'sim' ? 'أرقام الشرائح' : 'أرقام الأجهزة'),
                       Tab(text: 'سجل الأنشطة'),
@@ -420,7 +420,7 @@ class _InventorySectionDetailsPageState extends State<InventorySectionDetailsPag
               icon: const Icon(Icons.edit_note, color: Colors.white),
               label: Text(
                 'تحديث الكمية',
-                style: GoogleFonts.cairo(
+                style: TextStyle(fontFamily: 'BeIN', 
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
                 ),
@@ -445,7 +445,7 @@ class _InventorySectionDetailsPageState extends State<InventorySectionDetailsPag
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             title: Text(
               'تحديث مخزون ${itemType.nameAr}',
-              style: GoogleFonts.cairo(
+              style: TextStyle(fontFamily: 'BeIN', 
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
@@ -457,7 +457,7 @@ class _InventorySectionDetailsPageState extends State<InventorySectionDetailsPag
               children: [
                 Text(
                   'الرجاء إدخال الكمية الجديدة للمخزون الحالي:',
-                  style: GoogleFonts.cairo(color: Colors.white60, fontSize: 13),
+                  style: TextStyle(fontFamily: 'BeIN', color: Colors.white60, fontSize: 13),
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
@@ -466,7 +466,7 @@ class _InventorySectionDetailsPageState extends State<InventorySectionDetailsPag
                   style: GoogleFonts.poppins(color: Colors.white),
                   decoration: InputDecoration(
                     labelText: 'الكمية (وحدات)',
-                    labelStyle: GoogleFonts.cairo(color: Colors.white38),
+                    labelStyle: TextStyle(fontFamily: 'BeIN', color: Colors.white38),
                     filled: true,
                     fillColor: AppColors.surfaceDark,
                     border: OutlineInputBorder(
@@ -486,7 +486,7 @@ class _InventorySectionDetailsPageState extends State<InventorySectionDetailsPag
                 onPressed: () => Navigator.of(context).pop(),
                 child: Text(
                   'إلغاء',
-                  style: GoogleFonts.cairo(color: Colors.white38),
+                  style: TextStyle(fontFamily: 'BeIN', color: Colors.white38),
                 ),
               ),
               Obx(() => ElevatedButton(
@@ -562,7 +562,7 @@ class _InventorySectionDetailsPageState extends State<InventorySectionDetailsPag
                       )
                     : Text(
                         'حفظ',
-                        style: GoogleFonts.cairo(color: Colors.white, fontWeight: FontWeight.bold),
+                        style: TextStyle(fontFamily: 'BeIN', color: Colors.white, fontWeight: FontWeight.bold),
                       ),
               )),
             ],
@@ -625,7 +625,7 @@ class _InventorySectionDetailsPageState extends State<InventorySectionDetailsPag
                     Flexible(
                       child: Text(
                         itemType.nameAr,
-                        style: GoogleFonts.cairo(
+                        style: TextStyle(fontFamily: 'BeIN', 
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
@@ -667,7 +667,7 @@ class _InventorySectionDetailsPageState extends State<InventorySectionDetailsPag
                 const SizedBox(height: 4),
                 Text(
                   itemType.nameEn,
-                  style: GoogleFonts.cairo(
+                  style: TextStyle(fontFamily: 'BeIN', 
                     fontSize: 13,
                     color: AppColors.textSecondary,
                   ),
@@ -686,7 +686,7 @@ class _InventorySectionDetailsPageState extends State<InventorySectionDetailsPag
             ),
             child: Text(
               _getUnitName(itemType),
-              style: GoogleFonts.cairo(
+              style: TextStyle(fontFamily: 'BeIN', 
                 color: color,
                 fontWeight: FontWeight.bold,
                 fontSize: 12,
@@ -764,7 +764,7 @@ class _InventorySectionDetailsPageState extends State<InventorySectionDetailsPag
           const SizedBox(height: 10),
           Text(
             title,
-            style: GoogleFonts.cairo(
+            style: TextStyle(fontFamily: 'BeIN', 
               fontSize: context.fontSize(9.5),
               color: AppColors.textSecondary,
               fontWeight: FontWeight.bold,
@@ -776,7 +776,7 @@ class _InventorySectionDetailsPageState extends State<InventorySectionDetailsPag
           const SizedBox(height: 4),
           Text(
             value,
-            style: GoogleFonts.cairo(
+            style: TextStyle(fontFamily: 'BeIN', 
               fontSize: context.fontSize(12.5),
               color: Colors.white,
               fontWeight: FontWeight.bold,
@@ -814,10 +814,10 @@ class _InventorySectionDetailsPageState extends State<InventorySectionDetailsPag
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
           child: TextField(
             controller: _searchController,
-            style: GoogleFonts.cairo(color: Colors.white, fontSize: 13),
+            style: TextStyle(fontFamily: 'BeIN', color: Colors.white, fontSize: 13),
             decoration: InputDecoration(
               hintText: isDevice ? 'ابحث برقم السيريل أو TID أو اسم العميل...' : 'ابحث برقم الشريحة أو اسم العميل...',
-              hintStyle: GoogleFonts.cairo(color: AppColors.textSecondary, fontSize: 12),
+              hintStyle: TextStyle(fontFamily: 'BeIN', color: AppColors.textSecondary, fontSize: 12),
               prefixIcon: Icon(Icons.search_rounded, color: AppColors.primary, size: 20),
               suffixIcon: _searchQuery.isNotEmpty
                   ? IconButton(
@@ -891,7 +891,7 @@ class _InventorySectionDetailsPageState extends State<InventorySectionDetailsPag
                       const SizedBox(height: 12),
                       Text(
                         _searchQuery.isNotEmpty ? 'لا توجد نتائج للبحث' : 'لا توجد عناصر',
-                        style: GoogleFonts.cairo(color: AppColors.textSecondary, fontSize: 14),
+                        style: TextStyle(fontFamily: 'BeIN', color: AppColors.textSecondary, fontSize: 14),
                       ),
                     ],
                   ),
@@ -986,7 +986,7 @@ class _InventorySectionDetailsPageState extends State<InventorySectionDetailsPag
                                       // اسم الصنف
                                       Text(
                                         itemType.nameAr,
-                                        style: GoogleFonts.cairo(
+                                        style: TextStyle(fontFamily: 'BeIN', 
                                           color: AppColors.textSecondary,
                                           fontSize: 11,
                                           fontWeight: FontWeight.w600,
@@ -996,7 +996,7 @@ class _InventorySectionDetailsPageState extends State<InventorySectionDetailsPag
                                       // الرقم التسلسلي
                                       Text(
                                         item['serial'] ?? '',
-                                        style: GoogleFonts.cairo(
+                                        style: TextStyle(fontFamily: 'BeIN', 
                                           color: Colors.white,
                                           fontWeight: FontWeight.bold,
                                           fontSize: 13,
@@ -1031,7 +1031,7 @@ class _InventorySectionDetailsPageState extends State<InventorySectionDetailsPag
                                   ),
                                   child: Text(
                                     item['status'] ?? '',
-                                    style: GoogleFonts.cairo(
+                                    style: TextStyle(fontFamily: 'BeIN', 
                                       color: statusColor,
                                       fontSize: 10,
                                       fontWeight: FontWeight.bold,
@@ -1052,12 +1052,12 @@ class _InventorySectionDetailsPageState extends State<InventorySectionDetailsPag
                                   const SizedBox(width: 6),
                                   Text(
                                     'العميل: ',
-                                    style: GoogleFonts.cairo(color: AppColors.textSecondary, fontSize: 11),
+                                    style: TextStyle(fontFamily: 'BeIN', color: AppColors.textSecondary, fontSize: 11),
                                   ),
                                   Expanded(
                                     child: Text(
                                       item['customerName'] ?? '-',
-                                      style: GoogleFonts.cairo(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                                      style: TextStyle(fontFamily: 'BeIN', color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                     ),
@@ -1074,7 +1074,7 @@ class _InventorySectionDetailsPageState extends State<InventorySectionDetailsPag
                                       children: [
                                         Text(
                                           'التفاصيل',
-                                          style: GoogleFonts.cairo(color: statusColor, fontSize: 10, fontWeight: FontWeight.bold),
+                                          style: TextStyle(fontFamily: 'BeIN', color: statusColor, fontSize: 10, fontWeight: FontWeight.bold),
                                         ),
                                         const SizedBox(width: 3),
                                         Icon(Icons.arrow_forward_ios, color: statusColor, size: 8),
@@ -1097,7 +1097,7 @@ class _InventorySectionDetailsPageState extends State<InventorySectionDetailsPag
                                   Expanded(
                                     child: Text(
                                       'عهدة نشطة - جاهزة للتسليم للعميل',
-                                      style: GoogleFonts.cairo(color: AppColors.textSecondary, fontSize: 11),
+                                      style: TextStyle(fontFamily: 'BeIN', color: AppColors.textSecondary, fontSize: 11),
                                     ),
                                   ),
                                   Container(
@@ -1111,7 +1111,7 @@ class _InventorySectionDetailsPageState extends State<InventorySectionDetailsPag
                                       children: [
                                         Text(
                                           'عرض البيانات',
-                                          style: GoogleFonts.cairo(color: statusColor, fontSize: 10, fontWeight: FontWeight.bold),
+                                          style: TextStyle(fontFamily: 'BeIN', color: statusColor, fontSize: 10, fontWeight: FontWeight.bold),
                                         ),
                                         const SizedBox(width: 3),
                                         Icon(Icons.arrow_forward_ios, color: statusColor, size: 8),
@@ -1143,7 +1143,7 @@ class _InventorySectionDetailsPageState extends State<InventorySectionDetailsPag
       ),
       child: Text(
         text,
-        style: GoogleFonts.cairo(color: color.withOpacity(0.9), fontSize: 10, fontWeight: FontWeight.w600),
+        style: TextStyle(fontFamily: 'BeIN', color: color.withOpacity(0.9), fontSize: 10, fontWeight: FontWeight.w600),
       ),
     );
   }
@@ -1200,7 +1200,7 @@ class _InventorySectionDetailsPageState extends State<InventorySectionDetailsPag
                         children: [
                           Text(
                             'تفاصيل طلب التسليم المغلق',
-                            style: GoogleFonts.cairo(
+                            style: TextStyle(fontFamily: 'BeIN', 
                               color: Colors.white,
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
@@ -1208,7 +1208,7 @@ class _InventorySectionDetailsPageState extends State<InventorySectionDetailsPag
                           ),
                           Text(
                             'الطلب ${item['orderId'] ?? ''}',
-                            style: GoogleFonts.cairo(
+                            style: TextStyle(fontFamily: 'BeIN', 
                               color: AppColors.textSecondary,
                               fontSize: 12,
                             ),
@@ -1226,7 +1226,7 @@ class _InventorySectionDetailsPageState extends State<InventorySectionDetailsPag
                       ),
                       child: Text(
                         'مكتمل / مغلق',
-                        style: GoogleFonts.cairo(
+                        style: TextStyle(fontFamily: 'BeIN', 
                           color: statusColor,
                           fontSize: 11,
                           fontWeight: FontWeight.bold,
@@ -1285,7 +1285,7 @@ class _InventorySectionDetailsPageState extends State<InventorySectionDetailsPag
                     ),
                     child: Text(
                       'إغلاق النافذة',
-                      style: GoogleFonts.cairo(fontWeight: FontWeight.bold, fontSize: 13),
+                      style: TextStyle(fontFamily: 'BeIN', fontWeight: FontWeight.bold, fontSize: 13),
                     ),
                   ),
                 ),
@@ -1355,7 +1355,7 @@ class _InventorySectionDetailsPageState extends State<InventorySectionDetailsPag
                         children: [
                           Text(
                             isDevice ? 'تفاصيل الجهاز النشط' : 'تفاصيل الشريحة النشطة',
-                            style: GoogleFonts.cairo(
+                            style: TextStyle(fontFamily: 'BeIN', 
                               color: Colors.white,
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
@@ -1363,7 +1363,7 @@ class _InventorySectionDetailsPageState extends State<InventorySectionDetailsPag
                           ),
                           Text(
                             itemType.nameAr,
-                            style: GoogleFonts.cairo(
+                            style: TextStyle(fontFamily: 'BeIN', 
                               color: AppColors.textSecondary,
                               fontSize: 12,
                             ),
@@ -1381,7 +1381,7 @@ class _InventorySectionDetailsPageState extends State<InventorySectionDetailsPag
                       ),
                       child: Text(
                         item['status'] ?? 'نشط في العهدة',
-                        style: GoogleFonts.cairo(
+                        style: TextStyle(fontFamily: 'BeIN', 
                           color: statusColor,
                           fontSize: 11,
                           fontWeight: FontWeight.bold,
@@ -1426,7 +1426,7 @@ class _InventorySectionDetailsPageState extends State<InventorySectionDetailsPag
                           isDevice 
                               ? 'هذا الجهاز مسجل حالياً في عهدتك النشطة. يمكنك نقله وتسليمه للعميل مباشرة عند بدء زيارة تركيب جديدة.'
                               : 'هذه الشريحة مسجلة حالياً في عهدتك النشطة وجاهزة للاستخدام في جهاز العميل.',
-                          style: GoogleFonts.cairo(
+                          style: TextStyle(fontFamily: 'BeIN', 
                             color: Colors.white.withOpacity(0.85),
                             fontSize: 11,
                             height: 1.5,
@@ -1461,7 +1461,7 @@ class _InventorySectionDetailsPageState extends State<InventorySectionDetailsPag
                         icon: const Icon(Icons.copy, size: 16),
                         label: Text(
                           isDevice ? 'نسخ السيريال' : 'نسخ رقم الشريحة',
-                          style: GoogleFonts.cairo(fontSize: 12, fontWeight: FontWeight.bold),
+                          style: TextStyle(fontFamily: 'BeIN', fontSize: 12, fontWeight: FontWeight.bold),
                         ),
                         style: OutlinedButton.styleFrom(
                           foregroundColor: Colors.white,
@@ -1487,7 +1487,7 @@ class _InventorySectionDetailsPageState extends State<InventorySectionDetailsPag
                         ),
                         child: Text(
                           'إغلاق النافذة',
-                          style: GoogleFonts.cairo(fontWeight: FontWeight.bold, fontSize: 12),
+                          style: TextStyle(fontFamily: 'BeIN', fontWeight: FontWeight.bold, fontSize: 12),
                         ),
                       ),
                     ),
@@ -1517,7 +1517,7 @@ class _InventorySectionDetailsPageState extends State<InventorySectionDetailsPag
         children: [
           Text(
             title,
-            style: GoogleFonts.cairo(
+            style: TextStyle(fontFamily: 'BeIN', 
               color: AppColors.textSecondary,
               fontSize: 12,
               fontWeight: FontWeight.bold,
@@ -1541,13 +1541,13 @@ class _InventorySectionDetailsPageState extends State<InventorySectionDetailsPag
           const SizedBox(width: 10),
           Text(
             '$label:',
-            style: GoogleFonts.cairo(color: AppColors.textSecondary, fontSize: 12),
+            style: TextStyle(fontFamily: 'BeIN', color: AppColors.textSecondary, fontSize: 12),
           ),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
               value,
-              style: GoogleFonts.cairo(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+              style: TextStyle(fontFamily: 'BeIN', color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
               textAlign: TextAlign.end,
             ),
           ),
@@ -1581,7 +1581,7 @@ class _InventorySectionDetailsPageState extends State<InventorySectionDetailsPag
           children: [
             Text(
               label,
-              style: GoogleFonts.cairo(
+              style: TextStyle(fontFamily: 'BeIN', 
                 fontSize: 12,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                 color: isSelected ? Colors.white : AppColors.textSecondary,
@@ -1649,7 +1649,7 @@ class _InventorySectionDetailsPageState extends State<InventorySectionDetailsPag
                       Expanded(
                         child: Text(
                           log['title'] ?? '',
-                          style: GoogleFonts.cairo(
+                          style: TextStyle(fontFamily: 'BeIN', 
                             fontSize: 13,
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
@@ -1658,7 +1658,7 @@ class _InventorySectionDetailsPageState extends State<InventorySectionDetailsPag
                       ),
                       Text(
                         log['date'] ?? '',
-                        style: GoogleFonts.cairo(
+                        style: TextStyle(fontFamily: 'BeIN', 
                           fontSize: 10,
                           color: AppColors.textSecondary,
                         ),
@@ -1668,7 +1668,7 @@ class _InventorySectionDetailsPageState extends State<InventorySectionDetailsPag
                   const SizedBox(height: 4),
                   Text(
                     log['desc'] ?? '',
-                    style: GoogleFonts.cairo(
+                    style: TextStyle(fontFamily: 'BeIN', 
                       fontSize: 11,
                       color: Colors.white70,
                     ),

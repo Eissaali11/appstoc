@@ -91,7 +91,7 @@ class _WithdrawnDeviceDetailsPageState extends State<WithdrawnDeviceDetailsPage>
       appBar: AppBar(
         title: Text(
           'تفاصيل ودورة حياة الجهاز',
-          style: GoogleFonts.cairo(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 18),
+          style: TextStyle(fontFamily: 'BeIN', fontWeight: FontWeight.bold, color: Colors.white, fontSize: 18),
         ),
         backgroundColor: AppColors.surfaceDark,
         foregroundColor: Colors.white,
@@ -147,7 +147,7 @@ class _WithdrawnDeviceDetailsPageState extends State<WithdrawnDeviceDetailsPage>
                     children: [
                       Text(
                         itemName,
-                        style: GoogleFonts.cairo(
+                        style: TextStyle(fontFamily: 'BeIN', 
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
@@ -183,7 +183,7 @@ class _WithdrawnDeviceDetailsPageState extends State<WithdrawnDeviceDetailsPage>
                   ),
                   child: Text(
                     device.statusText,
-                    style: GoogleFonts.cairo(
+                    style: TextStyle(fontFamily: 'BeIN', 
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
                       color: device.statusColor,
@@ -249,7 +249,7 @@ class _WithdrawnDeviceDetailsPageState extends State<WithdrawnDeviceDetailsPage>
                       children: [
                         Text(
                           'الجزء المتضرر عند الاستلام',
-                          style: GoogleFonts.cairo(
+                          style: TextStyle(fontFamily: 'BeIN', 
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
@@ -258,7 +258,7 @@ class _WithdrawnDeviceDetailsPageState extends State<WithdrawnDeviceDetailsPage>
                         const SizedBox(height: 4),
                         Text(
                           device.damagePart!,
-                          style: GoogleFonts.cairo(
+                          style: TextStyle(fontFamily: 'BeIN', 
                             fontSize: 13,
                             color: Colors.white70,
                           ),
@@ -278,7 +278,7 @@ class _WithdrawnDeviceDetailsPageState extends State<WithdrawnDeviceDetailsPage>
             icon: const Icon(Icons.share_rounded),
             label: Text(
               'مشاركة إيصال الاستلام الرقمي',
-              style: GoogleFonts.cairo(fontWeight: FontWeight.bold, fontSize: 15),
+              style: TextStyle(fontFamily: 'BeIN', fontWeight: FontWeight.bold, fontSize: 15),
             ),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
@@ -299,7 +299,7 @@ class _WithdrawnDeviceDetailsPageState extends State<WithdrawnDeviceDetailsPage>
       padding: const EdgeInsets.only(bottom: 12, right: 4, top: 4),
       child: Text(
         title,
-        style: GoogleFonts.cairo(
+        style: TextStyle(fontFamily: 'BeIN', 
           fontSize: 15,
           fontWeight: FontWeight.bold,
           color: Colors.white.withOpacity(0.9),
@@ -407,7 +407,7 @@ class _WithdrawnDeviceDetailsPageState extends State<WithdrawnDeviceDetailsPage>
                   const SizedBox(height: 8),
                   Text(
                     steps[index]['title'] as String,
-                    style: GoogleFonts.cairo(
+                    style: TextStyle(fontFamily: 'BeIN', 
                       fontSize: isActive ? 13 : 11,
                       fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
                       color: isActive ? Colors.white : Colors.white60,
@@ -533,7 +533,7 @@ class _WithdrawnDeviceDetailsPageState extends State<WithdrawnDeviceDetailsPage>
               const SizedBox(width: 10),
               Text(
                 title,
-                style: GoogleFonts.cairo(
+                style: TextStyle(fontFamily: 'BeIN', 
                   fontWeight: FontWeight.bold,
                   fontSize: 14,
                   color: Colors.white,
@@ -568,7 +568,7 @@ class _WithdrawnDeviceDetailsPageState extends State<WithdrawnDeviceDetailsPage>
         children: [
           Text(
             label,
-            style: GoogleFonts.cairo(
+            style: TextStyle(fontFamily: 'BeIN', 
               fontSize: 13,
               color: AppColors.textSecondary,
             ),
@@ -580,7 +580,7 @@ class _WithdrawnDeviceDetailsPageState extends State<WithdrawnDeviceDetailsPage>
                 Flexible(
                   child: Text(
                     value,
-                    style: GoogleFonts.cairo(
+                    style: TextStyle(fontFamily: 'BeIN', 
                       fontSize: 13,
                       fontWeight: FontWeight.bold,
                       color: Colors.white70,
@@ -628,7 +628,7 @@ class _WithdrawnDeviceDetailsPageState extends State<WithdrawnDeviceDetailsPage>
           Expanded(
             child: Text(
               title,
-              style: GoogleFonts.cairo(
+              style: TextStyle(fontFamily: 'BeIN', 
                 fontSize: 12,
                 fontWeight: isPresent ? FontWeight.bold : FontWeight.normal,
                 color: isPresent ? Colors.white : AppColors.textSecondary.withOpacity(0.6),

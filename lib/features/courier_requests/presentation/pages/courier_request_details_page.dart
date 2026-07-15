@@ -73,7 +73,7 @@ class _CourierRequestDetailsPageState
                 const SizedBox(height: 16),
                 Text(
                   'قبول العهدة والطلب',
-                  style: GoogleFonts.cairo(
+                  style: TextStyle(fontFamily: 'BeIN', 
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
                     fontSize: 18,
@@ -82,7 +82,7 @@ class _CourierRequestDetailsPageState
                 const SizedBox(height: 10),
                 Text(
                   'سيتم نقلك فوراً لشاشة مسح الأجهزة للتحقق من هويتها وربطها بعهدتك.',
-                  style: GoogleFonts.cairo(
+                  style: TextStyle(fontFamily: 'BeIN', 
                     color: AppColors.textSecondary,
                     fontSize: 14,
                     height: 1.5,
@@ -103,7 +103,7 @@ class _CourierRequestDetailsPageState
                           padding: const EdgeInsets.symmetric(vertical: 14),
                         ),
                         child: Text('إلغاء',
-                            style: GoogleFonts.cairo(
+                            style: TextStyle(fontFamily: 'BeIN', 
                                 color: AppColors.textSecondary)),
                       ),
                     ),
@@ -185,7 +185,7 @@ class _CourierRequestDetailsPageState
                 const SizedBox(height: 16),
                 Text(
                   'رفض الطلب والعهدة',
-                  style: GoogleFonts.cairo(
+                  style: TextStyle(fontFamily: 'BeIN', 
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
                     fontSize: 18,
@@ -194,12 +194,12 @@ class _CourierRequestDetailsPageState
                 const SizedBox(height: 16),
                 TextField(
                   controller: reasonController,
-                  style: GoogleFonts.cairo(color: Colors.white, fontSize: 14),
+                  style: TextStyle(fontFamily: 'BeIN', color: Colors.white, fontSize: 14),
                   maxLines: 3,
                   decoration: InputDecoration(
                     hintText: 'سبب الرفض (مثال: الأجهزة غير متطابقة)',
                     hintStyle:
-                        GoogleFonts.cairo(color: AppColors.textMuted, fontSize: 13),
+                        TextStyle(fontFamily: 'BeIN', color: AppColors.textMuted, fontSize: 13),
                     filled: true,
                     fillColor: AppColors.backgroundMid,
                     border: OutlineInputBorder(
@@ -233,7 +233,7 @@ class _CourierRequestDetailsPageState
                           padding: const EdgeInsets.symmetric(vertical: 14),
                         ),
                         child: Text('إلغاء',
-                            style: GoogleFonts.cairo(
+                            style: TextStyle(fontFamily: 'BeIN', 
                                 color: AppColors.textSecondary)),
                       ),
                     ),
@@ -316,7 +316,7 @@ class _CourierRequestDetailsPageState
         if (req == null) {
           return Center(
             child: Text('تعذر تحميل تفاصيل الطلب',
-                style: GoogleFonts.cairo(color: AppColors.textSecondary)),
+                style: TextStyle(fontFamily: 'BeIN', color: AppColors.textSecondary)),
           );
         }
 
@@ -383,7 +383,7 @@ class _CourierRequestDetailsPageState
             children: [
               Text(
                 'طلب #${req.id}',
-                style: GoogleFonts.cairo(
+                style: TextStyle(fontFamily: 'BeIN', 
                     color: Colors.white,
                     fontSize: 22,
                     fontWeight: FontWeight.bold),
@@ -399,7 +399,7 @@ class _CourierRequestDetailsPageState
                     const SizedBox(width: 4),
                     Text(
                       req.city!,
-                      style: GoogleFonts.cairo(
+                      style: TextStyle(fontFamily: 'BeIN', 
                           color: AppColors.textSecondary, fontSize: 12),
                     ),
                   ],
@@ -431,14 +431,14 @@ class _CourierRequestDetailsPageState
               children: [
                 Text(
                   'جلسة استلام نشطة',
-                  style: GoogleFonts.cairo(
+                  style: TextStyle(fontFamily: 'BeIN', 
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
                       fontSize: 13),
                 ),
                 Text(
                   'مكتملة ${(controller.getSessionProgress() * 100).toInt()}% — استمر من حيث توقفت',
-                  style: GoogleFonts.cairo(
+                  style: TextStyle(fontFamily: 'BeIN', 
                       color: AppColors.textSecondary, fontSize: 12),
                 ),
               ],
@@ -458,7 +458,7 @@ class _CourierRequestDetailsPageState
               ),
               child: Text(
                 'متابعة',
-                style: GoogleFonts.cairo(
+                style: TextStyle(fontFamily: 'BeIN', 
                     color: AppColors.primary,
                     fontSize: 12,
                     fontWeight: FontWeight.bold),
@@ -544,7 +544,7 @@ class _CourierRequestDetailsPageState
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 child: Text(
                   'لا توجد مواد مدرجة بعد — سيتم تعيينها من المشرف',
-                  style: GoogleFonts.cairo(
+                  style: TextStyle(fontFamily: 'BeIN', 
                       color: AppColors.textMuted, fontSize: 13),
                   textAlign: TextAlign.center,
                 ),
@@ -628,7 +628,7 @@ class _CourierRequestDetailsPageState
               children: [
                 Text(
                   name,
-                  style: GoogleFonts.cairo(
+                  style: TextStyle(fontFamily: 'BeIN', 
                     fontWeight: FontWeight.bold,
                     fontSize: 13,
                     color: Colors.white,
@@ -636,7 +636,7 @@ class _CourierRequestDetailsPageState
                 ),
                 Text(
                   serialText,
-                  style: GoogleFonts.cairo(
+                  style: TextStyle(fontFamily: 'BeIN', 
                     fontSize: 11,
                     color: AppColors.textSecondary,
                   ),
@@ -803,7 +803,7 @@ class _CourierRequestDetailsPageState
     return Text(
       'الطلب في حالة ($status) — لا يتطلب إجراءات',
       textAlign: TextAlign.center,
-      style: GoogleFonts.cairo(color: AppColors.textMuted, fontSize: 13),
+      style: TextStyle(fontFamily: 'BeIN', color: AppColors.textMuted, fontSize: 13),
     );
   }
 

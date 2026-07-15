@@ -168,4 +168,23 @@ class CourierRequestsRepositoryImpl implements CourierRequestsRepository {
       throw Exception('فشل إرسال تقرير الزيارة: $message');
     }
   }
+
+  @override
+  Future<Map<String, dynamic>> serialLookup(String serial) async {
+    try {
+      final response = await apiClient.post(
+        '/api/courier/serial-lookup',
+        data: {'sn': serial},
+      );
+      return response.data as Map<String, dynamic>;
+    } catch (e) {
+      String message = e.toString();
+      if (e is DioException && e.response?.data != null) {
+        if (e.response?.data is Map && e.response?.data['message'] != null) {
+          message = e.response?.data['message'];
+        }
+      }
+      throw Exception('فشل الاستعلام عن الرقم التسلسلي: $message');
+    }
+  }
 }

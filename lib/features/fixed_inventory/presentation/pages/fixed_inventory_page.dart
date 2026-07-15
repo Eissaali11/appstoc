@@ -31,7 +31,7 @@ class FixedInventoryPage extends GetView<FixedInventoryController> {
       appBar: AppBar(
         title: Text(
           'المخزون الثابت',
-          style: GoogleFonts.cairo(
+          style: TextStyle(fontFamily: 'BeIN', 
             fontWeight: FontWeight.bold,
             color: Colors.white,
           ),
@@ -52,7 +52,7 @@ class FixedInventoryPage extends GetView<FixedInventoryController> {
         icon: const Icon(Icons.edit),
         label: Text(
           'تحديث',
-          style: GoogleFonts.cairo(fontWeight: FontWeight.bold),
+          style: TextStyle(fontFamily: 'BeIN', fontWeight: FontWeight.bold),
         ),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
@@ -181,7 +181,7 @@ class FixedInventoryPage extends GetView<FixedInventoryController> {
         const SizedBox(height: 8),
         Text(
           value,
-          style: GoogleFonts.cairo(
+          style: TextStyle(fontFamily: 'BeIN', 
             fontSize: 24,
             fontWeight: FontWeight.bold,
             color: Colors.white,
@@ -190,7 +190,7 @@ class FixedInventoryPage extends GetView<FixedInventoryController> {
         const SizedBox(height: 4),
         Text(
           label,
-          style: GoogleFonts.cairo(
+          style: TextStyle(fontFamily: 'BeIN', 
             fontSize: 12,
             color: Colors.white.withOpacity(0.9),
           ),
@@ -221,7 +221,7 @@ class FixedInventoryPage extends GetView<FixedInventoryController> {
             const SizedBox(height: 24),
             Text(
               'حدث خطأ',
-              style: GoogleFonts.cairo(
+              style: TextStyle(fontFamily: 'BeIN', 
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
@@ -230,7 +230,7 @@ class FixedInventoryPage extends GetView<FixedInventoryController> {
             const SizedBox(height: 12),
             Text(
               controller.error ?? 'حدث خطأ في تحميل البيانات',
-              style: GoogleFonts.cairo(
+              style: TextStyle(fontFamily: 'BeIN', 
                 fontSize: 16,
                 color: AppColors.textSecondary,
               ),
@@ -242,7 +242,7 @@ class FixedInventoryPage extends GetView<FixedInventoryController> {
               icon: const Icon(Icons.refresh),
               label: Text(
                 'إعادة المحاولة',
-                style: GoogleFonts.cairo(
+                style: TextStyle(fontFamily: 'BeIN', 
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -284,7 +284,7 @@ class FixedInventoryPage extends GetView<FixedInventoryController> {
           const SizedBox(height: 24),
           Text(
             'لا يوجد مخزون ثابت',
-            style: GoogleFonts.cairo(
+            style: TextStyle(fontFamily: 'BeIN', 
               fontSize: 20,
               fontWeight: FontWeight.bold,
               color: Colors.white,
@@ -293,7 +293,7 @@ class FixedInventoryPage extends GetView<FixedInventoryController> {
           const SizedBox(height: 8),
           Text(
             'لم يتم العثور على أي عناصر في المخزون الثابت',
-            style: GoogleFonts.cairo(
+            style: TextStyle(fontFamily: 'BeIN', 
               fontSize: 14,
               color: AppColors.textSecondary,
             ),
@@ -305,7 +305,7 @@ class FixedInventoryPage extends GetView<FixedInventoryController> {
             icon: const Icon(Icons.refresh),
             label: Text(
               'تحديث',
-              style: GoogleFonts.cairo(
+              style: TextStyle(fontFamily: 'BeIN', 
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -451,7 +451,7 @@ class _InventoryItemCard extends StatelessWidget {
                 children: [
                   Text(
                     itemType.nameAr,
-                    style: GoogleFonts.cairo(
+                    style: TextStyle(fontFamily: 'BeIN', 
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
@@ -460,7 +460,7 @@ class _InventoryItemCard extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     itemType.nameEn,
-                    style: GoogleFonts.cairo(
+                    style: TextStyle(fontFamily: 'BeIN', 
                       fontSize: 12,
                       color: AppColors.textSecondary,
                     ),
@@ -499,7 +499,7 @@ class _InventoryItemCard extends StatelessWidget {
                 children: [
                   Text(
                     total.toString(),
-                    style: GoogleFonts.cairo(
+                    style: TextStyle(fontFamily: 'BeIN', 
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
@@ -507,7 +507,7 @@ class _InventoryItemCard extends StatelessWidget {
                   ),
                   Text(
                     'إجمالي',
-                    style: GoogleFonts.cairo(
+                    style: TextStyle(fontFamily: 'BeIN', 
                       fontSize: 10,
                       color: Colors.white.withOpacity(0.9),
                     ),
@@ -537,7 +537,7 @@ class _InventoryItemCard extends StatelessWidget {
         children: [
           Text(
             label,
-            style: GoogleFonts.cairo(
+            style: TextStyle(fontFamily: 'BeIN', 
               fontSize: 12,
               color: color,
               fontWeight: FontWeight.w600,
@@ -546,7 +546,7 @@ class _InventoryItemCard extends StatelessWidget {
           const SizedBox(width: 6),
           Text(
             value.toString(),
-            style: GoogleFonts.cairo(
+            style: TextStyle(fontFamily: 'BeIN', 
               fontSize: 14,
               color: Colors.white,
               fontWeight: FontWeight.bold,

@@ -21,7 +21,7 @@ class MovingInventoryPage extends GetView<MovingInventoryController> {
       appBar: AppBar(
         title: Text(
           'المخزون المتحرك',
-          style: GoogleFonts.cairo(
+          style: TextStyle(fontFamily: 'BeIN', 
             fontWeight: FontWeight.bold,
             color: Colors.white,
           ),
@@ -42,7 +42,7 @@ class MovingInventoryPage extends GetView<MovingInventoryController> {
         icon: const Icon(Icons.edit),
         label: Text(
           'تحديث',
-          style: GoogleFonts.cairo(fontWeight: FontWeight.bold),
+          style: TextStyle(fontFamily: 'BeIN', fontWeight: FontWeight.bold),
         ),
         backgroundColor: AppColors.purpleGradient.first,
         foregroundColor: Colors.white,
@@ -95,7 +95,7 @@ class MovingInventoryPage extends GetView<MovingInventoryController> {
                             const SizedBox(width: 8),
                             Text(
                               'طلبات نقل معلقة (${controller.pendingTransfers.length})',
-                              style: GoogleFonts.cairo(
+                              style: TextStyle(fontFamily: 'BeIN', 
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.white,
@@ -232,7 +232,7 @@ class MovingInventoryPage extends GetView<MovingInventoryController> {
         const SizedBox(height: 8),
         Text(
           value,
-          style: GoogleFonts.cairo(
+          style: TextStyle(fontFamily: 'BeIN', 
             fontSize: 24,
             fontWeight: FontWeight.bold,
             color: Colors.white,
@@ -241,7 +241,7 @@ class MovingInventoryPage extends GetView<MovingInventoryController> {
         const SizedBox(height: 4),
         Text(
           label,
-          style: GoogleFonts.cairo(
+          style: TextStyle(fontFamily: 'BeIN', 
             fontSize: 12,
             color: Colors.white.withOpacity(0.9),
           ),
@@ -258,17 +258,17 @@ class MovingInventoryPage extends GetView<MovingInventoryController> {
         backgroundColor: AppColors.surfaceDark,
         title: Text(
           'رفض طلب النقل',
-          style: GoogleFonts.cairo(
+          style: TextStyle(fontFamily: 'BeIN', 
             fontWeight: FontWeight.bold,
             color: Colors.white,
           ),
         ),
         content: TextField(
           controller: reasonController,
-          style: GoogleFonts.cairo(color: Colors.white),
+          style: TextStyle(fontFamily: 'BeIN', color: Colors.white),
           decoration: InputDecoration(
             labelText: 'سبب الرفض (اختياري)',
-            labelStyle: GoogleFonts.cairo(color: AppColors.textSecondary),
+            labelStyle: TextStyle(fontFamily: 'BeIN', color: AppColors.textSecondary),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
             ),
@@ -284,7 +284,7 @@ class MovingInventoryPage extends GetView<MovingInventoryController> {
             onPressed: () => Get.back(),
             child: Text(
               'إلغاء',
-              style: GoogleFonts.cairo(color: AppColors.textSecondary),
+              style: TextStyle(fontFamily: 'BeIN', color: AppColors.textSecondary),
             ),
           ),
           ElevatedButton(
@@ -298,7 +298,7 @@ class MovingInventoryPage extends GetView<MovingInventoryController> {
             ),
             child: Text(
               'رفض',
-              style: GoogleFonts.cairo(fontWeight: FontWeight.bold),
+              style: TextStyle(fontFamily: 'BeIN', fontWeight: FontWeight.bold),
             ),
           ),
         ],
@@ -328,7 +328,7 @@ class MovingInventoryPage extends GetView<MovingInventoryController> {
             const SizedBox(height: 24),
             Text(
               'حدث خطأ',
-              style: GoogleFonts.cairo(
+              style: TextStyle(fontFamily: 'BeIN', 
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
@@ -337,7 +337,7 @@ class MovingInventoryPage extends GetView<MovingInventoryController> {
             const SizedBox(height: 12),
             Text(
               controller.error ?? 'حدث خطأ في تحميل البيانات',
-              style: GoogleFonts.cairo(
+              style: TextStyle(fontFamily: 'BeIN', 
                 fontSize: 16,
                 color: AppColors.textSecondary,
               ),
@@ -349,7 +349,7 @@ class MovingInventoryPage extends GetView<MovingInventoryController> {
               icon: const Icon(Icons.refresh),
               label: Text(
                 'إعادة المحاولة',
-                style: GoogleFonts.cairo(
+                style: TextStyle(fontFamily: 'BeIN', 
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -389,7 +389,7 @@ class MovingInventoryPage extends GetView<MovingInventoryController> {
           const SizedBox(height: 24),
           Text(
             'لا يوجد مخزون متحرك',
-            style: GoogleFonts.cairo(
+            style: TextStyle(fontFamily: 'BeIN', 
               fontSize: 20,
               fontWeight: FontWeight.bold,
               color: Colors.white,
@@ -398,7 +398,7 @@ class MovingInventoryPage extends GetView<MovingInventoryController> {
           const SizedBox(height: 8),
           Text(
             'لم يتم العثور على أي عناصر في المخزون المتحرك',
-            style: GoogleFonts.cairo(
+            style: TextStyle(fontFamily: 'BeIN', 
               fontSize: 14,
               color: AppColors.textSecondary,
             ),
@@ -457,7 +457,7 @@ class _PendingTransferCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   transfer.warehouseName ?? 'مستودع غير محدد',
-                  style: GoogleFonts.cairo(
+                  style: TextStyle(fontFamily: 'BeIN', 
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
@@ -470,7 +470,7 @@ class _PendingTransferCard extends StatelessWidget {
           if (itemType != null)
             Text(
               '${itemType!.nameAr} - ${transfer.quantity} ${transfer.packagingType == "boxes" ? "كراتين" : "وحدات"}',
-              style: GoogleFonts.cairo(
+              style: TextStyle(fontFamily: 'BeIN', 
                 fontSize: 14,
                 color: Colors.white.withOpacity(0.9),
               ),
@@ -478,7 +478,7 @@ class _PendingTransferCard extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             'منذ ${_getTimeAgo(transfer.createdAt)}',
-            style: GoogleFonts.cairo(
+            style: TextStyle(fontFamily: 'BeIN', 
               fontSize: 12,
               color: Colors.white.withOpacity(0.7),
             ),
@@ -492,7 +492,7 @@ class _PendingTransferCard extends StatelessWidget {
                   icon: const Icon(Icons.check, size: 18),
                   label: Text(
                     'قبول',
-                    style: GoogleFonts.cairo(fontWeight: FontWeight.bold),
+                    style: TextStyle(fontFamily: 'BeIN', fontWeight: FontWeight.bold),
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.success,
@@ -511,7 +511,7 @@ class _PendingTransferCard extends StatelessWidget {
                   icon: const Icon(Icons.close, size: 18),
                   label: Text(
                     'رفض',
-                    style: GoogleFonts.cairo(fontWeight: FontWeight.bold),
+                    style: TextStyle(fontFamily: 'BeIN', fontWeight: FontWeight.bold),
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.error,
@@ -670,7 +670,7 @@ class _InventoryItemCard extends StatelessWidget {
                 children: [
                   Text(
                     itemType.nameAr,
-                    style: GoogleFonts.cairo(
+                    style: TextStyle(fontFamily: 'BeIN', 
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
@@ -679,7 +679,7 @@ class _InventoryItemCard extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     itemType.nameEn,
-                    style: GoogleFonts.cairo(
+                    style: TextStyle(fontFamily: 'BeIN', 
                       fontSize: 12,
                       color: AppColors.textSecondary,
                     ),
@@ -718,7 +718,7 @@ class _InventoryItemCard extends StatelessWidget {
                 children: [
                   Text(
                     total.toString(),
-                    style: GoogleFonts.cairo(
+                    style: TextStyle(fontFamily: 'BeIN', 
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
@@ -726,7 +726,7 @@ class _InventoryItemCard extends StatelessWidget {
                   ),
                   Text(
                     'إجمالي',
-                    style: GoogleFonts.cairo(
+                    style: TextStyle(fontFamily: 'BeIN', 
                       fontSize: 10,
                       color: Colors.white.withOpacity(0.9),
                     ),
@@ -756,7 +756,7 @@ class _InventoryItemCard extends StatelessWidget {
         children: [
           Text(
             label,
-            style: GoogleFonts.cairo(
+            style: TextStyle(fontFamily: 'BeIN', 
               fontSize: 12,
               color: color,
               fontWeight: FontWeight.w600,
@@ -765,7 +765,7 @@ class _InventoryItemCard extends StatelessWidget {
           const SizedBox(width: 6),
           Text(
             value.toString(),
-            style: GoogleFonts.cairo(
+            style: TextStyle(fontFamily: 'BeIN', 
               fontSize: 14,
               color: Colors.white,
               fontWeight: FontWeight.bold,

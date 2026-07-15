@@ -175,7 +175,7 @@ class _InventoryListPageState extends State<InventoryListPage> {
                   children: [
                     Text(
                       '${filteredItems.length} صنف',
-                      style: GoogleFonts.cairo(
+                      style: TextStyle(fontFamily: 'BeIN', 
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
@@ -195,7 +195,7 @@ class _InventoryListPageState extends State<InventoryListPage> {
                           const SizedBox(width: 4),
                           Text(
                             'ترتيب',
-                            style: GoogleFonts.cairo(
+                            style: TextStyle(fontFamily: 'BeIN', 
                               fontSize: 14,
                               color: AppColors.primary,
                             ),
@@ -342,7 +342,7 @@ class _InventoryListPageState extends State<InventoryListPage> {
             const SizedBox(height: 24),
             Text(
               'no_items'.tr,
-              style: GoogleFonts.cairo(
+              style: TextStyle(fontFamily: 'BeIN', 
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
@@ -353,7 +353,7 @@ class _InventoryListPageState extends State<InventoryListPage> {
               _searchQuery.isNotEmpty
                   ? 'لم يتم العثور على أصناف تطابق البحث'
                   : 'لا توجد أصناف في المخزون',
-              style: GoogleFonts.cairo(
+              style: TextStyle(fontFamily: 'BeIN', 
                 fontSize: 14,
                 color: AppColors.textSecondary,
               ),
@@ -372,7 +372,7 @@ class _InventoryListPageState extends State<InventoryListPage> {
                 icon: const Icon(Icons.clear_all),
                 label: Text(
                   'reset_filters'.tr,
-                  style: GoogleFonts.cairo(
+                  style: TextStyle(fontFamily: 'BeIN', 
                     fontWeight: FontWeight.bold,
                   ),
                 ),

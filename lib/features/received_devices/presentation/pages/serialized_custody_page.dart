@@ -55,7 +55,7 @@ class _SerializedCustodyPageState extends State<SerializedCustodyPage>
       appBar: AppBar(
         title: Text(
           'كشف حساب العهدة (Ledger)',
-          style: GoogleFonts.cairo(
+          style: TextStyle(fontFamily: 'BeIN', 
             fontWeight: FontWeight.bold,
             color: Colors.white,
             fontSize: 18,
@@ -77,7 +77,7 @@ class _SerializedCustodyPageState extends State<SerializedCustodyPage>
           indicatorColor: AppColors.primary,
           labelColor: Colors.white,
           unselectedLabelColor: Colors.white30,
-          labelStyle: GoogleFonts.cairo(fontWeight: FontWeight.bold, fontSize: 13),
+          labelStyle: TextStyle(fontFamily: 'BeIN', fontWeight: FontWeight.bold, fontSize: 13),
           tabs: const [
             Tab(text: 'أرصدة العهدة'),
             Tab(text: 'استلام عهدة جديدة'),
@@ -123,7 +123,7 @@ class _SerializedCustodyPageState extends State<SerializedCustodyPage>
           icon: const Icon(Icons.qr_code_scanner, color: Colors.white),
           label: Text(
             'استلام شحنة',
-            style: GoogleFonts.cairo(
+            style: TextStyle(fontFamily: 'BeIN', 
               fontWeight: FontWeight.bold,
               color: Colors.white,
               fontSize: 14,
@@ -206,7 +206,7 @@ class _SerializedCustodyPageState extends State<SerializedCustodyPage>
             padding: const EdgeInsets.only(bottom: 16, right: 4),
             child: Text(
               'أقسام العهدة الميدانية',
-              style: GoogleFonts.cairo(
+              style: TextStyle(fontFamily: 'BeIN', 
                 fontSize: 15,
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
@@ -327,7 +327,7 @@ class _SerializedCustodyPageState extends State<SerializedCustodyPage>
               children: [
                 Text(
                   title,
-                  style: GoogleFonts.cairo(
+                  style: TextStyle(fontFamily: 'BeIN', 
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
@@ -336,7 +336,7 @@ class _SerializedCustodyPageState extends State<SerializedCustodyPage>
                 const SizedBox(height: 4),
                 Text(
                   subtitle,
-                  style: GoogleFonts.cairo(
+                  style: TextStyle(fontFamily: 'BeIN', 
                     fontSize: 12,
                     color: AppColors.textSecondary,
                   ),
@@ -357,7 +357,7 @@ class _SerializedCustodyPageState extends State<SerializedCustodyPage>
                 ),
                 child: Text(
                   '$count وحدات',
-                  style: GoogleFonts.cairo(
+                  style: TextStyle(fontFamily: 'BeIN', 
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
                     color: color,
@@ -496,7 +496,7 @@ class _SerializedCustodyPageState extends State<SerializedCustodyPage>
                       children: [
                         Text(
                           title,
-                          style: GoogleFonts.cairo(
+                          style: TextStyle(fontFamily: 'BeIN', 
                             fontSize: 15,
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
@@ -504,7 +504,7 @@ class _SerializedCustodyPageState extends State<SerializedCustodyPage>
                         ),
                         Text(
                           subtitle,
-                          style: GoogleFonts.cairo(
+                          style: TextStyle(fontFamily: 'BeIN', 
                             fontSize: 12,
                             color: AppColors.textSecondary,
                           ),
@@ -520,7 +520,7 @@ class _SerializedCustodyPageState extends State<SerializedCustodyPage>
                     ),
                     child: Text(
                       category,
-                      style: GoogleFonts.cairo(
+                      style: TextStyle(fontFamily: 'BeIN', 
                         color: categoryColor,
                         fontSize: 11,
                         fontWeight: FontWeight.bold,
@@ -560,7 +560,7 @@ class _SerializedCustodyPageState extends State<SerializedCustodyPage>
                   child: ExpansionTile(
                     title: Text(
                       'عرض الأرقام التسلسلية ($current)',
-                      style: GoogleFonts.cairo(
+                      style: TextStyle(fontFamily: 'BeIN', 
                         fontSize: 12,
                         color: categoryColor,
                         fontWeight: FontWeight.bold,
@@ -632,7 +632,7 @@ class _SerializedCustodyPageState extends State<SerializedCustodyPage>
       children: [
         Text(
           label,
-          style: GoogleFonts.cairo(fontSize: 11, color: AppColors.textSecondary),
+          style: TextStyle(fontFamily: 'BeIN', fontSize: 11, color: AppColors.textSecondary),
         ),
         const SizedBox(height: 4),
         Text(
@@ -684,7 +684,7 @@ class _SerializedCustodyPageState extends State<SerializedCustodyPage>
               padding: const EdgeInsets.only(bottom: 12, right: 4),
               child: Text(
                 'شحنات بانتظار القبول (${pendingTransfers.length})',
-                style: GoogleFonts.cairo(
+                style: TextStyle(fontFamily: 'BeIN', 
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
                   color: Colors.white70,
@@ -699,7 +699,7 @@ class _SerializedCustodyPageState extends State<SerializedCustodyPage>
               padding: const EdgeInsets.only(bottom: 12, right: 4, top: 8),
               child: Text(
                 'شحنات مقبولة بانتظار التوثيق والاستلام (${acceptedTransfers.length})',
-                style: GoogleFonts.cairo(
+                style: TextStyle(fontFamily: 'BeIN', 
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
                   color: Colors.white70,
@@ -755,7 +755,7 @@ class _SerializedCustodyPageState extends State<SerializedCustodyPage>
                     children: [
                       Text(
                         itemTypeName,
-                        style: GoogleFonts.cairo(
+                        style: TextStyle(fontFamily: 'BeIN', 
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
                           fontSize: 14,
@@ -763,7 +763,7 @@ class _SerializedCustodyPageState extends State<SerializedCustodyPage>
                       ),
                       Text(
                         'المصدر: ${transfer.warehouseName ?? "المستودع الرئيسي"}',
-                        style: GoogleFonts.cairo(
+                        style: TextStyle(fontFamily: 'BeIN', 
                           color: AppColors.textSecondary,
                           fontSize: 12,
                         ),
@@ -774,7 +774,7 @@ class _SerializedCustodyPageState extends State<SerializedCustodyPage>
               ),
               Text(
                 isAccepted ? 'بانتظار التوثيق' : 'بانتظار القبول',
-                style: GoogleFonts.cairo(
+                style: TextStyle(fontFamily: 'BeIN', 
                   color: isAccepted ? AppColors.success : AppColors.accentOrange,
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
@@ -791,11 +791,11 @@ class _SerializedCustodyPageState extends State<SerializedCustodyPage>
                 children: [
                   Text(
                     'الكمية المرسلة',
-                    style: GoogleFonts.cairo(fontSize: 11, color: AppColors.textMuted),
+                    style: TextStyle(fontFamily: 'BeIN', fontSize: 11, color: AppColors.textMuted),
                   ),
                   Text(
                     '${transfer.quantity} ${transfer.packagingType == "boxes" ? "كرتون" : "وحدة"}',
-                    style: GoogleFonts.cairo(
+                    style: TextStyle(fontFamily: 'BeIN', 
                       fontSize: 15,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
@@ -820,7 +820,7 @@ class _SerializedCustodyPageState extends State<SerializedCustodyPage>
               ),
               child: Text(
                 'ملاحظات: ${transfer.notes}',
-                style: GoogleFonts.cairo(fontSize: 12, color: AppColors.textSecondary),
+                style: TextStyle(fontFamily: 'BeIN', fontSize: 12, color: AppColors.textSecondary),
               ),
             ),
           ],
@@ -843,7 +843,7 @@ class _SerializedCustodyPageState extends State<SerializedCustodyPage>
                     icon: const Icon(Icons.close, size: 18, color: AppColors.error),
                     label: Text(
                       'رفض',
-                      style: GoogleFonts.cairo(
+                      style: TextStyle(fontFamily: 'BeIN', 
                         color: AppColors.error,
                         fontWeight: FontWeight.bold,
                       ),
@@ -880,7 +880,7 @@ class _SerializedCustodyPageState extends State<SerializedCustodyPage>
         backgroundColor: AppColors.surfaceDark,
         title: Text(
           'رفض شحنة العهدة',
-          style: GoogleFonts.cairo(
+          style: TextStyle(fontFamily: 'BeIN', 
             fontWeight: FontWeight.bold,
             color: Colors.white,
           ),
@@ -892,17 +892,17 @@ class _SerializedCustodyPageState extends State<SerializedCustodyPage>
           children: [
             Text(
               'يرجى كتابة سبب رفض استلام هذه العهدة:',
-              style: GoogleFonts.cairo(color: AppColors.textSecondary, fontSize: 13),
+              style: TextStyle(fontFamily: 'BeIN', color: AppColors.textSecondary, fontSize: 13),
               textAlign: TextAlign.right,
             ),
             const SizedBox(height: 12),
             TextField(
               controller: reasonController,
               maxLines: 3,
-              style: GoogleFonts.cairo(color: Colors.white),
+              style: TextStyle(fontFamily: 'BeIN', color: Colors.white),
               decoration: InputDecoration(
                 hintText: 'مثال: نقص في الكمية / تالف...',
-                hintStyle: GoogleFonts.cairo(color: AppColors.textMuted, fontSize: 12),
+                hintStyle: TextStyle(fontFamily: 'BeIN', color: AppColors.textMuted, fontSize: 12),
                 filled: true,
                 fillColor: Colors.black.withOpacity(0.2),
                 border: OutlineInputBorder(
@@ -923,7 +923,7 @@ class _SerializedCustodyPageState extends State<SerializedCustodyPage>
             onPressed: () => Get.back(),
             child: Text(
               'إلغاء',
-              style: GoogleFonts.cairo(color: AppColors.textSecondary),
+              style: TextStyle(fontFamily: 'BeIN', color: AppColors.textSecondary),
             ),
           ),
           ElevatedButton(
@@ -939,7 +939,7 @@ class _SerializedCustodyPageState extends State<SerializedCustodyPage>
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
             child: Text(
               'تأكيد الرفض',
-              style: GoogleFonts.cairo(fontWeight: FontWeight.bold, color: Colors.white),
+              style: TextStyle(fontFamily: 'BeIN', fontWeight: FontWeight.bold, color: Colors.white),
             ),
           ),
         ],
@@ -1074,7 +1074,7 @@ class _SerializedCustodyPageState extends State<SerializedCustodyPage>
                               log.title,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.cairo(
+                              style: TextStyle(fontFamily: 'BeIN', 
                                 fontSize: 13,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.white,
@@ -1094,7 +1094,7 @@ class _SerializedCustodyPageState extends State<SerializedCustodyPage>
                       const SizedBox(height: 6),
                       Text(
                         log.details,
-                        style: GoogleFonts.cairo(
+                        style: TextStyle(fontFamily: 'BeIN', 
                           fontSize: 12,
                           color: AppColors.textSecondary,
                         ),
@@ -1133,7 +1133,7 @@ class _SerializedCustodyPageState extends State<SerializedCustodyPage>
             const SizedBox(height: 20),
             Text(
               title,
-              style: GoogleFonts.cairo(
+              style: TextStyle(fontFamily: 'BeIN', 
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
@@ -1142,7 +1142,7 @@ class _SerializedCustodyPageState extends State<SerializedCustodyPage>
             const SizedBox(height: 8),
             Text(
               description,
-              style: GoogleFonts.cairo(
+              style: TextStyle(fontFamily: 'BeIN', 
                 fontSize: 13,
                 color: AppColors.textSecondary,
               ),
@@ -1176,7 +1176,7 @@ class _SerializedCustodyPageState extends State<SerializedCustodyPage>
             ),
             title: Text(
               'تحديث مخزون $title',
-              style: GoogleFonts.cairo(
+              style: TextStyle(fontFamily: 'BeIN', 
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
@@ -1188,7 +1188,7 @@ class _SerializedCustodyPageState extends State<SerializedCustodyPage>
               children: [
                 Text(
                   'الرجاء إدخال الكمية الجديدة للمخزون الحالي:',
-                  style: GoogleFonts.cairo(color: Colors.white60, fontSize: 13),
+                  style: TextStyle(fontFamily: 'BeIN', color: Colors.white60, fontSize: 13),
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
@@ -1197,7 +1197,7 @@ class _SerializedCustodyPageState extends State<SerializedCustodyPage>
                   style: GoogleFonts.poppins(color: Colors.white),
                   decoration: InputDecoration(
                     labelText: 'الكمية (وحدات)',
-                    labelStyle: GoogleFonts.cairo(color: Colors.white38),
+                    labelStyle: TextStyle(fontFamily: 'BeIN', color: Colors.white38),
                     filled: true,
                     fillColor: AppColors.surfaceDark,
                     border: OutlineInputBorder(
@@ -1217,7 +1217,7 @@ class _SerializedCustodyPageState extends State<SerializedCustodyPage>
                 onPressed: () => Navigator.of(context).pop(),
                 child: Text(
                   'إلغاء',
-                  style: GoogleFonts.cairo(color: Colors.white38),
+                  style: TextStyle(fontFamily: 'BeIN', color: Colors.white38),
                 ),
               ),
               Obx(() => ElevatedButton(
@@ -1293,7 +1293,7 @@ class _SerializedCustodyPageState extends State<SerializedCustodyPage>
                       )
                     : Text(
                         'حفظ',
-                        style: GoogleFonts.cairo(color: Colors.white, fontWeight: FontWeight.bold),
+                        style: TextStyle(fontFamily: 'BeIN', color: Colors.white, fontWeight: FontWeight.bold),
                       ),
               )),
             ],
@@ -1343,7 +1343,7 @@ class _SerializedCustodyPageState extends State<SerializedCustodyPage>
             children: [
               Text(
                 'تحديث العهدة يدوياً',
-                style: GoogleFonts.cairo(
+                style: TextStyle(fontFamily: 'BeIN', 
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
@@ -1353,7 +1353,7 @@ class _SerializedCustodyPageState extends State<SerializedCustodyPage>
               const SizedBox(height: 8),
               Text(
                 'اختر نوع المخزون الذي ترغب في تعديل كمياته (مثل ورق الطباعة والملصقات الدعائية)',
-                style: GoogleFonts.cairo(
+                style: TextStyle(fontFamily: 'BeIN', 
                   fontSize: 13,
                   color: AppColors.textSecondary,
                 ),
@@ -1474,7 +1474,7 @@ class _SerializedCustodyPageState extends State<SerializedCustodyPage>
           const SizedBox(height: 16),
           Text(
             title,
-            style: GoogleFonts.cairo(
+            style: TextStyle(fontFamily: 'BeIN', 
               fontSize: 15,
               fontWeight: FontWeight.bold,
               color: Colors.white,
@@ -1484,7 +1484,7 @@ class _SerializedCustodyPageState extends State<SerializedCustodyPage>
           const SizedBox(height: 6),
           Text(
             subtitle,
-            style: GoogleFonts.cairo(
+            style: TextStyle(fontFamily: 'BeIN', 
               fontSize: 11,
               color: AppColors.textSecondary,
             ),

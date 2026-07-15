@@ -172,7 +172,7 @@ class NeonButton extends StatelessWidget {
                     Flexible(
                       child: Text(
                         label,
-                        style: GoogleFonts.cairo(
+                        style: TextStyle(fontFamily: 'BeIN', 
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
                           fontSize: fontSize,
@@ -215,7 +215,7 @@ class StatusBadge extends StatelessWidget {
       ),
       child: Text(
         text,
-        style: GoogleFonts.cairo(
+        style: TextStyle(fontFamily: 'BeIN', 
           color: color,
           fontSize: fontSize,
           fontWeight: FontWeight.bold,
@@ -261,7 +261,7 @@ class SectionHeader extends StatelessWidget {
           Expanded(
             child: Text(
               title,
-              style: GoogleFonts.cairo(
+              style: TextStyle(fontFamily: 'BeIN', 
                 fontSize: 15,
                 fontWeight: FontWeight.bold,
                 color: AppColors.textPrimary,
@@ -305,11 +305,11 @@ class GlowingProgressBar extends StatelessWidget {
             children: [
               if (label != null)
                 Text(label!,
-                    style: GoogleFonts.cairo(
+                    style: TextStyle(fontFamily: 'BeIN', 
                         color: AppColors.textSecondary, fontSize: 12)),
               if (trailingText != null)
                 Text(trailingText!,
-                    style: GoogleFonts.cairo(
+                    style: TextStyle(fontFamily: 'BeIN', 
                         color: Colors.white,
                         fontSize: 12,
                         fontWeight: FontWeight.bold)),
@@ -378,13 +378,13 @@ class InfoRow extends StatelessWidget {
           const SizedBox(width: 10),
           Text(
             '$label: ',
-            style: GoogleFonts.cairo(
+            style: TextStyle(fontFamily: 'BeIN', 
                 color: AppColors.textMuted, fontSize: 13),
           ),
           Expanded(
             child: Text(
               value,
-              style: GoogleFonts.cairo(
+              style: TextStyle(fontFamily: 'BeIN', 
                 color: AppColors.textPrimary,
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
@@ -459,7 +459,7 @@ class StatCard extends StatelessWidget {
               children: [
                 Text(
                   value,
-                  style: GoogleFonts.cairo(
+                  style: TextStyle(fontFamily: 'BeIN', 
                     color: Colors.white,
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
@@ -467,7 +467,7 @@ class StatCard extends StatelessWidget {
                 ),
                 Text(
                   label,
-                  style: GoogleFonts.cairo(
+                  style: TextStyle(fontFamily: 'BeIN', 
                     color: AppColors.textSecondary,
                     fontSize: 12,
                   ),
@@ -475,7 +475,7 @@ class StatCard extends StatelessWidget {
                 if (subtitle != null)
                   Text(
                     subtitle!,
-                    style: GoogleFonts.cairo(
+                    style: TextStyle(fontFamily: 'BeIN', 
                       color: gradient.first.withOpacity(0.8),
                       fontSize: 11,
                       fontWeight: FontWeight.w500,

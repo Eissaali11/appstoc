@@ -106,7 +106,7 @@ class _NeoleapLeadsPageState extends State<NeoleapLeadsPage> {
                     const SizedBox(width: 8),
                     Text(
                       lead.phone == null ? 'add_phone'.tr : 'edit_phone'.tr,
-                      style: GoogleFonts.cairo(
+                      style: TextStyle(fontFamily: 'BeIN', 
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
@@ -117,7 +117,7 @@ class _NeoleapLeadsPageState extends State<NeoleapLeadsPage> {
                 const SizedBox(height: 8),
                 Text(
                   'يرجى إدخال رقم الهاتف للتواصل المباشر مع العميل عبر الواتساب والمكالمات.',
-                  style: GoogleFonts.cairo(color: AppColors.textSecondary, fontSize: 12),
+                  style: TextStyle(fontFamily: 'BeIN', color: AppColors.textSecondary, fontSize: 12),
                 ),
                 const SizedBox(height: 16),
                 TextField(
@@ -128,7 +128,7 @@ class _NeoleapLeadsPageState extends State<NeoleapLeadsPage> {
                     hintText: '966XXXXXXXXX',
                     hintStyle: GoogleFonts.robotoMono(color: Colors.white24, fontSize: 13),
                     labelText: 'whats_chat'.tr,
-                    labelStyle: GoogleFonts.cairo(color: AppColors.textSecondary),
+                    labelStyle: TextStyle(fontFamily: 'BeIN', color: AppColors.textSecondary),
                     filled: true,
                     fillColor: AppColors.backgroundDark,
                     border: OutlineInputBorder(
@@ -154,7 +154,7 @@ class _NeoleapLeadsPageState extends State<NeoleapLeadsPage> {
                       onPressed: () => Get.back(),
                       child: Text(
                         'cancel'.tr,
-                        style: GoogleFonts.cairo(color: AppColors.textSecondary),
+                        style: TextStyle(fontFamily: 'BeIN', color: AppColors.textSecondary),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -170,7 +170,7 @@ class _NeoleapLeadsPageState extends State<NeoleapLeadsPage> {
                       },
                       child: Text(
                         'save'.tr,
-                        style: GoogleFonts.cairo(
+                        style: TextStyle(fontFamily: 'BeIN', 
                           color: AppColors.backgroundDark,
                           fontWeight: FontWeight.bold,
                         ),
@@ -217,7 +217,7 @@ class _NeoleapLeadsPageState extends State<NeoleapLeadsPage> {
                 const SizedBox(height: 12),
                 Text(
                   'هل أنت متأكد من رغبتك في حذف العميل "${lead.name}"؟ لا يمكن التراجع عن هذا الإجراء.',
-                  style: GoogleFonts.cairo(color: AppColors.textSecondary, fontSize: 13),
+                  style: TextStyle(fontFamily: 'BeIN', color: AppColors.textSecondary, fontSize: 13),
                 ),
                 const SizedBox(height: 20),
                 Row(
@@ -227,7 +227,7 @@ class _NeoleapLeadsPageState extends State<NeoleapLeadsPage> {
                       onPressed: () => Get.back(),
                       child: Text(
                         'cancel'.tr,
-                        style: GoogleFonts.cairo(color: AppColors.textSecondary),
+                        style: TextStyle(fontFamily: 'BeIN', color: AppColors.textSecondary),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -250,7 +250,7 @@ class _NeoleapLeadsPageState extends State<NeoleapLeadsPage> {
                       },
                       child: Text(
                         'حذف',
-                        style: GoogleFonts.cairo(
+                        style: TextStyle(fontFamily: 'BeIN', 
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
                         ),
@@ -305,7 +305,7 @@ class _NeoleapLeadsPageState extends State<NeoleapLeadsPage> {
                       children: [
                         Text(
                           'تحديد المدن المستهدفة بالبحث',
-                          style: GoogleFonts.cairo(
+                          style: TextStyle(fontFamily: 'BeIN', 
                             fontSize: 15,
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
@@ -313,7 +313,7 @@ class _NeoleapLeadsPageState extends State<NeoleapLeadsPage> {
                         ),
                         Text(
                           '(${controller.selectedRegions.length} مختارة)',
-                          style: GoogleFonts.cairo(
+                          style: TextStyle(fontFamily: 'BeIN', 
                             fontSize: 12,
                             color: AppColors.primary,
                             fontWeight: FontWeight.bold,
@@ -327,7 +327,7 @@ class _NeoleapLeadsPageState extends State<NeoleapLeadsPage> {
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: TextField(
-                      style: GoogleFonts.cairo(color: Colors.white, fontSize: 13),
+                      style: TextStyle(fontFamily: 'BeIN', color: Colors.white, fontSize: 13),
                       onChanged: (val) {
                         setSheetState(() {
                           searchKeyword = val;
@@ -335,7 +335,7 @@ class _NeoleapLeadsPageState extends State<NeoleapLeadsPage> {
                       },
                       decoration: InputDecoration(
                         hintText: 'ابحث عن مدينة من مدن المملكة...',
-                        hintStyle: GoogleFonts.cairo(color: Colors.white30, fontSize: 12),
+                        hintStyle: TextStyle(fontFamily: 'BeIN', color: Colors.white30, fontSize: 12),
                         prefixIcon: const Icon(LucideIcons.search, size: 16, color: AppColors.textSecondary),
                         filled: true,
                         fillColor: AppColors.backgroundDark,
@@ -370,7 +370,7 @@ class _NeoleapLeadsPageState extends State<NeoleapLeadsPage> {
                           icon: const Icon(LucideIcons.checkSquare, size: 14, color: AppColors.primary),
                           label: Text(
                             'select_all'.tr,
-                            style: GoogleFonts.cairo(fontSize: 12, color: AppColors.primary, fontWeight: FontWeight.bold),
+                            style: TextStyle(fontFamily: 'BeIN', fontSize: 12, color: AppColors.primary, fontWeight: FontWeight.bold),
                           ),
                         ),
                         const SizedBox(width: 16),
@@ -382,7 +382,7 @@ class _NeoleapLeadsPageState extends State<NeoleapLeadsPage> {
                           icon: const Icon(LucideIcons.square, size: 14, color: AppColors.error),
                           label: Text(
                             'deselect_all'.tr,
-                            style: GoogleFonts.cairo(fontSize: 12, color: AppColors.error, fontWeight: FontWeight.bold),
+                            style: TextStyle(fontFamily: 'BeIN', fontSize: 12, color: AppColors.error, fontWeight: FontWeight.bold),
                           ),
                         ),
                       ],
@@ -404,7 +404,7 @@ class _NeoleapLeadsPageState extends State<NeoleapLeadsPage> {
                           leading: Text(r.emoji, style: const TextStyle(fontSize: 18)),
                           title: Text(
                             r.name,
-                            style: GoogleFonts.cairo(
+                            style: TextStyle(fontFamily: 'BeIN', 
                               color: isSelected ? Colors.white : AppColors.textSecondary,
                               fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                               fontSize: 14,
@@ -495,7 +495,7 @@ class _NeoleapLeadsPageState extends State<NeoleapLeadsPage> {
                   const Icon(LucideIcons.alertTriangle, color: AppColors.error, size: 20),
                   const SizedBox(width: 10),
                   Expanded(child: Text(controller.error.value,
-                      style: GoogleFonts.cairo(color: AppColors.error, fontSize: 13, fontWeight: FontWeight.w500))),
+                      style: TextStyle(fontFamily: 'BeIN', color: AppColors.error, fontSize: 13, fontWeight: FontWeight.w500))),
                   IconButton(
                     icon: const Icon(LucideIcons.x, size: 18, color: AppColors.error),
                     onPressed: () => controller.error.value = '',
@@ -531,7 +531,7 @@ class _NeoleapLeadsPageState extends State<NeoleapLeadsPage> {
                     children: [
                       Text(
                         'قائمة العملاء المستخرجين',
-                        style: GoogleFonts.cairo(
+                        style: TextStyle(fontFamily: 'BeIN', 
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
@@ -539,7 +539,7 @@ class _NeoleapLeadsPageState extends State<NeoleapLeadsPage> {
                       ),
                       Text(
                         '${controller.filteredLeads.length} عميل محتمل',
-                        style: GoogleFonts.cairo(
+                        style: TextStyle(fontFamily: 'BeIN', 
                           fontSize: 12,
                           color: AppColors.primary,
                           fontWeight: FontWeight.bold,
@@ -596,7 +596,7 @@ class _NeoleapLeadsPageState extends State<NeoleapLeadsPage> {
                   children: [
                     Text(
                       'google_places_settings'.tr,
-                      style: GoogleFonts.cairo(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.white),
+                      style: TextStyle(fontFamily: 'BeIN', fontWeight: FontWeight.bold, fontSize: 14, color: Colors.white),
                     ),
                     const SizedBox(height: 2),
                     Row(
@@ -605,7 +605,7 @@ class _NeoleapLeadsPageState extends State<NeoleapLeadsPage> {
                         const SizedBox(width: 6),
                         Text(
                           _statusLabel,
-                          style: GoogleFonts.cairo(
+                          style: TextStyle(fontFamily: 'BeIN', 
                             fontSize: 11,
                             color: _statusColor,
                             fontWeight: FontWeight.bold,
@@ -637,7 +637,7 @@ class _NeoleapLeadsPageState extends State<NeoleapLeadsPage> {
             decoration: InputDecoration(
               hintText: 'AIzaSy...',
               labelText: 'أدخل المفتاح واضغط ✓ للاتصال',
-              labelStyle: GoogleFonts.cairo(color: AppColors.textSecondary, fontSize: 12),
+              labelStyle: TextStyle(fontFamily: 'BeIN', color: AppColors.textSecondary, fontSize: 12),
               hintStyle: GoogleFonts.robotoMono(color: Colors.white24, fontSize: 12),
               filled: true,
               fillColor: AppColors.backgroundDark,
@@ -681,7 +681,7 @@ class _NeoleapLeadsPageState extends State<NeoleapLeadsPage> {
           const SizedBox(height: 8),
           Text(
             'بعد إدخال المفتاح اضغط ✓ أو Enter للتحقق التلقائي من الاتصال',
-            style: GoogleFonts.cairo(color: AppColors.textSecondary, fontSize: 10),
+            style: TextStyle(fontFamily: 'BeIN', color: AppColors.textSecondary, fontSize: 10),
           ),
         ],
       ),
@@ -704,12 +704,12 @@ class _NeoleapLeadsPageState extends State<NeoleapLeadsPage> {
           // Query field
           TextField(
             controller: _queryCtrl,
-            style: GoogleFonts.cairo(color: Colors.white, fontSize: 14),
+            style: TextStyle(fontFamily: 'BeIN', color: Colors.white, fontSize: 14),
             decoration: InputDecoration(
               labelText: 'search_query_hint'.tr,
               hintText: 'supermarket_hint'.tr,
-              labelStyle: GoogleFonts.cairo(color: AppColors.textSecondary),
-              hintStyle: GoogleFonts.cairo(color: Colors.white24, fontSize: 12),
+              labelStyle: TextStyle(fontFamily: 'BeIN', color: AppColors.textSecondary),
+              hintStyle: TextStyle(fontFamily: 'BeIN', color: Colors.white24, fontSize: 12),
               prefixIcon: const Icon(LucideIcons.store, color: AppColors.primary),
               filled: true,
               fillColor: AppColors.backgroundDark,
@@ -735,7 +735,7 @@ class _NeoleapLeadsPageState extends State<NeoleapLeadsPage> {
               Expanded(
                 child: Text(
                   '${'radius_meters'.tr}: ${(_radius / 1000).toStringAsFixed(1)} ${'km'.tr}',
-                  style: GoogleFonts.cairo(fontWeight: FontWeight.bold, fontSize: 12, color: AppColors.textPrimary),
+                  style: TextStyle(fontFamily: 'BeIN', fontWeight: FontWeight.bold, fontSize: 12, color: AppColors.textPrimary),
                 ),
               ),
               Expanded(
@@ -764,7 +764,7 @@ class _NeoleapLeadsPageState extends State<NeoleapLeadsPage> {
           // Regions Selection Dropdown Label
           Text(
             'regions_selection'.tr,
-            style: GoogleFonts.cairo(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.white),
+            style: TextStyle(fontFamily: 'BeIN', fontWeight: FontWeight.bold, fontSize: 13, color: Colors.white),
           ),
           const SizedBox(height: 8),
 
@@ -788,7 +788,7 @@ class _NeoleapLeadsPageState extends State<NeoleapLeadsPage> {
                       controller.selectedRegions.isEmpty
                           ? 'اختر المدن المستهدفة بالبحث...'
                           : 'تم تحديد ${controller.selectedRegions.length} مدينة من مدن المملكة',
-                      style: GoogleFonts.cairo(
+                      style: TextStyle(fontFamily: 'BeIN', 
                         color: controller.selectedRegions.isEmpty ? Colors.white38 : Colors.white,
                         fontSize: 13,
                         fontWeight: controller.selectedRegions.isEmpty ? FontWeight.normal : FontWeight.bold,
@@ -873,7 +873,7 @@ class _NeoleapLeadsPageState extends State<NeoleapLeadsPage> {
           const SizedBox(height: 2),
           Text(
             label,
-            style: GoogleFonts.cairo(
+            style: TextStyle(fontFamily: 'BeIN', 
               fontSize: 10,
               color: AppColors.textSecondary,
             ),
@@ -891,11 +891,11 @@ class _NeoleapLeadsPageState extends State<NeoleapLeadsPage> {
         Expanded(
           child: TextField(
             controller: _searchFilterCtrl,
-            style: GoogleFonts.cairo(color: Colors.white, fontSize: 13),
+            style: TextStyle(fontFamily: 'BeIN', color: Colors.white, fontSize: 13),
             onChanged: controller.filterLeads,
             decoration: InputDecoration(
               hintText: 'search_leads_hint'.tr,
-              hintStyle: GoogleFonts.cairo(color: Colors.white30, fontSize: 12),
+              hintStyle: TextStyle(fontFamily: 'BeIN', color: Colors.white30, fontSize: 12),
               prefixIcon: const Icon(LucideIcons.search, size: 16, color: AppColors.textSecondary),
               filled: true,
               fillColor: AppColors.surfaceDark,
@@ -960,7 +960,7 @@ class _NeoleapLeadsPageState extends State<NeoleapLeadsPage> {
                   children: [
                     Text(
                       lead.name,
-                      style: GoogleFonts.cairo(
+                      style: TextStyle(fontFamily: 'BeIN', 
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
                         color: Colors.white,
@@ -976,7 +976,7 @@ class _NeoleapLeadsPageState extends State<NeoleapLeadsPage> {
                           Expanded(
                             child: Text(
                               lead.address!,
-                              style: GoogleFonts.cairo(color: AppColors.textSecondary, fontSize: 11),
+                              style: TextStyle(fontFamily: 'BeIN', color: AppColors.textSecondary, fontSize: 11),
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -1061,7 +1061,7 @@ class _NeoleapLeadsPageState extends State<NeoleapLeadsPage> {
                         icon: const Icon(LucideIcons.plus, size: 13, color: AppColors.primary),
                         label: Text(
                           'add_phone'.tr,
-                          style: GoogleFonts.cairo(fontSize: 11, color: AppColors.primary),
+                          style: TextStyle(fontFamily: 'BeIN', fontSize: 11, color: AppColors.primary),
                         ),
                         style: TextButton.styleFrom(
                           padding: EdgeInsets.zero,
@@ -1158,7 +1158,7 @@ class _NeoleapLeadsPageState extends State<NeoleapLeadsPage> {
             const SizedBox(height: 12),
             Text(
               'no_leads_found'.tr,
-              style: GoogleFonts.cairo(color: AppColors.textSecondary, fontSize: 13),
+              style: TextStyle(fontFamily: 'BeIN', color: AppColors.textSecondary, fontSize: 13),
             ),
           ],
         ),

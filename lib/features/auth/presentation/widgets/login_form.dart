@@ -140,7 +140,7 @@ class _LoginFormState extends State<LoginForm> {
         const SizedBox(width: 6),
         Text(
           text,
-          style: GoogleFonts.cairo(
+          style: TextStyle(fontFamily: 'BeIN', 
             fontSize: 13,
             color: Colors.white54,
             fontWeight: FontWeight.w600,
@@ -197,14 +197,14 @@ class _LoginFormState extends State<LoginForm> {
         keyboardType: keyboardType,
         textInputAction: textInputAction,
         onFieldSubmitted: onFieldSubmitted,
-        style: GoogleFonts.cairo(
+        style: TextStyle(fontFamily: 'BeIN', 
           fontSize: 15,
           color: Colors.white,
           fontWeight: FontWeight.w500,
         ),
         decoration: InputDecoration(
           hintText: hint,
-          hintStyle: GoogleFonts.cairo(
+          hintStyle: TextStyle(fontFamily: 'BeIN', 
             fontSize: 14,
             color: Colors.white24,
           ),
@@ -239,7 +239,7 @@ class _LoginFormState extends State<LoginForm> {
             horizontal: 16,
             vertical: 18,
           ),
-          errorStyle: GoogleFonts.cairo(
+          errorStyle: TextStyle(fontFamily: 'BeIN', 
             fontSize: 11,
             color: AppColors.error,
           ),
@@ -304,7 +304,7 @@ class _LoginFormState extends State<LoginForm> {
                         const SizedBox(width: 12),
                         Text(
                           'جاري تسجيل الدخول...',
-                          style: GoogleFonts.cairo(
+                          style: TextStyle(fontFamily: 'BeIN', 
                             fontSize: 15,
                             color: Colors.white54,
                             fontWeight: FontWeight.bold,
@@ -317,7 +317,7 @@ class _LoginFormState extends State<LoginForm> {
                       children: [
                         Text(
                           'دخول',
-                          style: GoogleFonts.cairo(
+                          style: TextStyle(fontFamily: 'BeIN', 
                             fontSize: 17,
                             fontWeight: FontWeight.bold,
                             color: Colors.white,

@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/widgets/app_drawer.dart';
 import '../../../../shared/widgets/barcode_scanner_widget.dart';
+import '../../../../shared/utils/barcode_validator.dart';
 import '../../../../core/storage/offline_queue_manager.dart';
 import '../../../auth/presentation/controllers/auth_controller.dart';
 import '../controllers/devices_controller.dart';
@@ -81,8 +82,23 @@ class _WithdrawDevicePageState extends State<WithdrawDevicePage> {
       ),
     );
     if (result != null && result.trim().isNotEmpty) {
+      final cleanResult = result.trim();
+      if (controller == _serialNumberController) {
+        final validationError = BarcodeValidator.validateAnyDevice(cleanResult);
+        if (validationError != null) {
+          Get.snackbar(
+            'خطأ في مسح الباركود',
+            validationError,
+            backgroundColor: AppColors.error,
+            colorText: Colors.white,
+            snackPosition: SnackPosition.BOTTOM,
+            duration: const Duration(seconds: 3),
+          );
+          return;
+        }
+      }
       setState(() {
-        controller.text = result.trim();
+        controller.text = cleanResult;
       });
     }
   }
@@ -116,7 +132,7 @@ class _WithdrawDevicePageState extends State<WithdrawDevicePage> {
       appBar: AppBar(
         title: Text(
           'withdraw_device_title'.tr,
-          style: GoogleFonts.cairo(
+          style: TextStyle(fontFamily: 'BeIN', 
             fontWeight: FontWeight.bold,
             color: Colors.white,
             fontSize: 18,
@@ -177,7 +193,7 @@ class _WithdrawDevicePageState extends State<WithdrawDevicePage> {
                               children: [
                                 Text(
                                   'withdraw_new_device'.tr,
-                                  style: GoogleFonts.cairo(
+                                  style: TextStyle(fontFamily: 'BeIN', 
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
                                     color: Colors.white,
@@ -185,7 +201,7 @@ class _WithdrawDevicePageState extends State<WithdrawDevicePage> {
                                 ),
                                 Text(
                                   'withdraw_description'.tr,
-                                  style: GoogleFonts.cairo(
+                                  style: TextStyle(fontFamily: 'BeIN', 
                                     fontSize: 12,
                                     color: AppColors.textSecondary,
                                   ),
@@ -249,7 +265,12 @@ class _WithdrawDevicePageState extends State<WithdrawDevicePage> {
                             label: 'serial_number_label'.tr,
                             hint: 'enter_serial'.tr,
                             icon: Icons.smartphone,
-                            validator: (val) => val == null || val.trim().isEmpty ? 'enter_serial'.tr : null,
+                            validator: (val) {
+                              if (val == null || val.trim().isEmpty) {
+                                return 'enter_serial'.tr;
+                              }
+                              return BarcodeValidator.validateAnyDevice(val);
+                            },
                             suffix: IconButton(
                               icon: const Icon(Icons.qr_code_scanner, color: AppColors.primary),
                               onPressed: () => _scanBarcode(_serialNumberController),
@@ -261,7 +282,7 @@ class _WithdrawDevicePageState extends State<WithdrawDevicePage> {
                           const SizedBox(height: 10),
                           Text(
                             'accessories_status'.tr,
-                            style: GoogleFonts.cairo(
+                            style: TextStyle(fontFamily: 'BeIN', 
                               fontSize: 14,
                               fontWeight: FontWeight.bold,
                               color: AppColors.primary,
@@ -372,7 +393,7 @@ class _WithdrawDevicePageState extends State<WithdrawDevicePage> {
                             )
                           : Text(
                               'register_withdrawal'.tr,
-                              style: GoogleFonts.cairo(
+                              style: TextStyle(fontFamily: 'BeIN', 
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -403,7 +424,7 @@ class _WithdrawDevicePageState extends State<WithdrawDevicePage> {
       children: [
         Text(
           label,
-          style: GoogleFonts.cairo(
+          style: TextStyle(fontFamily: 'BeIN', 
             fontSize: 13,
             fontWeight: FontWeight.bold,
             color: Colors.white70,
@@ -414,10 +435,10 @@ class _WithdrawDevicePageState extends State<WithdrawDevicePage> {
           controller: controller,
           maxLines: maxLines,
           validator: validator,
-          style: GoogleFonts.cairo(color: Colors.white, fontSize: 14),
+          style: TextStyle(fontFamily: 'BeIN', color: Colors.white, fontSize: 14),
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: GoogleFonts.cairo(color: Colors.white30, fontSize: 13),
+            hintStyle: TextStyle(fontFamily: 'BeIN', color: Colors.white30, fontSize: 13),
             prefixIcon: Icon(icon, color: AppColors.textSecondary, size: 20),
             suffixIcon: suffix,
             filled: true,
@@ -456,7 +477,7 @@ class _WithdrawDevicePageState extends State<WithdrawDevicePage> {
       children: [
         Text(
           label,
-          style: GoogleFonts.cairo(
+          style: TextStyle(fontFamily: 'BeIN', 
             fontSize: 13,
             fontWeight: FontWeight.bold,
             color: Colors.white70,
@@ -476,7 +497,7 @@ class _WithdrawDevicePageState extends State<WithdrawDevicePage> {
               isExpanded: true,
               dropdownColor: AppColors.surfaceDark,
               icon: const Icon(Icons.arrow_drop_down, color: AppColors.textSecondary),
-              style: GoogleFonts.cairo(color: Colors.white, fontSize: 14),
+              style: TextStyle(fontFamily: 'BeIN', color: Colors.white, fontSize: 14),
               onChanged: onChanged,
               items: items.map<DropdownMenuItem<String>>((String value) {
                 return DropdownMenuItem<String>(

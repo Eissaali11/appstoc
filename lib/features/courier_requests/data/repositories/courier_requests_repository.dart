@@ -12,4 +12,5 @@ abstract class CourierRequestsRepository {
   Future<void> arriveCustomer(int requestId);
   Future<void> startInstallation(int requestId);
   Future<Map<String, dynamic>> submitExecutionAttempt(int requestId, Map<String, dynamic> attemptData);
+  Future<Map<String, dynamic>> serialLookup(String serial);
 }

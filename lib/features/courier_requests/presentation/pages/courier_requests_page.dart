@@ -113,7 +113,7 @@ class _CourierRequestsPageState extends State<CourierRequestsPage>
         children: [
           Text(
             'طلبات التوصيل',
-            style: GoogleFonts.cairo(
+            style: TextStyle(fontFamily: 'BeIN', 
               fontWeight: FontWeight.bold,
               color: Colors.white,
               fontSize: 18,
@@ -121,7 +121,7 @@ class _CourierRequestsPageState extends State<CourierRequestsPage>
           ),
           Obx(() => Text(
                 '${controller.requests.length} طلب إجمالاً',
-                style: GoogleFonts.cairo(
+                style: TextStyle(fontFamily: 'BeIN', 
                   color: AppColors.textSecondary,
                   fontSize: 12,
                 ),
@@ -156,8 +156,8 @@ class _CourierRequestsPageState extends State<CourierRequestsPage>
             indicatorColor: AppColors.primary,
             indicatorWeight: 2,
             labelStyle:
-                GoogleFonts.cairo(fontWeight: FontWeight.bold, fontSize: 13),
-            unselectedLabelStyle: GoogleFonts.cairo(fontSize: 12),
+                TextStyle(fontFamily: 'BeIN', fontWeight: FontWeight.bold, fontSize: 13),
+            unselectedLabelStyle: TextStyle(fontFamily: 'BeIN', fontSize: 12),
             tabs: _tabs
                 .map((t) => Tab(
                       child: Row(
@@ -208,7 +208,7 @@ class _CourierRequestsPageState extends State<CourierRequestsPage>
           const SizedBox(height: 20),
           Text(
             'تعذر تحميل الطلبات',
-            style: GoogleFonts.cairo(
+            style: TextStyle(fontFamily: 'BeIN', 
                 color: Colors.white,
                 fontSize: 18,
                 fontWeight: FontWeight.bold),
@@ -217,7 +217,7 @@ class _CourierRequestsPageState extends State<CourierRequestsPage>
           Text(
             controller.error ?? 'خطأ في الاتصال بالخادم',
             style:
-                GoogleFonts.cairo(color: AppColors.textSecondary, fontSize: 13),
+                TextStyle(fontFamily: 'BeIN', color: AppColors.textSecondary, fontSize: 13),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 24),
@@ -255,7 +255,7 @@ class _CourierRequestsPageState extends State<CourierRequestsPage>
           const SizedBox(height: 16),
           Text(
             messages[tabIndex],
-            style: GoogleFonts.cairo(
+            style: TextStyle(fontFamily: 'BeIN', 
                 color: AppColors.textSecondary, fontSize: 16),
           ),
         ],
@@ -358,7 +358,7 @@ class _CourierRequestsPageState extends State<CourierRequestsPage>
                             children: [
                               Text(
                                 'طلب #${request.id}',
-                                style: GoogleFonts.cairo(
+                                style: TextStyle(fontFamily: 'BeIN', 
                                   fontWeight: FontWeight.bold,
                                   fontSize: 16,
                                   color: Colors.white,
@@ -367,7 +367,7 @@ class _CourierRequestsPageState extends State<CourierRequestsPage>
                               if (request.date != null)
                                 Text(
                                   request.date!,
-                                  style: GoogleFonts.cairo(
+                                  style: TextStyle(fontFamily: 'BeIN', 
                                     color: AppColors.textMuted,
                                     fontSize: 11,
                                   ),
@@ -414,7 +414,7 @@ class _CourierRequestsPageState extends State<CourierRequestsPage>
                             const SizedBox(width: 8),
                             Text(
                               'بانتظار قبولك — اضغط لعرض التفاصيل',
-                              style: GoogleFonts.cairo(
+                              style: TextStyle(fontFamily: 'BeIN', 
                                   color: AppColors.warning,
                                   fontSize: 12,
                                   fontWeight: FontWeight.bold),
@@ -429,7 +429,7 @@ class _CourierRequestsPageState extends State<CourierRequestsPage>
                         children: [
                           Text(
                             'عرض التفاصيل',
-                            style: GoogleFonts.cairo(
+                            style: TextStyle(fontFamily: 'BeIN', 
                                 color: AppColors.primary, fontSize: 12),
                           ),
                           const SizedBox(width: 4),
@@ -458,7 +458,7 @@ class _CourierRequestsPageState extends State<CourierRequestsPage>
           Expanded(
             child: Text(
               value,
-              style: GoogleFonts.cairo(
+              style: TextStyle(fontFamily: 'BeIN', 
                   color: AppColors.textSecondary, fontSize: 13),
               overflow: TextOverflow.ellipsis,
             ),
