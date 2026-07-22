@@ -5,7 +5,9 @@ import 'package:shimmer/shimmer.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/widgets/app_drawer.dart';
 import '../../../../shared/widgets/barcode_scanner_widget.dart';
+import '../../../../shared/widgets/rassco_app_bar.dart';
 import '../../../../shared/utils/barcode_validator.dart';
+import '../../../../shared/scanner/scanner_item_types.dart';
 import '../../presentation/controllers/devices_controller.dart';
 import '../../data/models/received_device.dart';
 import '../../../../shared/models/item_type.dart';
@@ -137,17 +139,8 @@ class _ReceivedDevicesPageState extends State<ReceivedDevicesPage> with SingleTi
     return Scaffold(
       backgroundColor: AppColors.backgroundDark,
       drawer: const AppDrawer(),
-      appBar: AppBar(
-        title: Text(
-          'سجل الأجهزة المسحوبة',
-          style: TextStyle(fontFamily: 'BeIN', 
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-        ),
-        backgroundColor: AppColors.surfaceDark,
-        foregroundColor: Colors.white,
-        elevation: 0,
+      appBar: RasscoAppBar(
+        titleText: 'سجل الأجهزة المسحوبة',
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -279,16 +272,23 @@ class _ReceivedDevicesPageState extends State<ReceivedDevicesPage> with SingleTi
               InkWell(
                 onTap: () async {
                   Get.back(); // close bottom sheet
-                  final result = await Navigator.push<String>(
+                  final result = await Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const BarcodeScannerWidget(
+                      builder: (context) => BarcodeScannerWidget(
                         title: 'مسح باركود تسليم العهدة',
+                        itemTypes: ScannerItemTypes.devices(),
+                        categoryHint: 'devices',
+                        allowUnionOfItemTypes: true,
                       ),
                     ),
                   );
-                  if (result != null && result.trim().isNotEmpty) {
-                    final cleanResult = result.trim();
+                  final cleanResult = result is String
+                      ? result.trim()
+                      : (result is Map
+                          ? (result['code'] as String?)?.trim()
+                          : null);
+                  if (cleanResult != null && cleanResult.isNotEmpty) {
                     final validationError = BarcodeValidator.validateAnyDevice(cleanResult);
                     if (validationError != null) {
                       Get.snackbar(

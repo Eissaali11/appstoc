@@ -34,7 +34,9 @@ class _SplashPageState extends State<SplashPage>
   bool _hasNavigated    = false;  // prevent double navigation
   bool _isAuthenticated = false;
 
-  static const _kMinSplash = Duration(seconds: 5);
+  static const _kMinSplash    = Duration(seconds: 5);
+  // Hard ceiling — no matter what happens, navigate after this
+  static const _kHardTimeout  = Duration(seconds: 9);
 
   @override
   void initState() {
@@ -65,6 +67,15 @@ class _SplashPageState extends State<SplashPage>
     Future.delayed(_kMinSplash).then((_) {
       if (!mounted) return;
       _minTimerElapsed = true;
+      _tryNavigate();
+    });
+
+    // ── Hard timeout — guarantees navigation no matter what ────
+    Future.delayed(_kHardTimeout).then((_) {
+      if (!mounted || _hasNavigated) return;
+      _minTimerElapsed = true;
+      _servicesReady   = true;
+      _videoFinished   = true;
       _tryNavigate();
     });
 
@@ -124,9 +135,11 @@ class _SplashPageState extends State<SplashPage>
       _videoController.setVolume(0.0);
     }
 
-    // Video end
-    if (v.isInitialized && !v.isPlaying && pos >= v.duration && pos.inSeconds > 0) {
-      if (!_videoFinished) {
+    // Video end — detect when position is within last 200ms OR past duration
+    if (v.isInitialized && v.duration.inMilliseconds > 0) {
+      final nearEnd = pos.inMilliseconds >= (v.duration.inMilliseconds - 200);
+      final pastEnd = !v.isPlaying && pos.inMilliseconds > 0;
+      if ((nearEnd || pastEnd) && !_videoFinished) {
         _videoFinished = true;
         _tryNavigate();
       }

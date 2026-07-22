@@ -7,6 +7,7 @@ import '../api/interceptors/error_interceptor.dart';
 import '../storage/secure_storage.dart';
 import '../storage/local_cache.dart';
 import '../storage/offline_queue_manager.dart';
+import '../services/notification_service.dart';
 
 import '../api/api_config.dart';
 
@@ -29,6 +30,9 @@ class InjectionContainer {
       SecureStorageService(),
       permanent: true,
     );
+
+    // Push Notifications Service
+    await Get.putAsync<NotificationService>(() => NotificationService().init(), permanent: true);
 
     // Dio Client
     final dio = Dio(

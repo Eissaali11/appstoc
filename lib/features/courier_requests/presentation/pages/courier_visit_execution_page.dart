@@ -6,8 +6,11 @@ import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/widgets/design_system.dart';
+import '../../../../shared/widgets/rassco_app_bar.dart';
 import '../../../../shared/widgets/lottie_feedback_dialog.dart';
 import '../../../../shared/widgets/barcode_scanner_widget.dart';
+import '../../../../shared/scanner/identifier_normalization_service.dart';
+import '../../../../shared/scanner/scanner_item_types.dart';
 import '../controllers/courier_requests_controller.dart';
 
 class CourierVisitExecutionPage extends StatefulWidget {
@@ -262,15 +265,25 @@ class _CourierVisitExecutionPageState
   }
 
   Future<void> _scanBarcode(TextEditingController tc, String role) async {
-    final result = await Navigator.push<String>(
+    final types = ScannerItemTypes.forRole(role);
+    final result = await Navigator.push(
       context,
       MaterialPageRoute(
-          builder: (_) => const BarcodeScannerWidget(title: 'مسح الباركود')),
+        builder: (_) => BarcodeScannerWidget(
+          title: 'مسح الباركود',
+          itemTypes: types,
+          categoryHint: role == 'sim' ? 'sim' : 'devices',
+          allowUnionOfItemTypes: true,
+        ),
+      ),
     );
-    if (result != null) {
-      final normalized = role == 'device'
-          ? result.trim().toUpperCase().replaceAll(RegExp(r'[\s\-_.]'), '')
-          : result.trim();
+    final raw = result is String
+        ? result
+        : (result is Map ? result['code'] as String? : null);
+    if (raw != null) {
+      // Light normalize — strip ICCID spaces; keep device letter prefixes.
+      final normalized =
+          IdentifierNormalizationService.normalize(raw);
       setState(() => tc.text = normalized);
       _doSerialLookup(normalized, role);
     }
@@ -434,6 +447,7 @@ class _CourierVisitExecutionPageState
       expandedHeight: 130,
       backgroundColor: AppColors.surfaceDark,
       foregroundColor: Colors.white,
+      title: RasscoBrandTitle.text('تنفيذ الزيارة الميدانية'),
       flexibleSpace: FlexibleSpaceBar(
         background: Container(
           decoration: const BoxDecoration(

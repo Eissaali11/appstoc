@@ -29,6 +29,16 @@ class MergedInventoryItem {
   int get totalQuantity => fixedBoxes + fixedUnits + movingBoxes + movingUnits;
 }
 
+bool _isActiveSerializedStatus(dynamic status) {
+  final s = '${status ?? ''}'.toUpperCase();
+  if (s.isEmpty) return true; // API active list usually omits delivered
+  if (s == 'DELIVERED' || s == 'RETURNED' || s == 'WITHDRAWN') return false;
+  return s == 'RECEIVED_BY_TECHNICIAN' ||
+      s == 'IN_TRANSIT_CUSTODY' ||
+      s.contains('TRANSIT') ||
+      s.contains('RECEIVED');
+}
+
 class DashboardController extends GetxController {
   final GetDashboardDataUseCase getDashboardDataUseCase;
   final AcceptTransferUseCase acceptTransferUseCase;
@@ -135,6 +145,24 @@ class DashboardController extends GetxController {
     selectedFilter.value = InventoryFilter.all;
   }
 
+  /// Clears all in-memory inventory/custody state (must run on logout to prevent cross-account leak).
+  void clearScopedState() {
+    _fixedBoxes.value = 0;
+    _fixedUnits.value = 0;
+    _movingBoxes.value = 0;
+    _movingUnits.value = 0;
+    _pendingTransfersCount.value = 0;
+    _fixedInventory.clear();
+    _movingInventory.clear();
+    _pendingTransfers.clear();
+    _itemTypes.clear();
+    _serializedItems.clear();
+    _deliveredItems.clear();
+    clearFilters();
+    _error.value = null;
+    _isInitialLoad.value = true;
+  }
+
   // Computed property to return the filtered and sorted list of inventory items
   List<MergedInventoryItem> get filteredItems {
     final Map<String, MergedInventoryItem> itemsMap = {};
@@ -196,10 +224,17 @@ class DashboardController extends GetxController {
           itemType.category == 'sim' ||
           itemType.category == 'devices';
       if (isSerialized) {
-        final count = _serializedItems.where((si) => si['itemTypeId'] == itemType.id).length;
+        final count = _serializedItems
+            .where((si) =>
+                si['itemTypeId'] == itemType.id &&
+                _isActiveSerializedStatus(si['status']))
+            .length;
         if (itemsMap.containsKey(itemType.id)) {
+          // Serialized custody counts come ONLY from serials — never mix fixed boxes.
           itemsMap[itemType.id]!.movingUnits = count;
           itemsMap[itemType.id]!.movingBoxes = 0;
+          itemsMap[itemType.id]!.fixedBoxes = 0;
+          itemsMap[itemType.id]!.fixedUnits = 0;
         } else {
           itemsMap[itemType.id] = MergedInventoryItem(
             itemType: itemType,

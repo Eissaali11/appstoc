@@ -2,9 +2,11 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/ui_helper.dart';
 import '../../../../shared/widgets/design_system.dart';
+import '../../../../shared/widgets/rassco_app_bar.dart';
 import '../controllers/courier_requests_controller.dart';
 import '../../../../core/routing/app_pages.dart';
 import '../../data/models/courier_request_model.dart';
@@ -29,14 +31,8 @@ class CourierRequestReviewPage extends GetView<CourierRequestsController> {
 
     return Scaffold(
       backgroundColor: AppColors.backgroundDark,
-      appBar: AppBar(
-        title: Text(
-          'مراجعة واستلام العهدة',
-          style: TextStyle(fontFamily: 'BeIN', fontWeight: FontWeight.bold),
-        ),
-        backgroundColor: AppColors.surfaceDark,
-        elevation: 0,
-        centerTitle: true,
+      appBar: const RasscoAppBar(
+        titleText: 'مراجعة واستلام العهدة',
       ),
       body: Obx(() {
         if (controller.isLoading) {
@@ -359,16 +355,33 @@ class CourierRequestReviewPage extends GetView<CourierRequestsController> {
               )),
               if (controller.evidencePhotos.length < 3)
                 GestureDetector(
-                  onTap: () {
-                    const mockBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAIAAAD/gAIDAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAExJREFUeNrswQENAAAAwqD3T20PBxQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOBjQYAAAgwABQ==';
-                    controller.addEvidencePhotoLocal(mockBase64);
-                    Get.snackbar(
-                      'تم التقاط الصورة',
-                      'تم إرفاق صورة إثبات الاستلام بنجاح',
-                      snackPosition: SnackPosition.BOTTOM,
-                      backgroundColor: AppColors.success,
-                      colorText: Colors.white,
-                    );
+                  onTap: () async {
+                    try {
+                      final picker = ImagePicker();
+                      final file = await picker.pickImage(
+                        source: ImageSource.camera,
+                        imageQuality: 70,
+                        maxWidth: 1024,
+                      );
+                      if (file == null) return;
+                      final bytes = await file.readAsBytes();
+                      controller.addEvidencePhotoLocal(base64Encode(bytes));
+                      Get.snackbar(
+                        'تم التقاط الصورة',
+                        'تم إرفاق صورة إثبات الاستلام بنجاح',
+                        snackPosition: SnackPosition.BOTTOM,
+                        backgroundColor: AppColors.success,
+                        colorText: Colors.white,
+                      );
+                    } catch (e) {
+                      Get.snackbar(
+                        'خطأ',
+                        'فشل التقاط الصورة',
+                        snackPosition: SnackPosition.BOTTOM,
+                        backgroundColor: AppColors.error,
+                        colorText: Colors.white,
+                      );
+                    }
                   },
                   child: Container(
                     decoration: BoxDecoration(

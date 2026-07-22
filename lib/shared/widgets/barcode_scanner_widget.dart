@@ -1,15 +1,27 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import '../../core/theme/app_colors.dart';
 import '../models/item_type.dart';
-import '../utils/barcode_validator.dart';
+import '../scanner/barcode_candidate_selector.dart';
+import '../scanner/barcode_rule_registry.dart';
+import '../scanner/camera_lifecycle_manager.dart';
+import '../scanner/duplicate_scanner_guard.dart';
+import '../scanner/identifier_normalization_service.dart';
+import '../scanner/scanner_context.dart';
+import '../scanner/scanner_session_manager.dart';
+import '../scanner/success_feedback_service.dart';
+import 'rassco_app_bar.dart';
 
-
-/// مكون مسح الباركود التفاعلي باستخدام الكاميرا.
-/// يدعم قراءة الأكواد الخطية 1D (أجهزة نقاط البيع POS وشرائح SIM والسلع).
-/// يدعم المسح الفردي والمسح المستمر المتعدد.
+/// Enterprise Smart Scanner V2 — context-aware single-serial capture.
+///
+/// - Evaluates ALL barcodes in frame against current item-type rules
+/// - Ignores GTIN / PN / product codes that do not match
+/// - One success per session (IDLE→SCANNING→VALIDATING→ACCEPTED→CLOSED)
+/// - Lock BEFORE any await after valid accept
+/// - Success: local beep + haptic ~100ms + green frame + checkmark + fill + close
+/// - Invalid: silent; Duplicate: one cooldown toast, camera stays open
+/// - Native [scanWindow] ROI so codes outside the frame are filtered early
 class BarcodeScannerWidget extends StatefulWidget {
   final Function(String)? onBarcodeDetected;
   final String title;
@@ -17,6 +29,22 @@ class BarcodeScannerWidget extends StatefulWidget {
   final List<ItemType>? itemTypes;
   final String? selectedItemTypeId;
   final Function(String)? onItemTypeChanged;
+
+  /// Serials already present in the calling form (duplicate detection).
+  final List<String> existingValues;
+
+  /// Category hint when no single type is selected: `devices` | `sim`.
+  final String? categoryHint;
+
+  /// When true (default) and [itemTypes] is non-empty without a selection,
+  /// accept any serial matching rules from those types (union). When false,
+  /// require an explicit selected type (fail closed until chosen).
+  final bool allowUnionOfItemTypes;
+
+  /// Non-serial barcode capture (e.g. Terminal ID). Bypasses item-type rules
+  /// and accepts the first non-empty code after light normalize — still one
+  /// success / session lock / single beep. Do NOT use for device serials.
+  final bool rawBarcodeMode;
 
   const BarcodeScannerWidget({
     super.key,
@@ -26,6 +54,10 @@ class BarcodeScannerWidget extends StatefulWidget {
     this.itemTypes,
     this.selectedItemTypeId,
     this.onItemTypeChanged,
+    this.existingValues = const [],
+    this.categoryHint,
+    this.allowUnionOfItemTypes = true,
+    this.rawBarcodeMode = false,
   });
 
   @override
@@ -33,136 +65,276 @@ class BarcodeScannerWidget extends StatefulWidget {
 }
 
 class _BarcodeScannerWidgetState extends State<BarcodeScannerWidget> {
-  late final MobileScannerController _scannerController;
-  bool _isScanCompleted = false;
-  final List<String> _scannedCodes = [];
+  late final CameraLifecycleManager _camera;
+  late final ScannerSessionManager _session;
+  late final DuplicateScannerGuard _dupGuard;
+  late final SuccessFeedbackService _feedback;
+  late final BarcodeCandidateSelector _selector;
+  late ScannerContext _context;
+
+  bool _showGreenFrame = false;
+  bool _showCheckmark = false;
+  String? _guidance;
   String? _selectedItemTypeId;
+  final List<String> _scannedCodes = [];
+
+  static const _closeDelay = Duration(milliseconds: 280);
+  static const _scanAreaHeight = 200.0;
 
   @override
   void initState() {
     super.initState();
     _selectedItemTypeId = widget.selectedItemTypeId;
-    // إعداد متحكم المسح مع حصر صيغ الباركود المطلوبة لرفع كفاءة وسرعة القراءة
-    _scannerController = MobileScannerController(
-      detectionSpeed: DetectionSpeed.normal,
-      facing: CameraFacing.back,
-      torchEnabled: false,
-      formats: [
-        BarcodeFormat.code128,
-        BarcodeFormat.code39,
-        BarcodeFormat.ean13,
-        BarcodeFormat.qrCode, // دعم الـ QR أيضاً للمرونة
-      ],
-    );
+    _camera = CameraLifecycleManager();
+    _session = ScannerSessionManager();
+    _dupGuard = DuplicateScannerGuard()..seedExisting(widget.existingValues);
+    _feedback = SuccessFeedbackService();
+    _selector = BarcodeCandidateSelector();
+    if (widget.itemTypes != null) {
+      BarcodeRuleRegistry.cacheFromItemTypes(widget.itemTypes!);
+    }
+    _rebuildContext();
+    _session.markScanning();
   }
 
   @override
   void dispose() {
-    // إغلاق المتحكم لتفادي تسريب الذاكرة وتحرير موارد الكاميرا
-    _scannerController.dispose();
+    _feedback.dispose();
+    _camera.dispose();
     super.dispose();
   }
 
-  void _onDetect(BarcodeCapture capture) {
-    if (_isScanCompleted) return;
-
-    final List<Barcode> barcodes = capture.barcodes;
-    for (final barcode in barcodes) {
-      if (barcode.rawValue != null && barcode.rawValue!.isNotEmpty) {
-        // تنظيف الكود ومسح البادئات غير الصحيحة مثل c1 أو ]C1 الخاصة بـ GS1-128
-        var cleaned = barcode.rawValue!.trim();
-        if (cleaned.startsWith(']C1')) {
-          cleaned = cleaned.substring(3);
-        } else if (cleaned.toLowerCase().startsWith('c1')) {
-          cleaned = cleaned.substring(2);
-        }
-        final String scannedValue = cleaned;
-
-        // التحقق من صحة الباركود بالنسبة لنوع الصنف المختار
-        if (widget.itemTypes != null && _selectedItemTypeId != null) {
-          ItemType? selectedType;
-          for (final t in widget.itemTypes!) {
-            if (t.id == _selectedItemTypeId) {
-              selectedType = t;
-              break;
-            }
-          }
-            var validationError = BarcodeValidator.validate(scannedValue, selectedType);
-            if (validationError != null) {
-              // محاولة الكشف التلقائي عن نوع الصنف المطابق من بين الأصناف المتاحة
-              ItemType? detectedType;
-              for (final t in widget.itemTypes!) {
-                if (BarcodeValidator.validate(scannedValue, t) == null) {
-                  detectedType = t;
-                  break;
-                }
-              }
-
-              if (detectedType != null) {
-                setState(() {
-                  _selectedItemTypeId = detectedType!.id;
-                });
-                if (widget.onItemTypeChanged != null) {
-                  widget.onItemTypeChanged!(detectedType.id);
-                }
-                validationError = null;
-                selectedType = detectedType;
-              } else {
-                // تشغيل اهتزاز تنبيه بالخطأ
-                HapticFeedback.heavyImpact();
-                
-                // عرض رسالة خطأ للمستخدم
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      validationError!,
-                      style: TextStyle(fontFamily: 'BeIN', fontWeight: FontWeight.bold, color: Colors.white),
-                    ),
-                    backgroundColor: AppColors.error,
-                    duration: const Duration(seconds: 2),
-                  ),
-                );
-                continue; // تخطي هذا الباركود غير الصالح ومتابعة المسح
-              }
-            }
-        }
-
-        if (widget.isMultiScan) {
-          if (!_scannedCodes.contains(scannedValue)) {
-            setState(() {
-              _scannedCodes.add(scannedValue);
-            });
-            // تشغيل اهتزاز خفيف
-            HapticFeedback.lightImpact();
-            if (widget.onBarcodeDetected != null) {
-              widget.onBarcodeDetected!(scannedValue);
-            }
-          }
-        } else {
-          setState(() {
-            _isScanCompleted = true;
-          });
-          HapticFeedback.lightImpact();
-
-          if (widget.onBarcodeDetected != null) {
-            widget.onBarcodeDetected!(scannedValue);
-          }
-
-          // إرجاع النتيجة وإغلاق الشاشة
-          if (mounted) {
-            if (widget.itemTypes != null) {
-              Navigator.of(context).pop({
-                'code': scannedValue,
-                'itemTypeId': _selectedItemTypeId,
-              });
-            } else {
-              Navigator.of(context).pop(scannedValue);
-            }
-          }
-          break;
-        }
-      }
+  ItemType? _selectedType() {
+    if (widget.itemTypes == null || _selectedItemTypeId == null) return null;
+    for (final t in widget.itemTypes!) {
+      if (t.id == _selectedItemTypeId) return t;
     }
+    return null;
+  }
+
+  void _rebuildContext() {
+    final selected = _selectedType();
+    final types = widget.itemTypes;
+    // Union even when one type is pre-selected (SIM category defaults to STC
+    // first — without union, Lebara/Zain 19-digit ICCIDs never match).
+    final useUnion = widget.allowUnionOfItemTypes &&
+        types != null &&
+        types.isNotEmpty;
+
+    _context = ScannerContext.create(
+      sessionId: 'scan_${DateTime.now().microsecondsSinceEpoch}',
+      itemType: selected,
+      itemTypeId: _selectedItemTypeId,
+      existingValues: {
+        ...widget.existingValues,
+        ..._scannedCodes,
+        ..._dupGuard.accepted,
+      },
+      isMultiScan: widget.isMultiScan,
+      allowedItemTypes: useUnion ? types : null,
+      categoryHint: widget.categoryHint ?? selected?.category,
+      // Fail closed unless we have a type, a union of types, or explicit category fallback.
+      allowFallbackRegistry: selected == null &&
+          !useUnion &&
+          widget.categoryHint != null &&
+          (types == null || types.isEmpty),
+    );
+    _selector.resetStability();
+  }
+
+  void _onDetect(BarcodeCapture capture) {
+    // Session lock / closed → ignore every subsequent frame (no double beep).
+    if (!_session.isOpen || _session.isLocked) return;
+
+    _session.markScanning();
+
+    if (widget.rawBarcodeMode) {
+      _onDetectRaw(capture);
+      return;
+    }
+
+    // Fail closed: no trusted rules for the selected item type.
+    if (!_context.hasTrustedRules) {
+      if (mounted && _guidance == null) {
+        setState(() => _guidance = 'اختر نوع الصنف أولاً');
+      }
+      return;
+    }
+
+    final imgW = capture.width;
+    final imgH = capture.height;
+
+    final observations = <BarcodeObservation>[];
+    for (final barcode in capture.barcodes) {
+      final raw = barcode.rawValue;
+      if (raw == null || raw.isEmpty) continue;
+      observations.add(
+        BarcodeObservation(
+          raw: raw,
+          center: _barcodeCenter(barcode, imgW, imgH),
+          confidence: 1.0, // mobile_scanner does not expose a stable score
+        ),
+      );
+    }
+    if (observations.isEmpty) return;
+
+    // Evaluate ALL barcodes — never accept the first blindly.
+    final result = _selector.select(observations, context: _context);
+
+    if (result.status == CandidateStatus.ambiguous ||
+        result.status == CandidateStatus.unstable) {
+      if (mounted && result.guidanceMessage != null) {
+        setState(() => _guidance = result.guidanceMessage);
+      }
+      return;
+    }
+
+    if (result.status != CandidateStatus.singleMatch ||
+        result.selected == null) {
+      // Non-matching (GTIN/PN/wrong type): silent ignore.
+      return;
+    }
+
+    _commitAccept(result.selected!);
+  }
+
+  /// Raw / non-serial path (Terminal ID). Still session-locked + one beep.
+  void _onDetectRaw(BarcodeCapture capture) {
+    for (final barcode in capture.barcodes) {
+      final raw = barcode.rawValue;
+      if (raw == null || raw.isEmpty) continue;
+      final normalized = IdentifierNormalizationService.normalize(raw);
+      if (normalized.isEmpty) continue;
+      if (_dupGuard.isDuplicate(normalized) ||
+          _scannedCodes.contains(normalized)) {
+        if (_dupGuard.shouldShowToast() && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                DuplicateScannerGuard.duplicateMessage,
+                style: TextStyle(fontFamily: 'BeIN'),
+              ),
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+        return;
+      }
+      if (!_session.tryLock()) return;
+      _session.accept(normalized);
+      _dupGuard.markAccepted(normalized);
+      if (widget.isMultiScan) {
+        _handleMultiAccept(normalized);
+      } else {
+        _handleSingleAccept(normalized);
+      }
+      return;
+    }
+  }
+
+  void _commitAccept(String opaqueSerial) {
+    // Duplicate in form / session — toast with cooldown, no success feedback.
+    if (_dupGuard.isDuplicate(opaqueSerial) ||
+        _scannedCodes.contains(opaqueSerial)) {
+      if (_dupGuard.shouldShowToast() && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              DuplicateScannerGuard.duplicateMessage,
+              style: TextStyle(fontFamily: 'BeIN'),
+            ),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+      return;
+    }
+
+    // CRITICAL: lock synchronously BEFORE any await.
+    if (!_session.tryLock()) return;
+    _session.accept(opaqueSerial);
+    _dupGuard.markAccepted(opaqueSerial);
+
+    if (widget.isMultiScan) {
+      _handleMultiAccept(opaqueSerial);
+    } else {
+      _handleSingleAccept(opaqueSerial);
+    }
+  }
+
+  Offset? _barcodeCenter(Barcode barcode, double? imgW, double? imgH) {
+    final corners = barcode.corners;
+    if (corners.isEmpty) return null;
+    double sx = 0, sy = 0;
+    for (final c in corners) {
+      sx += c.dx;
+      sy += c.dy;
+    }
+    final w = (imgW != null && imgW > 0) ? imgW : 1280.0;
+    final h = (imgH != null && imgH > 0) ? imgH : 720.0;
+    return Offset(sx / corners.length / w, sy / corners.length / h);
+  }
+
+  void _handleMultiAccept(String opaqueSerial) {
+    setState(() {
+      _scannedCodes.add(opaqueSerial);
+      _showGreenFrame = true;
+      _showCheckmark = true;
+      _guidance = null;
+    });
+
+    // Fire feedback once for this accept (async AFTER lock).
+    _feedback.fire();
+
+    widget.onBarcodeDetected?.call(opaqueSerial);
+
+    // Brief success UI then unlock for next serial in multi-scan.
+    Future.delayed(const Duration(milliseconds: 400), () {
+      if (!mounted) return;
+      _feedback.reset();
+      _session.resetForNextScan();
+      _session.markScanning();
+      _rebuildContext();
+      setState(() {
+        _showGreenFrame = false;
+        _showCheckmark = false;
+      });
+    });
+  }
+
+  void _handleSingleAccept(String opaqueSerial) {
+    setState(() {
+      _showGreenFrame = true;
+      _showCheckmark = true;
+      _guidance = null;
+    });
+
+    // Async feedback AFTER synchronous lock/accept.
+    _feedback.fire().whenComplete(() {});
+
+    widget.onBarcodeDetected?.call(opaqueSerial);
+
+    Future.delayed(_closeDelay, () async {
+      if (!mounted) return;
+      _session.close();
+      await _camera.stop();
+      if (!mounted) return;
+      if (widget.itemTypes != null) {
+        Navigator.of(context).pop({
+          'code': opaqueSerial,
+          'itemTypeId': _selectedItemTypeId,
+        });
+      } else {
+        Navigator.of(context).pop(opaqueSerial);
+      }
+    });
+  }
+
+  Rect _computeScanWindow(Size size) {
+    final scanAreaWidth = size.width * 0.8;
+    final left = (size.width - scanAreaWidth) / 2;
+    final top = (size.height - _scanAreaHeight) / 2;
+    return Rect.fromLTWH(left, top, scanAreaWidth, _scanAreaHeight);
   }
 
   @override
@@ -173,7 +345,32 @@ class _BarcodeScannerWidgetState extends State<BarcodeScannerWidget> {
     return _buildSingleScanLayout(context);
   }
 
-  // ─── واجهة المسح المتعدد ───
+  Widget _buildCameraStack({required double height}) {
+    return SizedBox(
+      height: height,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final size = Size(constraints.maxWidth, constraints.maxHeight);
+          final window = _computeScanWindow(size);
+          return Stack(
+            fit: StackFit.expand,
+            children: [
+              MobileScanner(
+                controller: _camera.controller,
+                onDetect: _onDetect,
+                scanWindow: window,
+                errorBuilder: _buildErrorWidget,
+              ),
+              _buildScannerOverlay(context, size),
+              if (widget.itemTypes != null && widget.itemTypes!.isNotEmpty)
+                _buildItemTypeDropdown(),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
   Widget _buildMultiScanLayout(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
@@ -184,80 +381,27 @@ class _BarcodeScannerWidgetState extends State<BarcodeScannerWidget> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // 1. كاميرا المسح مع قائمة الاختيار العائمة
               Container(
-                height: 320,
                 decoration: const BoxDecoration(
                   border: Border(
                     bottom: BorderSide(color: AppColors.border, width: 1),
                   ),
                 ),
-                child: Stack(
-                  children: [
-                    MobileScanner(
-                      controller: _scannerController,
-                      onDetect: _onDetect,
-                      errorBuilder: _buildErrorWidget,
-                    ),
-                    _buildScannerOverlay(context),
-                    if (widget.itemTypes != null && widget.itemTypes!.isNotEmpty)
-                      Positioned(
-                        top: 16,
-                        left: 16,
-                        right: 16,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: AppColors.surfaceDark.withOpacity(0.85),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: AppColors.primary.withOpacity(0.5)),
-                          ),
-                          child: DropdownButtonHideUnderline(
-                            child: DropdownButton<String>(
-                              value: _selectedItemTypeId,
-                              dropdownColor: AppColors.surfaceDark,
-                              style: TextStyle(fontFamily: 'BeIN', color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
-                              isExpanded: true,
-                              items: widget.itemTypes!.map((t) {
-                                final label = t.category == 'sim' ? '[شريحة] ${t.nameAr}' : '[جهاز] ${t.nameAr}';
-                                return DropdownMenuItem<String>(
-                                  value: t.id,
-                                  child: Text(label, style: TextStyle(fontFamily: 'BeIN', color: Colors.white)),
-                                );
-                              }).toList(),
-                              onChanged: (val) {
-                                if (val == null) return;
-                                setState(() {
-                                  _selectedItemTypeId = val;
-                                });
-                                if (widget.onItemTypeChanged != null) {
-                                  widget.onItemTypeChanged!(val);
-                                }
-                              },
-                            ),
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
+                child: _buildCameraStack(height: 320),
               ),
-              
-              // 2. حاوية قائمة الأرقام الممسوحة
               Container(
                 padding: const EdgeInsets.all(16),
-                decoration: const BoxDecoration(
-                  color: AppColors.backgroundDark,
-                ),
+                color: AppColors.backgroundDark,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // العنوان وإجراء الحذف الكل
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
                           'الأرقام الممسوحة (${_scannedCodes.length})',
-                          style: TextStyle(fontFamily: 'BeIN', 
+                          style: const TextStyle(
+                            fontFamily: 'BeIN',
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
                             fontSize: 14,
@@ -268,11 +412,15 @@ class _BarcodeScannerWidgetState extends State<BarcodeScannerWidget> {
                             onPressed: () {
                               setState(() {
                                 _scannedCodes.clear();
+                                _dupGuard.clear();
+                                _dupGuard.seedExisting(widget.existingValues);
+                                _rebuildContext();
                               });
                             },
-                            child: Text(
+                            child: const Text(
                               'حذف الكل',
-                              style: TextStyle(fontFamily: 'BeIN', 
+                              style: TextStyle(
+                                fontFamily: 'BeIN',
                                 color: AppColors.error,
                                 fontSize: 12,
                                 fontWeight: FontWeight.bold,
@@ -282,15 +430,14 @@ class _BarcodeScannerWidgetState extends State<BarcodeScannerWidget> {
                       ],
                     ),
                     const SizedBox(height: 12),
-                    
-                    // قائمة الأكواد الممسوحة فعلياً
                     if (_scannedCodes.isEmpty)
-                      Center(
+                      const Center(
                         child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 40),
+                          padding: EdgeInsets.symmetric(vertical: 40),
                           child: Text(
                             'لم يتم مسح أي باركود بعد',
-                            style: TextStyle(fontFamily: 'BeIN', 
+                            style: TextStyle(
+                              fontFamily: 'BeIN',
                               color: Colors.white30,
                               fontSize: 13,
                             ),
@@ -310,7 +457,8 @@ class _BarcodeScannerWidgetState extends State<BarcodeScannerWidget> {
                           final code = _scannedCodes[index];
                           return Row(
                             children: [
-                              const Icon(Icons.qr_code, color: AppColors.primary, size: 18),
+                              const Icon(Icons.qr_code,
+                                  color: AppColors.primary, size: 18),
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Text(
@@ -323,10 +471,13 @@ class _BarcodeScannerWidgetState extends State<BarcodeScannerWidget> {
                                 ),
                               ),
                               IconButton(
-                                icon: const Icon(Icons.delete_outline, color: AppColors.error, size: 18),
+                                icon: const Icon(Icons.delete_outline,
+                                    color: AppColors.error, size: 18),
                                 onPressed: () {
                                   setState(() {
                                     _scannedCodes.removeAt(index);
+                                    _dupGuard.remove(code);
+                                    _rebuildContext();
                                   });
                                 },
                               ),
@@ -334,10 +485,7 @@ class _BarcodeScannerWidgetState extends State<BarcodeScannerWidget> {
                           );
                         },
                       ),
-                    
                     const SizedBox(height: 24),
-                    
-                    // زر التأكيد النهائي
                     ElevatedButton.icon(
                       onPressed: _scannedCodes.isEmpty
                           ? null
@@ -351,10 +499,12 @@ class _BarcodeScannerWidgetState extends State<BarcodeScannerWidget> {
                                 Navigator.of(context).pop(_scannedCodes);
                               }
                             },
-                      icon: const Icon(Icons.check_circle_outline, color: Colors.white),
+                      icon: const Icon(Icons.check_circle_outline,
+                          color: Colors.white),
                       label: Text(
                         'تأكيد وحفظ الشحنة (${_scannedCodes.length})',
-                        style: TextStyle(fontFamily: 'BeIN', 
+                        style: const TextStyle(
+                          fontFamily: 'BeIN',
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
                           fontSize: 15,
@@ -379,107 +529,110 @@ class _BarcodeScannerWidgetState extends State<BarcodeScannerWidget> {
     );
   }
 
-  // ─── واجهة المسح المفرد ───
   Widget _buildSingleScanLayout(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: _buildAppBar(),
-      body: Stack(
-        children: [
-          MobileScanner(
-            controller: _scannerController,
-            onDetect: _onDetect,
-            errorBuilder: _buildErrorWidget,
-          ),
-          _buildScannerOverlay(context),
-          if (widget.itemTypes != null && widget.itemTypes!.isNotEmpty)
-            Positioned(
-              top: 16,
-              left: 16,
-              right: 16,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceDark.withOpacity(0.85),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.primary.withOpacity(0.5)),
-                ),
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<String>(
-                    value: _selectedItemTypeId,
-                    dropdownColor: AppColors.surfaceDark,
-                    style: TextStyle(fontFamily: 'BeIN', color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
-                    isExpanded: true,
-                    items: widget.itemTypes!.map((t) {
-                      final label = t.category == 'sim' ? '[شريحة] ${t.nameAr}' : '[جهاز] ${t.nameAr}';
-                      return DropdownMenuItem<String>(
-                        value: t.id,
-                        child: Text(label, style: TextStyle(fontFamily: 'BeIN', color: Colors.white)),
-                      );
-                    }).toList(),
-                    onChanged: (val) {
-                      if (val == null) return;
-                      setState(() {
-                        _selectedItemTypeId = val;
-                      });
-                      if (widget.onItemTypeChanged != null) {
-                        widget.onItemTypeChanged!(val);
-                      }
-                    },
-                  ),
-                ),
-              ),
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          return _buildCameraStack(height: constraints.maxHeight);
+        },
+      ),
+    );
+  }
+
+  Widget _buildItemTypeDropdown() {
+    return Positioned(
+      top: 16,
+      left: 16,
+      right: 16,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        decoration: BoxDecoration(
+          color: AppColors.surfaceDark.withOpacity(0.85),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.primary.withOpacity(0.5)),
+        ),
+        child: DropdownButtonHideUnderline(
+          child: DropdownButton<String>(
+            value: _selectedItemTypeId,
+            hint: const Text(
+              'اختر نوع الصنف',
+              style: TextStyle(fontFamily: 'BeIN', color: Colors.white70),
             ),
-        ],
+            dropdownColor: AppColors.surfaceDark,
+            style: const TextStyle(
+              fontFamily: 'BeIN',
+              color: Colors.white,
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+            ),
+            isExpanded: true,
+            items: widget.itemTypes!.map((t) {
+              final label = t.category == 'sim'
+                  ? '[شريحة] ${t.nameAr}'
+                  : '[جهاز] ${t.nameAr}';
+              return DropdownMenuItem<String>(
+                value: t.id,
+                child: Text(label,
+                    style: const TextStyle(
+                        fontFamily: 'BeIN', color: Colors.white)),
+              );
+            }).toList(),
+            onChanged: (val) {
+              if (val == null) return;
+              setState(() {
+                _selectedItemTypeId = val;
+                _rebuildContext();
+                _guidance = null;
+              });
+              widget.onItemTypeChanged?.call(val);
+            },
+          ),
+        ),
       ),
     );
   }
 
   PreferredSizeWidget _buildAppBar() {
-    return AppBar(
-      title: Text(
-        widget.title,
-        style: TextStyle(fontFamily: 'BeIN', 
-          fontWeight: FontWeight.bold,
-          color: Colors.white,
-        ),
-      ),
-      backgroundColor: AppColors.surfaceDark,
-      elevation: 0,
+    return RasscoAppBar(
+      titleText: widget.title,
       leading: IconButton(
         icon: const Icon(Icons.arrow_back, color: Colors.white),
         onPressed: () => Navigator.of(context).pop(),
       ),
       actions: [
         ValueListenableBuilder(
-          valueListenable: _scannerController.torchState,
+          valueListenable: _camera.controller.torchState,
           builder: (context, state, child) {
             switch (state) {
               case TorchState.off:
                 return IconButton(
                   icon: const Icon(Icons.flash_off, color: Colors.grey),
-                  onPressed: () => _scannerController.toggleTorch(),
+                  onPressed: () => _camera.toggleTorch(),
                 );
               case TorchState.on:
                 return IconButton(
                   icon: const Icon(Icons.flash_on, color: Colors.yellow),
-                  onPressed: () => _scannerController.toggleTorch(),
+                  onPressed: () => _camera.toggleTorch(),
                 );
             }
           },
         ),
         IconButton(
           icon: const Icon(Icons.flip_camera_ios, color: Colors.white),
-          onPressed: () => _scannerController.switchCamera(),
+          onPressed: () => _camera.switchCamera(),
         ),
       ],
     );
   }
 
-  Widget _buildErrorWidget(BuildContext context, MobileScannerException error, Widget? child) {
+  Widget _buildErrorWidget(
+      BuildContext context, MobileScannerException error, Widget? child) {
     String errorMessage = 'حدث خطأ أثناء فتح الكاميرا';
     if (error.errorCode == MobileScannerErrorCode.permissionDenied) {
-      errorMessage = 'صلاحية الكاميرا غير ممنوحة. يرجى تفعيلها من الإعدادات.';
+      errorMessage =
+          'صلاحية الكاميرا غير ممنوحة. يرجى تفعيلها من الإعدادات.';
     }
     return Center(
       child: Padding(
@@ -492,7 +645,8 @@ class _BarcodeScannerWidgetState extends State<BarcodeScannerWidget> {
             Text(
               errorMessage,
               textAlign: TextAlign.center,
-              style: TextStyle(fontFamily: 'BeIN', 
+              style: const TextStyle(
+                fontFamily: 'BeIN',
                 color: Colors.white,
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
@@ -504,7 +658,7 @@ class _BarcodeScannerWidgetState extends State<BarcodeScannerWidget> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
               ),
-              child: Text(
+              child: const Text(
                 'رجوع',
                 style: TextStyle(fontFamily: 'BeIN', color: Colors.white),
               ),
@@ -515,9 +669,12 @@ class _BarcodeScannerWidgetState extends State<BarcodeScannerWidget> {
     );
   }
 
-  Widget _buildScannerOverlay(BuildContext context) {
-    final double scanAreaWidth = MediaQuery.of(context).size.width * 0.8;
-    final double scanAreaHeight = 200.0;
+  Widget _buildScannerOverlay(BuildContext context, Size size) {
+    final scanAreaWidth = size.width * 0.8;
+    final frameColor = _showGreenFrame ? AppColors.success : AppColors.primary;
+    final hint = _showGreenFrame
+        ? 'تم المسح بنجاح'
+        : (_guidance ?? 'ضع الرقم التسلسلي داخل الإطار');
 
     return Stack(
       children: [
@@ -538,7 +695,7 @@ class _BarcodeScannerWidgetState extends State<BarcodeScannerWidget> {
                 alignment: Alignment.center,
                 child: Container(
                   width: scanAreaWidth,
-                  height: scanAreaHeight,
+                  height: _scanAreaHeight,
                   decoration: BoxDecoration(
                     color: Colors.red,
                     borderRadius: BorderRadius.circular(16),
@@ -553,24 +710,37 @@ class _BarcodeScannerWidgetState extends State<BarcodeScannerWidget> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
                 width: scanAreaWidth,
-                height: scanAreaHeight,
+                height: _scanAreaHeight,
                 decoration: BoxDecoration(
-                  border: Border.all(color: AppColors.primary, width: 2),
+                  border: Border.all(
+                      color: frameColor, width: _showGreenFrame ? 3.5 : 2),
                   borderRadius: BorderRadius.circular(16),
                 ),
+                child: _showCheckmark
+                    ? const Center(
+                        child: Icon(
+                          Icons.check_circle,
+                          color: AppColors.success,
+                          size: 64,
+                        ),
+                      )
+                    : null,
               ),
               const SizedBox(height: 24),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
                   color: Colors.black.withOpacity(0.8),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
-                  'ضع الباركود داخل المربع للمسح التلقائي',
-                  style: TextStyle(fontFamily: 'BeIN', 
+                  hint,
+                  style: const TextStyle(
+                    fontFamily: 'BeIN',
                     color: Colors.white,
                     fontSize: 14,
                   ),

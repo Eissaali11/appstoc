@@ -4,7 +4,9 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/widgets/app_drawer.dart';
 import '../../../../shared/widgets/barcode_scanner_widget.dart';
+import '../../../../shared/widgets/rassco_app_bar.dart';
 import '../../../../shared/utils/barcode_validator.dart';
+import '../../../../shared/scanner/scanner_item_types.dart';
 import '../../../../core/storage/offline_queue_manager.dart';
 import '../../../auth/presentation/controllers/auth_controller.dart';
 import '../controllers/devices_controller.dart';
@@ -73,17 +75,22 @@ class _WithdrawDevicePageState extends State<WithdrawDevicePage> {
   }
 
   Future<void> _scanBarcode(TextEditingController controller) async {
-    final result = await Navigator.push<String>(
+    final isSerial = controller == _serialNumberController;
+    final result = await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => const BarcodeScannerWidget(
-          title: 'مسح باركود الجهاز',
+        builder: (context) => BarcodeScannerWidget(
+          title: isSerial ? 'مسح باركود الجهاز' : 'مسح رقم الجهاز',
+          itemTypes: isSerial ? ScannerItemTypes.devices() : null,
+          categoryHint: isSerial ? 'devices' : null,
+          allowUnionOfItemTypes: true,
+          rawBarcodeMode: !isSerial,
         ),
       ),
     );
-    if (result != null && result.trim().isNotEmpty) {
-      final cleanResult = result.trim();
-      if (controller == _serialNumberController) {
+    final cleanResult = _extractScanCode(result);
+    if (cleanResult != null && cleanResult.isNotEmpty) {
+      if (isSerial) {
         final validationError = BarcodeValidator.validateAnyDevice(cleanResult);
         if (validationError != null) {
           Get.snackbar(
@@ -101,6 +108,16 @@ class _WithdrawDevicePageState extends State<WithdrawDevicePage> {
         controller.text = cleanResult;
       });
     }
+  }
+
+  String? _extractScanCode(dynamic result) {
+    if (result == null) return null;
+    if (result is String) return result.trim();
+    if (result is Map) {
+      final code = result['code'];
+      if (code is String) return code.trim();
+    }
+    return null;
   }
 
   void _submitForm() {
@@ -129,18 +146,8 @@ class _WithdrawDevicePageState extends State<WithdrawDevicePage> {
     return Scaffold(
       backgroundColor: AppColors.backgroundDark,
       drawer: const AppDrawer(),
-      appBar: AppBar(
-        title: Text(
-          'withdraw_device_title'.tr,
-          style: TextStyle(fontFamily: 'BeIN', 
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-            fontSize: 18,
-          ),
-        ),
-        backgroundColor: AppColors.surfaceDark,
-        foregroundColor: Colors.white,
-        elevation: 0,
+      appBar: RasscoAppBar(
+        titleText: 'withdraw_device_title'.tr,
       ),
       body: Directionality(
         textDirection: Get.locale?.languageCode == 'ar' ? TextDirection.rtl : TextDirection.ltr,

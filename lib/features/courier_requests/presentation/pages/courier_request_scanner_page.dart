@@ -4,6 +4,8 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/widgets/barcode_scanner_widget.dart';
 import '../../../../shared/widgets/design_system.dart';
+import '../../../../shared/widgets/rassco_app_bar.dart';
+import '../../../../shared/scanner/scanner_item_types.dart';
 import '../controllers/courier_requests_controller.dart';
 import '../../data/models/courier_request_model.dart';
 import '../../../../core/routing/app_pages.dart';
@@ -54,9 +56,12 @@ class _CourierRequestScannerPageState
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => const BarcodeScannerWidget(
+        builder: (context) => BarcodeScannerWidget(
           title: 'مسح باركود الأجهزة والشرائح',
           isMultiScan: true,
+          itemTypes: ScannerItemTypes.serialTracked(),
+          categoryHint: null,
+          allowUnionOfItemTypes: true,
         ),
       ),
     );
@@ -64,6 +69,11 @@ class _CourierRequestScannerPageState
       List<String> codes = [];
       if (result is List<String>) {
         codes = result;
+      } else if (result is Map) {
+        codes = List<String>.from(result['codes'] ?? const []);
+        if (codes.isEmpty && result['code'] is String) {
+          codes = [result['code'] as String];
+        }
       } else if (result is String && result.trim().isNotEmpty) {
         codes = [result.trim()];
       }
@@ -401,25 +411,27 @@ class _CourierRequestScannerPageState
               pinned: true,
               backgroundColor: AppColors.surfaceDark,
               foregroundColor: Colors.white,
-              title: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'محرك المسح الذكي',
-                    style: TextStyle(fontFamily: 'BeIN', 
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                      fontSize: 17,
+              title: RasscoBrandTitle(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'محرك المسح الذكي',
+                      style: TextStyle(fontFamily: 'BeIN', 
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        fontSize: 17,
+                      ),
                     ),
-                  ),
-                  Text(
-                    'طلب #$requestId — تحقق من هوية كل جهاز',
-                    style: TextStyle(fontFamily: 'BeIN', 
-                      color: AppColors.textSecondary,
-                      fontSize: 11,
+                    Text(
+                      'طلب #$requestId — تحقق من هوية كل جهاز',
+                      style: TextStyle(fontFamily: 'BeIN', 
+                        color: AppColors.textSecondary,
+                        fontSize: 11,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
 
@@ -791,16 +803,28 @@ class _CourierRequestScannerPageState
                   const Spacer(),
                   TextButton.icon(
                     onPressed: () async {
-                      final scannedCode = await Navigator.push<String>(
+                      final types = item.itemType == 'SIM'
+                          ? ScannerItemTypes.forRole('sim')
+                          : ScannerItemTypes.forRole('device');
+                      final scannedRaw = await Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => const BarcodeScannerWidget(
+                          builder: (context) => BarcodeScannerWidget(
                             title: 'مسح باركود العنصر',
+                            itemTypes: types,
+                            categoryHint:
+                                item.itemType == 'SIM' ? 'sim' : 'devices',
+                            allowUnionOfItemTypes: true,
                           ),
                         ),
                       );
-                      if (scannedCode != null && scannedCode.trim().isNotEmpty) {
-                        _processScannedCodeForItem(item, scannedCode.trim());
+                      final scannedCode = scannedRaw is String
+                          ? scannedRaw.trim()
+                          : (scannedRaw is Map
+                              ? (scannedRaw['code'] as String?)?.trim()
+                              : null);
+                      if (scannedCode != null && scannedCode.isNotEmpty) {
+                        _processScannedCodeForItem(item, scannedCode);
                       }
                     },
                     icon: const Icon(Icons.qr_code_scanner,

@@ -8,6 +8,7 @@ import '../../../../shared/models/item_type.dart';
 import '../../../../shared/utils/icon_mapper.dart';
 import '../../../courier_requests/presentation/controllers/courier_requests_controller.dart';
 import '../../../../shared/utils/responsive_helper.dart';
+import '../../../../shared/widgets/rassco_app_bar.dart';
 import '../controllers/dashboard_controller.dart';
 import '../../domain/repositories/dashboard_repository.dart';
 
@@ -20,7 +21,7 @@ class InventorySectionDetailsPage extends StatefulWidget {
 
 class _InventorySectionDetailsPageState extends State<InventorySectionDetailsPage> with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  String _selectedStatusFilter = 'all';
+  String _selectedStatusFilter = 'active';
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
   List<Map<String, String>> _custodySerials = [];
@@ -39,25 +40,23 @@ class _InventorySectionDetailsPageState extends State<InventorySectionDetailsPag
 
   bool _matchesItemType(Map<String, dynamic> item, ItemType itemType) {
     final typeId = item['itemTypeId']?.toString();
-    final category = item['itemTypeCategory']?.toString();
-    if (typeId != null && typeId == itemType.id) return true;
-    if (category != null && category == itemType.category) return true;
-    return false;
+    if (typeId == null || typeId.isEmpty) return false;
+    return typeId == itemType.id;
   }
 
   Future<void> _loadCustodyData() async {
     final args = Get.arguments as Map<String, dynamic>? ?? {};
-    final ItemType itemType = args['itemType'] as ItemType? ?? ItemType(
-      id: 'mock-pos',
-      nameAr: 'جهاز نقطة بيع POS',
-      nameEn: 'POS Terminal V2',
-      iconName: 'devices',
-      colorHex: '#18B2B0',
-      sortOrder: 1,
-      isActive: true,
-      isVisible: true,
-      category: 'devices',
-    );
+    final ItemType? itemTypeArg = args['itemType'] as ItemType?;
+    if (itemTypeArg == null) {
+      if (mounted) {
+        setState(() {
+          _custodySerials = [];
+          _loadingCustody = false;
+        });
+      }
+      return;
+    }
+    final ItemType itemType = itemTypeArg;
 
     final List<Map<String, String>> merged = [];
     final seen = <String>{};
@@ -77,7 +76,6 @@ class _InventorySectionDetailsPageState extends State<InventorySectionDetailsPag
     try {
       List<dynamic> activeItems = (args['activeItems'] as List?) ?? [];
       List<dynamic> deliveredItems = (args['deliveredItems'] as List?) ?? [];
-      final List<dynamic> passedSerials = args['serials'] as List? ?? [];
 
       // Refresh from API when possible (source of truth after order close)
       if (Get.isRegistered<DashboardController>()) {
@@ -86,40 +84,33 @@ class _InventorySectionDetailsPageState extends State<InventorySectionDetailsPag
         if (userId != null) {
           try {
             final repo = Get.find<DashboardRepository>();
-            final active = await repo.fetchMySerializedItems(userId);
+            final active = await repo.fetchMySerializedItems(
+              userId,
+              itemTypeId: itemType.id,
+            );
             final deliveredByType = await repo.fetchDeliveredItems(
               userId,
               itemTypeId: itemType.id,
             );
-            // Also fetch all and filter by category — itemType.id may not match DB UUID
-            final deliveredAll = await repo.fetchDeliveredItems(userId);
             activeItems = active.where((e) => _matchesItemType(e, itemType)).toList();
-            final mergedDelivered = <String, Map<String, dynamic>>{};
-            for (final e in [...deliveredByType, ...deliveredAll]) {
-              if (!_matchesItemType(e, itemType) &&
-                  e['itemTypeId']?.toString() != itemType.id) {
-                // category match via name for legacy type ids like n950
-                final name = '${e['itemTypeName'] ?? ''}'.toLowerCase();
-                final cat = '${e['itemTypeCategory'] ?? ''}';
-                final matchesName = itemType.category == 'devices'
-                    ? (cat == 'devices' || name.contains('n950') || name.contains('pos'))
-                    : (cat == 'sim' || name.contains('lebara') || name.contains('sim') || name.contains('شريحة'));
-                if (!matchesName) continue;
-              }
-              final sn = '${e['serialNumber'] ?? ''}';
-              if (sn.isEmpty) continue;
-              mergedDelivered[sn] = e;
-            }
-            deliveredItems = mergedDelivered.values.toList();
+            deliveredItems = deliveredByType
+                .where((e) => _matchesItemType(e, itemType) || e['itemTypeId']?.toString() == itemType.id)
+                .toList();
           } catch (e) {
             debugPrint('Custody API refresh failed: $e');
+            activeItems = activeItems.where((e) => _matchesItemType(Map<String, dynamic>.from(e as Map), itemType)).toList();
+            deliveredItems = deliveredItems.where((e) => _matchesItemType(Map<String, dynamic>.from(e as Map), itemType)).toList();
           }
         }
+      } else {
+        activeItems = activeItems.where((e) => _matchesItemType(Map<String, dynamic>.from(e as Map), itemType)).toList();
+        deliveredItems = deliveredItems.where((e) => _matchesItemType(Map<String, dynamic>.from(e as Map), itemType)).toList();
       }
 
       // Delivered first (wins over active on duplicate serial)
       for (final raw in deliveredItems) {
         final item = Map<String, dynamic>.from(raw as Map);
+        if (!_matchesItemType(item, itemType)) continue;
         addRow({
           'serial': '${item['serialNumber'] ?? ''}',
           'tid': '${item['barcode'] ?? ''}',
@@ -133,37 +124,29 @@ class _InventorySectionDetailsPageState extends State<InventorySectionDetailsPag
         }, prefer: true);
       }
 
-      // Active custody from API objects
-      if (activeItems.isNotEmpty) {
-        for (final raw in activeItems) {
-          final item = Map<String, dynamic>.from(raw as Map);
-          final statusRaw = '${item['status'] ?? ''}'.toUpperCase();
-          if (statusRaw == 'DELIVERED') continue;
-          addRow({
-            'serial': '${item['serialNumber'] ?? ''}',
-            'tid': item['barcode'] != null
-                ? '${item['barcode']}'
-                : ((item['serialNumber']?.toString().length ?? 0) > 4
-                    ? 'T-${item['serialNumber'].toString().substring(item['serialNumber'].toString().length - 4)}'
-                    : ''),
-            'status': statusRaw.contains('TRANSIT') ? 'قيد النقل' : 'نشط في العهدة',
-            'type': itemType.category == 'sim' ? 'شريحة' : 'متحرك',
-            'simType': '${item['carrierName'] ?? ''}',
-          });
+      // Active custody from API objects — never invent rows from untyped fallback serials
+      for (final raw in activeItems) {
+        final item = Map<String, dynamic>.from(raw as Map);
+        if (!_matchesItemType(item, itemType)) continue;
+        final statusRaw = '${item['status'] ?? ''}'.toUpperCase();
+        if (statusRaw == 'DELIVERED' || statusRaw == 'RETURNED' || statusRaw == 'WITHDRAWN') {
+          continue;
         }
-      } else {
-        for (final s in passedSerials) {
-          final serial = s.toString();
-          addRow({
-            'serial': serial,
-            'tid': serial.length > 4 ? 'T-${serial.substring(serial.length - 4)}' : 'T-$serial',
-            'status': 'نشط في العهدة',
-            'type': itemType.category == 'sim' ? 'شريحة' : 'متحرك',
-          });
-        }
+        addRow({
+          'serial': '${item['serialNumber'] ?? ''}',
+          'tid': item['barcode'] != null
+              ? '${item['barcode']}'
+              : ((item['serialNumber']?.toString().length ?? 0) > 4
+                  ? 'T-${item['serialNumber'].toString().substring(item['serialNumber'].toString().length - 4)}'
+                  : ''),
+          'status': statusRaw.contains('TRANSIT') ? 'قيد النقل' : 'نشط في العهدة',
+          'type': itemType.category == 'sim' ? 'شريحة' : 'متحرك',
+          'simType': '${item['carrierName'] ?? ''}',
+        });
       }
 
-      // Enrich / add from completed courier requests (real closes only — no mock)
+      // Enrich courier completions ONLY for serials already scoped to this item type
+      final scopedSerials = seen;
       if (Get.isRegistered<CourierRequestsController>()) {
         final requestsController = Get.find<CourierRequestsController>();
         final completedRequests =
@@ -172,7 +155,8 @@ class _InventorySectionDetailsPageState extends State<InventorySectionDetailsPag
         for (final request in completedRequests) {
           if (itemType.category == 'devices' &&
               request.sn != null &&
-              request.sn!.trim().isNotEmpty) {
+              request.sn!.trim().isNotEmpty &&
+              scopedSerials.contains(request.sn!.trim().toLowerCase())) {
             addRow({
               'serial': request.sn!,
               'tid': request.tid ?? '',
@@ -194,7 +178,8 @@ class _InventorySectionDetailsPageState extends State<InventorySectionDetailsPag
             }, prefer: true);
           } else if (itemType.category == 'sim' &&
               request.simSerial != null &&
-              request.simSerial!.trim().isNotEmpty) {
+              request.simSerial!.trim().isNotEmpty &&
+              scopedSerials.contains(request.simSerial!.trim().toLowerCase())) {
             addRow({
               'serial': request.simSerial!,
               'tid': '',
@@ -256,21 +241,24 @@ class _InventorySectionDetailsPageState extends State<InventorySectionDetailsPag
 
   @override
   Widget build(BuildContext context) {
-    // قراءة Arguments أو استخدام fallbacks رائعة
     final args = Get.arguments as Map<String, dynamic>? ?? {};
-    
-    // إنشاء صنف افتراضي لمنع الأخطاء في حال الدخول المباشر
-    final ItemType itemType = args['itemType'] as ItemType? ?? ItemType(
-      id: 'mock-pos',
-      nameAr: 'جهاز نقطة بيع POS',
-      nameEn: 'POS Terminal V2',
-      iconName: 'devices',
-      colorHex: '#18B2B0',
-      sortOrder: 1,
-      isActive: true,
-      isVisible: true,
-      category: 'devices',
-    );
+    final ItemType? itemType = args['itemType'] as ItemType?;
+
+    if (itemType == null) {
+      return Scaffold(
+        backgroundColor: AppColors.backgroundDark,
+        appBar: const RasscoAppBar(
+          titleText: 'تفاصيل العهدة',
+        ),
+        body: const Center(
+          child: Text(
+            'لا توجد بيانات للصنف. ارجع وافتح القسم من لوحة التحكم.',
+            style: TextStyle(fontFamily: 'BeIN', color: Colors.white70),
+            textAlign: TextAlign.center,
+          ),
+        ),
+      );
+    }
 
     final int fixedBoxes = args['fixedBoxes'] ?? 0;
     final int fixedUnits = args['fixedUnits'] ?? 0;
@@ -322,7 +310,7 @@ class _InventorySectionDetailsPageState extends State<InventorySectionDetailsPag
 
     return Scaffold(
       backgroundColor: AppColors.backgroundDark,
-      appBar: AppBar(
+      appBar: RasscoAppBar(
         title: Row(
           children: [
             // أيقونة الصنف في AppBar
@@ -360,9 +348,6 @@ class _InventorySectionDetailsPageState extends State<InventorySectionDetailsPag
             ),
           ],
         ),
-        backgroundColor: AppColors.surfaceDark,
-        foregroundColor: Colors.white,
-        elevation: 0,
       ),
       body: NestedScrollView(
         headerSliverBuilder: (BuildContext context, bool innerBoxIsScrolled) {

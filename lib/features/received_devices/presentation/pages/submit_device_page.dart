@@ -7,6 +7,7 @@ import '../controllers/devices_controller.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/widgets/app_drawer.dart';
 import '../../../../shared/widgets/barcode_scanner_widget.dart';
+import '../../../../shared/widgets/rassco_app_bar.dart';
 import '../../../../shared/utils/barcode_validator.dart';
 import '../../data/models/received_device.dart';
 import '../../../../shared/models/item_type.dart';
@@ -552,17 +553,8 @@ class _SubmitDevicePageState extends State<SubmitDevicePage> {
     return Scaffold(
       backgroundColor: AppColors.backgroundDark,
       drawer: const AppDrawer(),
-      appBar: AppBar(
-        title: Text(
-          'إدخال وتوريد الأجهزة الذكي',
-          style: TextStyle(fontFamily: 'BeIN', 
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-        ),
-        backgroundColor: AppColors.surfaceDark,
-        foregroundColor: Colors.white,
-        elevation: 0,
+      appBar: RasscoAppBar(
+        titleText: 'إدخال وتوريد الأجهزة الذكي',
         actions: [
           // Offline Mode Toggle Icon
           IconButton(
@@ -680,17 +672,21 @@ class _SubmitDevicePageState extends State<SubmitDevicePage> {
                   label: 'رقم الجهاز (Terminal ID) - اختياري',
                   icon: Icons.tag,
                   onScanPressed: () async {
-                    final result = await Navigator.push<String>(
+                    final result = await Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder: (context) => const BarcodeScannerWidget(
                           title: 'مسح رقم الجهاز',
+                          rawBarcodeMode: true,
                         ),
                       ),
                     );
-                    if (result != null) {
+                    final code = result is String
+                        ? result
+                        : (result is Map ? result['code'] as String? : null);
+                    if (code != null) {
                       setState(() {
-                        _terminalIdController.text = result;
+                        _terminalIdController.text = code;
                       });
                     }
                   },
@@ -1038,8 +1034,18 @@ class _SubmitDevicePageState extends State<SubmitDevicePage> {
                         MaterialPageRoute(
                           builder: (context) => BarcodeScannerWidget(
                             title: 'مسح الرقم التسلسلي',
-                            itemTypes: controller.itemTypes,
+                            itemTypes: _selectedCategory == 'sim'
+                                ? controller.itemTypes
+                                    .where((t) => t.category == 'sim')
+                                    .toList()
+                                : controller.itemTypes
+                                    .where((t) =>
+                                        t.category == _selectedCategory)
+                                    .toList(),
                             selectedItemTypeId: _selectedItemTypeId,
+                            categoryHint: _selectedCategory,
+                            // SIM: accept any carrier rule in category (18 or 19).
+                            allowUnionOfItemTypes: _selectedCategory == 'sim',
                           ),
                         ),
                       );

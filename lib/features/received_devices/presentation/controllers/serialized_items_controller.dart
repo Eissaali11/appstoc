@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../../core/utils/gps_helper.dart';
 import '../../domain/repositories/serialized_items_repository.dart';
 import '../../domain/repositories/devices_repository.dart';
 import '../../data/models/serialized_item.dart';
@@ -224,10 +225,9 @@ class SerializedItemsController extends GetxController {
       _isLoading.value = true;
       _error.value = null;
 
-      // Simulate capturing GPS (Riyadh coordinates)
-      // Note: Real GPS would use Geolocator package if present
-      final double lat = 24.7136;
-      final double lng = 46.6753;
+      final position = await GpsHelper.getCurrentLocation();
+      final double? lat = position?.latitude;
+      final double? lng = position?.longitude;
 
       // Call API
       await repository.scanOut(
@@ -249,12 +249,13 @@ class SerializedItemsController extends GetxController {
       return true;
     } catch (e) {
       // Offline fallback
+      final position = await GpsHelper.getCurrentLocation();
       final draft = {
         'serialNumber': serialNumber,
         'receiverName': receiverName,
         'orderNumber': orderNumber,
-        'latitude': 24.7136,
-        'longitude': 46.6753,
+        if (position != null) 'latitude': position.latitude,
+        if (position != null) 'longitude': position.longitude,
         'timestamp': DateTime.now().toIso8601String(),
       };
 

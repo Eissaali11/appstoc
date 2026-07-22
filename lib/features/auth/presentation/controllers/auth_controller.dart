@@ -1,23 +1,34 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
+import 'package:hive/hive.dart';
 import '../../domain/entities/user_entity.dart';
 import '../../domain/use_cases/login_use_case.dart';
 import '../../domain/use_cases/logout_use_case.dart';
 import '../../domain/use_cases/get_current_user_use_case.dart';
+import '../../domain/use_cases/update_fcm_token_use_case.dart';
 import '../../../../core/storage/secure_storage.dart';
+import '../../../../core/storage/local_cache.dart';
+import '../../../../core/storage/offline_queue_manager.dart';
+import '../../../../core/services/notification_service.dart';
+import '../../../../core/api/api_config.dart';
+import '../../../dashboard/presentation/controllers/dashboard_controller.dart';
+import '../../../courier_requests/presentation/controllers/courier_requests_controller.dart';
+import '../../../received_devices/domain/repositories/serialized_items_repository.dart';
 import '../routes/auth_router.dart';
 
 class AuthController extends GetxController {
   final LoginUseCase loginUseCase;
   final LogoutUseCase logoutUseCase;
   final GetCurrentUserUseCase getCurrentUserUseCase;
+  final UpdateFcmTokenUseCase updateFcmTokenUseCase;
   final AuthRouter router;
 
   AuthController({
     required this.loginUseCase,
     required this.logoutUseCase,
     required this.getCurrentUserUseCase,
+    required this.updateFcmTokenUseCase,
     required this.router,
   });
 
@@ -60,6 +71,7 @@ class AuthController extends GetxController {
             role: userMap['role'] as String,
             regionId: userMap['regionId'] as String?,
             city: userMap['city'] as String?,
+            profileImage: userMap['profileImage'] as String?,
           );
         } catch (e) {
           debugPrint('Error parsing cached user: $e');
@@ -68,6 +80,9 @@ class AuthController extends GetxController {
 
       // Attempt background refresh of user data from server
       _refreshUserInBackground();
+
+      // Send FCM Token to server asynchronously
+      sendFcmTokenToServer();
 
       return true;
     } catch (e) {
@@ -86,15 +101,7 @@ class AuthController extends GetxController {
       final currentUser = await getCurrentUserUseCase();
       _user.value = currentUser;
 
-      final userMap = {
-        'id': currentUser.id,
-        'username': currentUser.username,
-        'fullName': currentUser.fullName,
-        'role': currentUser.role,
-        'regionId': currentUser.regionId,
-        'city': currentUser.city,
-      };
-      await Get.find<SecureStorageService>().saveCachedUserJson(jsonEncode(userMap));
+      await _persistUserCache(currentUser);
     } catch (e) {
       debugPrint('Background user refresh failed: $e');
       final errStr = e.toString().toLowerCase();
@@ -105,6 +112,19 @@ class AuthController extends GetxController {
         // Token is invalid/expired - log out the user
         logout();
       }
+    }
+  }
+
+  Future<void> sendFcmTokenToServer() async {
+    try {
+      final notificationService = Get.find<NotificationService>();
+      final token = await notificationService.getFCMToken();
+      if (token != null) {
+        await updateFcmTokenUseCase(token);
+        debugPrint('[AuthController] FCM Token sent to server successfully');
+      }
+    } catch (e) {
+      debugPrint('[AuthController] Error sending FCM Token to server: $e');
     }
   }
 
@@ -126,18 +146,13 @@ class AuthController extends GetxController {
           role: userJson['role'] as String,
           regionId: userJson['regionId'] as String?,
           city: userJson['city'] as String?,
+          profileImage: userJson['profileImage'] as String?,
         );
         _user.value = userEntity;
+        await _persistUserCache(userEntity);
 
-        final userMap = {
-          'id': userEntity.id,
-          'username': userEntity.username,
-          'fullName': userEntity.fullName,
-          'role': userEntity.role,
-          'regionId': userEntity.regionId,
-          'city': userEntity.city,
-        };
-        await Get.find<SecureStorageService>().saveCachedUserJson(jsonEncode(userMap));
+        // Send FCM Token to server asynchronously after login
+        sendFcmTokenToServer();
 
         // Transition to Dashboard via Router
         router.navigateToDashboard();
@@ -168,9 +183,78 @@ class AuthController extends GetxController {
     } catch (e) {
       debugPrint('Logout background call failed: $e');
     } finally {
+      await _clearCrossAccountState();
       _user.value = null;
       _isLoading.value = false;
       router.navigateToLogin();
     }
+  }
+
+  /// Prevents previous account custody/inventory from leaking into the next login.
+  Future<void> _clearCrossAccountState() async {
+    try {
+      if (Get.isRegistered<DashboardController>()) {
+        Get.find<DashboardController>().clearScopedState();
+      }
+      if (Get.isRegistered<CourierRequestsController>()) {
+        Get.find<CourierRequestsController>().clearScopedState();
+      }
+      if (Get.isRegistered<OfflineQueueController>()) {
+        await Get.find<OfflineQueueController>().clearQueue();
+      }
+      if (Get.isRegistered<SerializedItemsRepository>()) {
+        await Get.find<SerializedItemsRepository>().clearAllDrafts();
+      }
+      await LocalCache.clearCache();
+      await ApiConfig.clearCache();
+
+      for (final boxName in const [
+        'serialized_items_drafts',
+        'draft_devices',
+        'courier_receiving_sessions',
+        'offline_sync_queue',
+      ]) {
+        try {
+          if (Hive.isBoxOpen(boxName)) {
+            await Hive.box(boxName).clear();
+          } else {
+            final box = await Hive.openBox(boxName);
+            await box.clear();
+          }
+        } catch (e) {
+          debugPrint('Failed clearing Hive box $boxName: $e');
+        }
+      }
+    } catch (e) {
+      debugPrint('Cross-account state clear failed: $e');
+    }
+  }
+
+  Future<void> _persistUserCache(UserEntity user) async {
+    final userMap = {
+      'id': user.id,
+      'username': user.username,
+      'fullName': user.fullName,
+      'role': user.role,
+      'regionId': user.regionId,
+      'city': user.city,
+      'profileImage': user.profileImage,
+    };
+    await Get.find<SecureStorageService>().saveCachedUserJson(jsonEncode(userMap));
+  }
+
+  /// Updates local auth user after profile save (avatar/city sync for drawer).
+  Future<void> applyLocalUserPatch({
+    String? city,
+    String? profileImage,
+  }) async {
+    final current = _user.value;
+    if (current == null) return;
+    final next = current.copyWith(
+      city: city ?? current.city,
+      profileImage: profileImage ?? current.profileImage,
+    );
+    _user.value = next;
+    await _persistUserCache(next);
   }
 }

@@ -5,6 +5,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/routing/app_pages.dart';
 import '../../../../shared/models/item_type.dart';
 import '../../../../shared/utils/icon_mapper.dart';
+import '../../../../shared/widgets/rassco_app_bar.dart';
 import '../../../fixed_inventory/data/models/inventory_entry.dart';
 import '../../../auth/presentation/controllers/auth_controller.dart';
 import '../../../stock_transfer/presentation/controllers/stock_transfer_controller.dart';
@@ -147,19 +148,10 @@ class _UpdateInventoryPageState extends State<UpdateInventoryPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.backgroundDark,
-      appBar: AppBar(
-        title: Text(
-          widget.inventoryType == 'fixed' 
-              ? 'update_fixed_title'.tr
-              : 'update_moving_title'.tr,
-          style: TextStyle(fontFamily: 'BeIN', 
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-        ),
-        backgroundColor: AppColors.surfaceDark,
-        foregroundColor: Colors.white,
-        elevation: 0,
+      appBar: RasscoAppBar(
+        titleText: widget.inventoryType == 'fixed'
+            ? 'update_fixed_title'.tr
+            : 'update_moving_title'.tr,
         actions: [
           IconButton(
             icon: const Icon(Icons.swap_horiz),

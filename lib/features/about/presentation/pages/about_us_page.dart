@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/widgets/app_drawer.dart';
+import '../../../../shared/widgets/rassco_app_bar.dart';
 
 /// ألوان النص داخل البطاقات (واضحة على الخلفية الداكنة)
 const _cardTextPrimary = Color(0xFFE2E8F0);
@@ -47,17 +48,8 @@ class AboutUsPage extends StatelessWidget {
       child: Scaffold(
         backgroundColor: AppColors.backgroundDark,
         drawer: const AppDrawer(),
-        appBar: AppBar(
-          title: Text(
-            'about_title'.tr,
-            style: TextStyle(fontFamily: 'BeIN', 
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
-          ),
-          backgroundColor: AppColors.surfaceDark,
-          foregroundColor: Colors.white,
-          elevation: 0,
+        appBar: RasscoAppBar(
+          titleText: 'about_title'.tr,
         ),
         body: SingleChildScrollView(
           child: Column(

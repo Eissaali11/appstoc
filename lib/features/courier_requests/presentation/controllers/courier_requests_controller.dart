@@ -33,6 +33,13 @@ class CourierRequestsController extends GetxController {
   bool get isLoading => _isLoading.value;
   String? get error => _error.value;
   List<CourierRequest> get requests => _requests;
+
+  void clearScopedState() {
+    _requests.clear();
+    _currentRequest.value = null;
+    _currentItems.clear();
+    _resetSessionState();
+  }
   CourierRequest? get currentRequest => _currentRequest.value;
   List<CourierRequestItem> get currentItems => _currentItems;
 
@@ -404,15 +411,15 @@ class CourierRequestsController extends GetxController {
         'sessionId': sessionId.value,
         'startTime': sessionStartTime.value?.toIso8601String(),
         'endTime': DateTime.now().toIso8601String(),
-        'gps': {
-          'latitude': lat ?? 24.7136, // Fallback Riyadh lat
-          'longitude': lng ?? 46.6753, // Fallback Riyadh lng
-        },
+        if (lat != null && lng != null)
+          'gps': {
+            'latitude': lat,
+            'longitude': lng,
+          },
         'device': {
           'platform': Platform.operatingSystem,
           'version': Platform.operatingSystemVersion,
         },
-        'battery': 92, // Mock battery level
         'photosCount': evidencePhotos.length,
         'scansCount': scannedSerials.length,
         'checkedAccessoriesCount': checkedAccessories.length,
@@ -459,20 +466,15 @@ class CourierRequestsController extends GetxController {
           }
         }
 
-        // Mock session metadata
+        // Session metadata for offline queue (real GPS only when available)
         final sessionMeta = {
           'sessionId': sessionId.value,
           'startTime': sessionStartTime.value?.toIso8601String(),
           'endTime': DateTime.now().toIso8601String(),
-          'gps': {
-            'latitude': 24.7136,
-            'longitude': 46.6753,
-          },
           'device': {
             'platform': Platform.operatingSystem,
             'version': Platform.operatingSystemVersion,
           },
-          'battery': 92,
           'photosCount': evidencePhotos.length,
           'scansCount': scannedSerials.length,
           'checkedAccessoriesCount': checkedAccessories.length,
@@ -488,7 +490,7 @@ class CourierRequestsController extends GetxController {
           },
         );
         
-        // Mock successful local state change
+        // Local state after queuing offline confirm
         if (_currentRequest.value != null) {
           // We clear the active session locally because it's now in the queue
           await deleteActiveSession(id);
@@ -625,10 +627,8 @@ class CourierRequestsController extends GetxController {
         'paperRollQty': paperRollQty,
         'stickersQty': stickersQty,
         'nulipCardsQty': nulipCardsQty,
-        'gpsLatitude': lat ?? 24.7136,
-        'gpsLongitude': lng ?? 46.6753,
-        'batteryLevel': 88, // Mock battery level
-        'networkOperator': 'STC', // Mock network
+        if (lat != null) 'gpsLatitude': lat,
+        if (lng != null) 'gpsLongitude': lng,
         'startTime': startTime?.toIso8601String() ?? DateTime.now().subtract(const Duration(minutes: 20)).toIso8601String(),
         'arrivalTime': arrivalTime?.toIso8601String() ?? DateTime.now().subtract(const Duration(minutes: 10)).toIso8601String(),
         'endTime': DateTime.now().toIso8601String(),
@@ -653,10 +653,6 @@ class CourierRequestsController extends GetxController {
           'paperRollQty': paperRollQty,
           'stickersQty': stickersQty,
           'nulipCardsQty': nulipCardsQty,
-          'gpsLatitude': 24.7136,
-          'gpsLongitude': 46.6753,
-          'batteryLevel': 88,
-          'networkOperator': 'STC',
           'startTime': startTime?.toIso8601String() ?? DateTime.now().subtract(const Duration(minutes: 20)).toIso8601String(),
           'arrivalTime': arrivalTime?.toIso8601String() ?? DateTime.now().subtract(const Duration(minutes: 10)).toIso8601String(),
           'endTime': DateTime.now().toIso8601String(),

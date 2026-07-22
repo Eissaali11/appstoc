@@ -104,8 +104,10 @@ class OfflineQueueRepositoryImpl implements OfflineQueueRepository {
           final device = WithdrawnDevice.fromJson(data);
           await devicesRepo.submitWithdrawnDevice(device);
         } else if (type == 'handover') {
-          // Process handover logic (mocked or actual endpoint)
-          await Future.delayed(const Duration(milliseconds: 1000));
+          // Handover offline sync is not implemented — fail loudly instead of fake success
+          throw UnsupportedError(
+            'مزامنة التسليم الأوفلاين غير مدعومة حالياً. أعد المحاولة مع اتصال بالشبكة.',
+          );
         } else if (type == 'confirm_receiving') {
           final courierRepo = Get.isRegistered<CourierRequestsRepository>()
               ? Get.find<CourierRequestsRepository>()
@@ -216,5 +218,10 @@ class OfflineQueueController extends GetxController {
 
     await updateQueueCount();
     return success;
+  }
+
+  Future<void> clearQueue() async {
+    await repository.clearQueue();
+    pendingCount.value = 0;
   }
 }

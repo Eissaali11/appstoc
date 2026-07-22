@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import '../../../../core/utils/validators.dart';
 import '../../../../shared/widgets/barcode_scanner_widget.dart';
 import '../../../../shared/utils/barcode_validator.dart';
+import '../../../../shared/scanner/scanner_item_types.dart';
 
 class DeviceForm extends StatefulWidget {
   final Function(Map<String, dynamic>) onSubmit;
@@ -95,17 +96,25 @@ class _DeviceFormState extends State<DeviceForm> {
                 IconButton(
                   icon: const Icon(Icons.qr_code_scanner),
                   onPressed: () async {
-                    final result = await Navigator.push<String>(
+                    final result = await Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => const BarcodeScannerWidget(
+                        builder: (context) => BarcodeScannerWidget(
                           title: 'مسح الرقم التسلسلي',
+                          itemTypes: ScannerItemTypes.devices(),
+                          categoryHint: 'devices',
+                          allowUnionOfItemTypes: true,
                         ),
                       ),
                     );
-                    if (result != null) {
-                      final cleanResult = result.trim();
-                      final validationError = BarcodeValidator.validateAnyDevice(cleanResult);
+                    final cleanResult = result is String
+                        ? result.trim()
+                        : (result is Map
+                            ? (result['code'] as String?)?.trim()
+                            : null);
+                    if (cleanResult != null && cleanResult.isNotEmpty) {
+                      final validationError =
+                          BarcodeValidator.validateAnyDevice(cleanResult);
                       if (validationError != null) {
                         Get.snackbar(
                           'خطأ في التحقق',

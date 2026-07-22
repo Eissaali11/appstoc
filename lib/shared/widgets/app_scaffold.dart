@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
+import 'rassco_app_bar.dart';
 
 class AppScaffold extends StatelessWidget {
   final String title;
@@ -20,9 +21,10 @@ class AppScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(title),
+      appBar: RasscoAppBar(
+        titleText: title,
         actions: actions,
+        automaticallyImplyLeading: showBackButton,
         leading: showBackButton
             ? IconButton(
                 icon: const Icon(Icons.arrow_back),

@@ -12,6 +12,7 @@ class UserModel extends UserEntity {
     required super.role,
     super.regionId,
     super.city,
+    super.profileImage,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) =>
@@ -27,6 +28,7 @@ class UserModel extends UserEntity {
       role: entity.role,
       regionId: entity.regionId,
       city: entity.city,
+      profileImage: entity.profileImage,
     );
   }
 }

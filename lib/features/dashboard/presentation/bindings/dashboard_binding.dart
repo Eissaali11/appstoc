@@ -8,6 +8,7 @@ import '../../../auth/data/repositories/auth_repository_impl.dart';
 import '../../../auth/domain/use_cases/login_use_case.dart';
 import '../../../auth/domain/use_cases/logout_use_case.dart';
 import '../../../auth/domain/use_cases/get_current_user_use_case.dart';
+import '../../../auth/domain/use_cases/update_fcm_token_use_case.dart';
 import '../../../auth/presentation/routes/auth_router.dart';
 import '../../data/repositories/dashboard_repository_impl.dart';
 import '../../domain/repositories/dashboard_repository.dart';
@@ -58,12 +59,17 @@ class DashboardBinding extends Bindings {
         Get.lazyPut(() => GetCurrentUserUseCase(Get.find<AuthRepository>()));
       }
 
+      if (!Get.isRegistered<UpdateFcmTokenUseCase>()) {
+        Get.lazyPut(() => UpdateFcmTokenUseCase(Get.find<AuthRepository>()));
+      }
+
       // تسجيل AuthController كـ permanent
       Get.put(
         AuthController(
           loginUseCase: Get.find<LoginUseCase>(),
           logoutUseCase: Get.find<LogoutUseCase>(),
           getCurrentUserUseCase: Get.find<GetCurrentUserUseCase>(),
+          updateFcmTokenUseCase: Get.find<UpdateFcmTokenUseCase>(),
           router: Get.find<AuthRouter>(),
         ),
         permanent: true,

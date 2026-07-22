@@ -10,7 +10,10 @@ abstract class DashboardRepository {
   Future<Map<String, dynamic>> scanSingleSerial(String transferId, String serialNumber);
 
   // v3.0: Fetch all serialized items currently in the technician's active custody
-  Future<List<Map<String, dynamic>>> fetchMySerializedItems(String technicianId);
+  Future<List<Map<String, dynamic>>> fetchMySerializedItems(
+    String technicianId, {
+    String? itemTypeId,
+  });
 
   // v3.0: Fetch delivered serialized items (custody_movements DELIVERED)
   Future<List<Map<String, dynamic>>> fetchDeliveredItems(

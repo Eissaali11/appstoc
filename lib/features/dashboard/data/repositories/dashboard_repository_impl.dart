@@ -123,9 +123,17 @@ class DashboardRepositoryImpl implements DashboardRepository {
   }
 
   @override
-  Future<List<Map<String, dynamic>>> fetchMySerializedItems(String technicianId) async {
+  Future<List<Map<String, dynamic>>> fetchMySerializedItems(
+    String technicianId, {
+    String? itemTypeId,
+  }) async {
     try {
-      final response = await apiClient.get('/api/technicians/$technicianId/serialized-items');
+      final query = itemTypeId != null && itemTypeId.isNotEmpty
+          ? '?itemTypeId=${Uri.encodeQueryComponent(itemTypeId)}'
+          : '';
+      final response = await apiClient.get(
+        '/api/technicians/$technicianId/serialized-items$query',
+      );
       return (response.data as List)
           .map((e) => e as Map<String, dynamic>)
           .toList();

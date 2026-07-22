@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../shared/widgets/rassco_app_bar.dart';
 
 class DashboardHeader extends StatefulWidget {
   final String userName;
@@ -86,6 +87,8 @@ class _DashboardHeaderState extends State<DashboardHeader>
                 },
                 tooltip: 'القائمة',
               ),
+              const SizedBox(width: 8),
+              const RasscoAppBarLogo(height: 26),
               const SizedBox(width: 8),
               Text(
                 'المركز',

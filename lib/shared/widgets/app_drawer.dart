@@ -5,6 +5,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/routing/app_pages.dart';
 import '../../features/auth/presentation/controllers/auth_controller.dart';
 import '../../features/dashboard/presentation/controllers/dashboard_controller.dart';
+import 'user_avatar.dart';
 
 class AppDrawer extends StatelessWidget {
   const AppDrawer({super.key});
@@ -43,27 +44,11 @@ class AppDrawer extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
                 child: Row(
                   children: [
-                    // App logo using ico1.png
-                    Container(
-                      width: 64,
-                      height: 64,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(18),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.35),
-                            blurRadius: 16,
-                            offset: const Offset(0, 8),
-                          ),
-                        ],
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(18),
-                        child: Image.asset(
-                          'assets/images/rassco_logo.png',
-                          fit: BoxFit.contain,
-                        ),
-                      ),
+                    UserAvatar(
+                      profileImage: user?.profileImage,
+                      size: 64,
+                      borderWidth: 1.5,
+                      borderColor: Colors.white.withOpacity(0.15),
                     ),
                     const SizedBox(width: 16),
                     // User name and app name
@@ -162,7 +147,7 @@ class AppDrawer extends StatelessWidget {
                     title: 'drawer_serialized_custody'.tr,
                     route: Routes.serializedCustody,
                     isActive: currentRoute == Routes.serializedCustody,
-                    gradient: AppColors.purpleGradient,
+                    gradient: [AppColors.primary, AppColors.primaryDark],
                   ),
                   _DrawerItem(
                     icon: Icons.inventory_2_outlined,
@@ -176,14 +161,14 @@ class AppDrawer extends StatelessWidget {
                     title: 'drawer_moving_inventory'.tr,
                     route: Routes.movingInventory,
                     isActive: currentRoute == Routes.movingInventory,
-                    gradient: AppColors.purpleGradient,
+                    gradient: [AppColors.primary, AppColors.primaryDark],
                   ),
                   _DrawerItem(
                     icon: Icons.list_alt_outlined,
                     title: 'drawer_inventory_list'.tr,
                     route: Routes.inventoryList,
                     isActive: currentRoute == Routes.inventoryList,
-                    gradient: AppColors.greenGradient,
+                    gradient: [AppColors.primary, AppColors.primaryDark],
                   ),
 
                   // --- 3. العمليات والمسح ---
@@ -193,14 +178,14 @@ class AppDrawer extends StatelessWidget {
                     title: 'drawer_shipment_scan'.tr,
                     route: Routes.shipmentScan,
                     isActive: currentRoute == Routes.shipmentScan,
-                    gradient: AppColors.greenGradient,
+                    gradient: [AppColors.primary, AppColors.primaryDark],
                   ),
                   _DrawerItem(
                     icon: Icons.add_to_photos_outlined,
                     title: 'drawer_submit_device'.tr,
                     route: Routes.submitDevice,
                     isActive: currentRoute == Routes.submitDevice,
-                    gradient: [AppColors.success, AppColors.success.withValues(alpha: 0.8)],
+                    gradient: [AppColors.primary, AppColors.primaryDark],
                   ),
                   _DrawerItem(
                     icon: Icons.move_to_inbox_outlined,
@@ -231,7 +216,7 @@ class AppDrawer extends StatelessWidget {
                     title: 'drawer_request_inventory'.tr,
                     route: Routes.requestInventory,
                     isActive: currentRoute == Routes.requestInventory,
-                    gradient: AppColors.orangeGradient,
+                    gradient: [AppColors.primary, AppColors.primaryDark],
                   ),
                   _DrawerItem(
                     icon: Icons.business_rounded,
@@ -260,7 +245,7 @@ class AppDrawer extends StatelessWidget {
                       title: 'drawer_notifications'.tr,
                       route: Routes.notifications,
                       isActive: currentRoute == Routes.notifications,
-                      gradient: AppColors.orangeGradient,
+                      gradient: [AppColors.primary, AppColors.primaryDark],
                       badge: count > 0 ? count : null,
                     );
                   }),
@@ -286,17 +271,12 @@ class AppDrawer extends StatelessWidget {
 
                 return Container(
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [AppColors.error, AppColors.error.withValues(alpha: 0.8)],
-                    ),
+                    color: AppColors.error.withOpacity(0.08),
                     borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.error.withValues(alpha: 0.3),
-                        blurRadius: 10,
-                        offset: const Offset(0, 5),
-                      ),
-                    ],
+                    border: Border.all(
+                      color: AppColors.error.withOpacity(0.35),
+                      width: 1,
+                    ),
                   ),
                   child: Material(
                     color: Colors.transparent,
@@ -358,7 +338,7 @@ class AppDrawer extends StatelessWidget {
                           children: [
                             const Icon(
                               Icons.logout,
-                              color: Colors.white,
+                              color: AppColors.error,
                               size: 20,
                             ),
                             const SizedBox(width: 12),
@@ -367,7 +347,7 @@ class AppDrawer extends StatelessWidget {
                               style: TextStyle(fontFamily: 'BeIN', 
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
-                                color: Colors.white,
+                                color: AppColors.error,
                               ),
                             ),
                           ],
@@ -433,7 +413,7 @@ class _DrawerItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
         gradient: isActive
             ? LinearGradient(
@@ -444,11 +424,18 @@ class _DrawerItem extends StatelessWidget {
             : null,
         color: isActive ? null : Colors.transparent,
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isActive
+              ? Colors.white.withOpacity(0.15)
+              : Colors.transparent,
+          width: 1,
+        ),
         boxShadow: isActive
             ? [
                 BoxShadow(
-                  color: gradient.first.withValues(alpha: 0.3),
-                  blurRadius: 8,
+                  color: gradient.first.withOpacity(0.35),
+                  blurRadius: 10,
+                  spreadRadius: 1,
                   offset: const Offset(0, 4),
                 ),
               ]
@@ -465,7 +452,7 @@ class _DrawerItem extends StatelessWidget {
             }
           },
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Row(
               children: [
                 // Icon
@@ -473,25 +460,25 @@ class _DrawerItem extends StatelessWidget {
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
                     color: isActive
-                        ? Colors.white.withValues(alpha: 0.2)
-                        : AppColors.textSecondary.withValues(alpha: 0.1),
+                        ? Colors.white.withOpacity(0.2)
+                        : AppColors.primary.withOpacity(0.08),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Icon(
                     icon,
-                    color: isActive ? Colors.white : AppColors.textSecondary,
-                    size: 24,
+                    color: isActive ? Colors.white : AppColors.primary.withOpacity(0.85),
+                    size: 22,
                   ),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 14),
                 // Title
                 Expanded(
                   child: Text(
                     title,
                     style: TextStyle(fontFamily: 'BeIN', 
-                      fontSize: 16,
+                      fontSize: 15,
                       fontWeight: isActive ? FontWeight.bold : FontWeight.w600,
-                      color: isActive ? Colors.white : AppColors.textSecondary,
+                      color: isActive ? Colors.white : Colors.white.withOpacity(0.75),
                     ),
                   ),
                 ),
@@ -501,14 +488,14 @@ class _DrawerItem extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
                       color: isActive
-                          ? Colors.white.withValues(alpha: 0.3)
+                          ? Colors.white.withOpacity(0.3)
                           : AppColors.error,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
                       badge! > 9 ? '9+' : badge.toString(),
                       style: TextStyle(fontFamily: 'BeIN', 
-                        fontSize: 12,
+                        fontSize: 11,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
                       ),
@@ -517,11 +504,11 @@ class _DrawerItem extends StatelessWidget {
                 // Active Indicator
                 if (isActive)
                   Container(
-                    width: 4,
-                    height: 24,
+                    width: 3,
+                    height: 20,
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(2),
+                      borderRadius: BorderRadius.circular(1.5),
                     ),
                   ),
               ],

@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/widgets/app_drawer.dart';
 import '../../../../shared/widgets/design_system.dart';
+import '../../../../shared/widgets/rassco_app_bar.dart';
 import '../controllers/courier_requests_controller.dart';
 import '../../data/models/courier_request_model.dart';
 
@@ -104,10 +105,7 @@ class _CourierRequestsPageState extends State<CourierRequestsPage>
       _TabInfo('المنتهية', Icons.check_circle_outline),
     ];
 
-    return AppBar(
-      backgroundColor: AppColors.surfaceDark,
-      foregroundColor: Colors.white,
-      elevation: 0,
+    return RasscoAppBar(
       title: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

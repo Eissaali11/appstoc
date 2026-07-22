@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/widgets/design_system.dart';
+import '../../../../shared/widgets/rassco_app_bar.dart';
 import '../../../../shared/widgets/lottie_feedback_dialog.dart';
 import '../controllers/courier_requests_controller.dart';
 import '../../data/models/courier_request_model.dart';
@@ -364,6 +365,7 @@ class _CourierRequestDetailsPageState
       pinned: true,
       backgroundColor: AppColors.surfaceDark,
       foregroundColor: Colors.white,
+      title: RasscoBrandTitle.text('طلب #${req.id}'),
       flexibleSpace: FlexibleSpaceBar(
         background: Container(
           decoration: BoxDecoration(
@@ -810,7 +812,7 @@ class _CourierRequestDetailsPageState
   Widget _buildLoadingSkeleton() {
     return Scaffold(
       backgroundColor: AppColors.backgroundDark,
-      appBar: AppBar(backgroundColor: AppColors.surfaceDark),
+      appBar: const RasscoAppBar(),
       body: const Center(
         child: CircularProgressIndicator(color: AppColors.primary),
       ),

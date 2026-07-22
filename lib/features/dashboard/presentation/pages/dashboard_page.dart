@@ -7,8 +7,8 @@ import '../../../../shared/widgets/app_drawer.dart';
 import '../../../../shared/widgets/design_system.dart';
 import '../../../courier_requests/presentation/controllers/courier_requests_controller.dart';
 import '../../../../core/routing/app_pages.dart';
-import '../../../../shared/models/item_type.dart';
 import '../../../../shared/utils/responsive_helper.dart';
+import '../../../received_devices/presentation/pages/custody_category_items_page.dart';
 
 class DashboardPage extends GetView<DashboardController> {
   const DashboardPage({super.key});
@@ -164,59 +164,53 @@ class DashboardPage extends GetView<DashboardController> {
   Widget _buildWelcomeHeader(BuildContext context, dynamic user) {
     final String techCode = user.username.startsWith('T-') ? user.username : 'T-${user.username}';
     final isOnline = controller.pendingSyncCount == 0;
+    const double avatarSize = 72;
 
-    return GlassCard(
-      padding: const EdgeInsets.all(18),
-      borderColor: AppColors.primary.withValues(alpha: 0.2),
-      shadows: [
-        BoxShadow(
-          color: AppColors.primary.withValues(alpha: 0.08),
-          blurRadius: 20,
-          offset: const Offset(0, 8),
-        ),
-      ],
-      child: Row(
+    return Padding(
+      padding: const EdgeInsets.only(top: avatarSize / 2),
+      child: Stack(
+        clipBehavior: Clip.none,
+        alignment: Alignment.topCenter,
         children: [
-          Builder(
-            builder: (ctx) => GestureDetector(
-              onTap: () => Scaffold.of(ctx).openDrawer(),
-              child: Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.05),
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white10),
-                ),
-                child: const Icon(Icons.menu, color: Colors.white, size: 24),
+          GlassCard(
+            padding: const EdgeInsets.fromLTRB(16, 44, 16, 16),
+            borderRadius: 20,
+            borderColor: AppColors.primary.withValues(alpha: 0.28),
+            shadows: [
+              BoxShadow(
+                color: AppColors.primary.withValues(alpha: 0.1),
+                blurRadius: 22,
+                offset: const Offset(0, 8),
               ),
-            ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
+            ],
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   'صباح الخير، ${user.fullName}',
-                  style: TextStyle(fontFamily: 'BeIN', 
-                    fontSize: 18,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontFamily: 'BeIN',
+                    fontSize: 17,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 6),
                 Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
                       'فني رقم: ',
-                      style: TextStyle(fontFamily: 'BeIN', 
+                      style: TextStyle(
+                        fontFamily: 'BeIN',
                         fontSize: 13,
                         color: AppColors.textSecondary,
                       ),
                     ),
                     Text(
                       techCode,
-                      style: TextStyle(fontFamily: 'BeIN', 
+                      style: const TextStyle(
+                        fontFamily: 'BeIN',
                         fontSize: 13,
                         fontWeight: FontWeight.bold,
                         color: AppColors.primary,
@@ -224,95 +218,138 @@ class DashboardPage extends GetView<DashboardController> {
                     ),
                   ],
                 ),
-              ],
-            ),
-          ),
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  GestureDetector(
-                    onTap: () => Get.toNamed(Routes.notifications),
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.05),
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white10),
-                      ),
-                      child: const Icon(
-                        Icons.notifications_none_rounded,
-                        color: Colors.white,
-                        size: 22,
-                      ),
-                    ),
-                  ),
-                  Obx(() {
-                    final count = controller.pendingTransfersCount;
-                    if (count == 0) return const SizedBox();
-                    return Positioned(
-                      top: -2,
-                      right: -2,
-                      child: Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: const BoxDecoration(
-                          color: AppColors.error,
-                          shape: BoxShape.circle,
-                        ),
-                        constraints: const BoxConstraints(
-                          minWidth: 16,
-                          minHeight: 16,
-                        ),
-                        child: Center(
-                          child: Text(
-                            '$count',
-                            style: TextStyle(fontFamily: 'BeIN', 
-                              color: Colors.white,
-                              fontSize: 9,
-                              fontWeight: FontWeight.bold,
-                              height: 1,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                      ),
-                    );
-                  }),
-                ],
-              ),
-              const SizedBox(height: 6),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: isOnline ? AppColors.success.withValues(alpha: 0.12) : AppColors.warning.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: isOnline ? AppColors.success.withValues(alpha: 0.3) : AppColors.warning.withValues(alpha: 0.3),
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
+                const SizedBox(height: 14),
+                Row(
                   children: [
-                    PulsingDot(
-                      color: isOnline ? AppColors.success : AppColors.warning,
-                      size: 7,
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      isOnline ? 'متصل' : 'أوفلاين',
-                      style: TextStyle(fontFamily: 'BeIN', 
-                        color: isOnline ? AppColors.success : AppColors.warning,
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
+                    Builder(
+                      builder: (ctx) => _WelcomeIconButton(
+                        icon: Icons.menu_rounded,
+                        tooltip: 'القائمة',
+                        onTap: () => Scaffold.of(ctx).openDrawer(),
                       ),
+                    ),
+                    const Spacer(),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: isOnline
+                            ? AppColors.success.withValues(alpha: 0.12)
+                            : AppColors.warning.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: isOnline
+                              ? AppColors.success.withValues(alpha: 0.3)
+                              : AppColors.warning.withValues(alpha: 0.3),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          PulsingDot(
+                            color: isOnline ? AppColors.success : AppColors.warning,
+                            size: 7,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            isOnline ? 'متصل' : 'أوفلاين',
+                            style: TextStyle(
+                              fontFamily: 'BeIN',
+                              color: isOnline ? AppColors.success : AppColors.warning,
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Spacer(),
+                    Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        _WelcomeIconButton(
+                          icon: Icons.notifications_none_rounded,
+                          tooltip: 'الإشعارات',
+                          onTap: () => Get.toNamed(Routes.notifications),
+                        ),
+                        Obx(() {
+                          final count = controller.pendingTransfersCount;
+                          if (count == 0) return const SizedBox.shrink();
+                          return Positioned(
+                            top: -2,
+                            right: -2,
+                            child: Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: const BoxDecoration(
+                                color: AppColors.error,
+                                shape: BoxShape.circle,
+                              ),
+                              constraints: const BoxConstraints(
+                                minWidth: 16,
+                                minHeight: 16,
+                              ),
+                              child: Center(
+                                child: Text(
+                                  '$count',
+                                  style: const TextStyle(
+                                    fontFamily: 'BeIN',
+                                    color: Colors.white,
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.bold,
+                                    height: 1,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
+                            ),
+                          );
+                        }),
+                      ],
                     ),
                   ],
                 ),
+              ],
+            ),
+          ),
+
+          // Logo avatar — dialog-style, half above the card
+          Positioned(
+            top: -(avatarSize / 2),
+            child: Container(
+              width: avatarSize,
+              height: avatarSize,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppColors.surfaceDark,
+                border: Border.all(color: AppColors.primary, width: 2.5),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primary.withValues(alpha: 0.35),
+                    blurRadius: 16,
+                    spreadRadius: 1,
+                  ),
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.35),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
-            ],
+              child: ClipOval(
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Image.asset(
+                    'assets/images/logo-1.png',
+                    fit: BoxFit.contain,
+                    filterQuality: FilterQuality.high,
+                    errorBuilder: (_, _, _) => const Icon(
+                      Icons.business,
+                      color: AppColors.primary,
+                      size: 28,
+                    ),
+                  ),
+                ),
+              ),
+            ),
           ),
         ],
       ),
@@ -600,14 +637,7 @@ class DashboardPage extends GetView<DashboardController> {
 
   Widget _buildCustodyOverviewList() {
     final filtered = controller.filteredItems;
-
-    final devicesQuantity = filtered
-        .where((item) => item.itemType.category == 'devices' || item.itemType.id.toLowerCase().contains('pos'))
-        .fold(0, (sum, item) => sum + item.totalQuantity);
-
-    final simsQuantity = filtered
-        .where((item) => item.itemType.category == 'sim' || item.itemType.id.toLowerCase().contains('sim'))
-        .fold(0, (sum, item) => sum + item.totalQuantity);
+    final requestsController = Get.find<CourierRequestsController>();
 
     final papersQuantity = filtered
         .where((item) => item.itemType.category == 'papers' || item.itemType.nameAr.contains('ورق') || item.itemType.nameEn.toLowerCase().contains('paper'))
@@ -617,17 +647,21 @@ class DashboardPage extends GetView<DashboardController> {
         .where((item) => item.itemType.category == 'accessories' || item.itemType.nameAr.contains('ملصق') || item.itemType.nameEn.toLowerCase().contains('sticker'))
         .fold(0, (sum, item) => sum + item.totalQuantity);
 
-    final dCount = devicesQuantity;
-    final sCount = simsQuantity;
+    final dCount = filtered
+        .where((item) => item.itemType.category == 'devices')
+        .fold(0, (sum, item) => sum + item.movingUnits);
+    final sCount = filtered
+        .where((item) => item.itemType.category == 'sim')
+        .fold(0, (sum, item) => sum + item.movingUnits);
     final pCount = papersQuantity;
     final stCount = stickersQuantity;
 
-    final deviceItem = filtered.firstWhereOrNull(
-      (item) => item.itemType.category == 'devices' || item.itemType.id.toLowerCase().contains('pos'),
-    );
-    final simItem = filtered.firstWhereOrNull(
-      (item) => item.itemType.category == 'sim' || item.itemType.id.toLowerCase().contains('sim'),
-    );
+    final deviceItems = filtered
+        .where((item) => item.itemType.category == 'devices')
+        .toList();
+    final simItems = filtered
+        .where((item) => item.itemType.category == 'sim')
+        .toList();
 
     return GlassCard(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -642,45 +676,16 @@ class DashboardPage extends GetView<DashboardController> {
             color: AppColors.primary,
             isSerialized: true,
             onTap: () {
-              final type = deviceItem?.itemType ?? ItemType(
-                id: 'pos',
-                nameAr: 'أجهزة POS',
-                nameEn: 'POS Terminal V2',
-                iconName: 'devices',
-                colorHex: '#18B2B0',
-                sortOrder: 1,
-                isActive: true,
-                isVisible: true,
-                category: 'devices',
-              );
-              
-              final actualSerials = controller.serializedItems
-                  .where((item) => item['itemTypeCategory'] == 'devices' || item['itemTypeId'] == type.id)
-                  .map((item) => item['serialNumber'] as String? ?? '')
-                  .where((s) => s.isNotEmpty)
-                  .toList();
-
-              final deliveredForType = controller.deliveredItems
-                  .where((item) =>
-                      item['itemTypeCategory'] == 'devices' ||
-                      item['itemTypeId'] == type.id)
-                  .toList();
-
-              Get.toNamed(
-                Routes.inventorySectionDetails,
-                arguments: {
-                  'itemType': type,
-                  'activeCount': actualSerials.length,
-                  'executedCount': deliveredForType.length,
-                  'serials': actualSerials,
-                  'deliveredItems': deliveredForType,
-                  'activeItems': controller.serializedItems
-                      .where((item) =>
-                          item['itemTypeCategory'] == 'devices' ||
-                          item['itemTypeId'] == type.id)
-                      .toList(),
-                },
-              );
+              Get.to(() => CustodyCategoryItemsPage(
+                    title: 'قسم أجهزة POS',
+                    rawCategory: 'devices',
+                    items: deviceItems,
+                    completedRequests: requestsController.requests
+                        .where((r) => r.isCompleted)
+                        .toList(),
+                    dashboardController: controller,
+                    requestsController: requestsController,
+                  ));
             },
           ),
           const Divider(color: Colors.white12, height: 1),
@@ -692,45 +697,16 @@ class DashboardPage extends GetView<DashboardController> {
             color: AppColors.success,
             isSerialized: true,
             onTap: () {
-              final type = simItem?.itemType ?? ItemType(
-                id: 'sim',
-                nameAr: 'شرائح SIM',
-                nameEn: 'SIM Card',
-                iconName: 'sim_card',
-                colorHex: '#22C55E',
-                sortOrder: 1,
-                isActive: true,
-                isVisible: true,
-                category: 'sim',
-              );
-
-              final actualSerials = controller.serializedItems
-                  .where((item) => item['itemTypeCategory'] == 'sim' || item['itemTypeId'] == type.id)
-                  .map((item) => item['serialNumber'] as String? ?? '')
-                  .where((s) => s.isNotEmpty)
-                  .toList();
-
-              final deliveredForType = controller.deliveredItems
-                  .where((item) =>
-                      item['itemTypeCategory'] == 'sim' ||
-                      item['itemTypeId'] == type.id)
-                  .toList();
-
-              Get.toNamed(
-                Routes.inventorySectionDetails,
-                arguments: {
-                  'itemType': type,
-                  'activeCount': actualSerials.length,
-                  'executedCount': deliveredForType.length,
-                  'serials': actualSerials,
-                  'deliveredItems': deliveredForType,
-                  'activeItems': controller.serializedItems
-                      .where((item) =>
-                          item['itemTypeCategory'] == 'sim' ||
-                          item['itemTypeId'] == type.id)
-                      .toList(),
-                },
-              );
+              Get.to(() => CustodyCategoryItemsPage(
+                    title: 'قسم شرائح SIM',
+                    rawCategory: 'sim',
+                    items: simItems,
+                    completedRequests: requestsController.requests
+                        .where((r) => r.isCompleted)
+                        .toList(),
+                    dashboardController: controller,
+                    requestsController: requestsController,
+                  ));
             },
           ),
           const Divider(color: Colors.white12, height: 1),
@@ -1068,6 +1044,41 @@ class DashboardPage extends GetView<DashboardController> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _WelcomeIconButton extends StatelessWidget {
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback onTap;
+
+  const _WelcomeIconButton({
+    required this.icon,
+    required this.tooltip,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          customBorder: const CircleBorder(),
+          child: Container(
+            padding: const EdgeInsets.all(9),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.05),
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white10),
+            ),
+            child: Icon(icon, color: Colors.white, size: 22),
+          ),
+        ),
       ),
     );
   }

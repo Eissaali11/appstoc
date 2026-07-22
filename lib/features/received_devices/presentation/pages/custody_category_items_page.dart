@@ -3,12 +3,21 @@ import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/widgets/design_system.dart';
+import '../../../../shared/widgets/rassco_app_bar.dart';
 import '../../../../shared/models/item_type.dart';
 import '../../../../shared/utils/icon_mapper.dart';
 import '../../../dashboard/presentation/controllers/dashboard_controller.dart';
 import '../../../courier_requests/presentation/controllers/courier_requests_controller.dart';
 import '../../../../core/routing/app_pages.dart';
 import 'package:dio/dio.dart';
+
+bool _isActiveCustodyStatus(dynamic status) {
+  final s = '${status ?? ''}'.toUpperCase();
+  return s == 'RECEIVED_BY_TECHNICIAN' ||
+      s == 'IN_TRANSIT_CUSTODY' ||
+      s.contains('TRANSIT') ||
+      s.contains('RECEIVED');
+}
 
 class CustodyCategoryItemsPage extends StatelessWidget {
   final String title;
@@ -38,14 +47,8 @@ class CustodyCategoryItemsPage extends StatelessWidget {
       textDirection: TextDirection.rtl,
       child: Scaffold(
         backgroundColor: AppColors.backgroundDark,
-        appBar: AppBar(
-          title: Text(
-            title,
-            style: TextStyle(fontFamily: 'BeIN', fontWeight: FontWeight.bold, color: Colors.white),
-          ),
-          backgroundColor: AppColors.surfaceDark,
-          foregroundColor: Colors.white,
-          elevation: 0,
+        appBar: RasscoAppBar(
+          titleText: title,
         ),
         body: items.isEmpty
             ? Center(
@@ -63,34 +66,19 @@ class CustodyCategoryItemsPage extends StatelessWidget {
                   final category = item.itemType.category;
 
                   final actualSerials = dashboardController.serializedItems
-                      .where((si) => si['itemTypeId'] == itemTypeId || si['itemTypeCategory'] == category)
+                      .where((si) =>
+                          si['itemTypeId'] == itemTypeId &&
+                          _isActiveCustodyStatus(si['status']))
                       .map((si) => si['serialNumber'] as String? ?? '')
                       .where((s) => s.isNotEmpty)
                       .toList();
 
                   final deliveredForType = dashboardController.deliveredItems
-                      .where((si) =>
-                          si['itemTypeId'] == itemTypeId ||
-                          si['itemTypeCategory'] == category)
+                      .where((si) => si['itemTypeId'] == itemTypeId)
                       .toList();
 
-                  // Prefer API delivered count; fall back to completed courier requests
-                  int executedCount = deliveredForType.length;
-                  if (executedCount == 0) {
-                    for (var request in completedRequests) {
-                      if (category == 'devices' && request.sn != null && request.sn!.isNotEmpty) {
-                        executedCount++;
-                      } else if (category == 'sim' && request.simSerial != null && request.simSerial!.isNotEmpty) {
-                        executedCount++;
-                      }
-                    }
-                  }
-
-                  if (category == 'papers' && executedCount == 0) {
-                    executedCount = completedRequests.length * 2;
-                  } else if (category == 'accessories' && executedCount == 0) {
-                    executedCount = completedRequests.length;
-                  }
+                  // Counts must use the same itemTypeId-scoped lists (no category-wide courier dump)
+                  final int executedCount = deliveredForType.length;
 
                   int receivedCount = dashboardController.pendingTransfers
                       .where((t) => t.itemType == itemTypeId && t.status == 'accepted')
@@ -185,14 +173,12 @@ class CustodyCategoryItemsPage extends StatelessWidget {
                 'executedCount': executed,
                 'serials': serials,
                 'deliveredItems': dashboardController.deliveredItems
-                    .where((si) =>
-                        si['itemTypeId'] == itemTypeId ||
-                        si['itemTypeCategory'] == rawCategory)
+                    .where((si) => si['itemTypeId'] == itemTypeId)
                     .toList(),
                 'activeItems': dashboardController.serializedItems
                     .where((si) =>
-                        si['itemTypeId'] == itemTypeId ||
-                        si['itemTypeCategory'] == rawCategory)
+                        si['itemTypeId'] == itemTypeId &&
+                        _isActiveCustodyStatus(si['status']))
                     .toList(),
               },
             );

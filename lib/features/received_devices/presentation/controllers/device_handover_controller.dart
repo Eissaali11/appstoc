@@ -18,7 +18,7 @@ class DeviceHandoverController extends GetxController {
   final Rxn<double> _latitude = Rxn<double>();
   final Rxn<double> _longitude = Rxn<double>();
   
-  // Lists fetched from server/mocked
+  // Lists fetched from server
   final _technicians = <Map<String, String>>[].obs;
   final _warehouses = <Map<String, String>>[].obs;
 
@@ -162,14 +162,14 @@ class DeviceHandoverController extends GetxController {
     try {
       _isLoading.value = true;
 
-      // Auto GPS capture
+      // Auto GPS capture — لا نستخدم إحداثيات وهمية عند الفشل
       final position = await GpsHelper.getCurrentLocation();
       if (position != null) {
         _latitude.value = position.latitude;
         _longitude.value = position.longitude;
       } else {
-        _latitude.value = 24.7136;
-        _longitude.value = 46.6753;
+        _latitude.value = null;
+        _longitude.value = null;
       }
 
       final ApiClient apiClient = Get.find<ApiClient>();

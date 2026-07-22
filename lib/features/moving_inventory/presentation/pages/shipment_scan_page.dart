@@ -7,6 +7,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/models/item_type.dart';
 import '../../../../shared/widgets/design_system.dart';
 import '../../../../shared/widgets/barcode_scanner_widget.dart';
+import '../../../../shared/widgets/rassco_app_bar.dart';
 import '../../../../shared/utils/icon_mapper.dart';
 import '../../../../shared/utils/barcode_validator.dart';
 
@@ -113,16 +114,38 @@ class _ShipmentScanPageState extends State<ShipmentScanPage>
     }
   }
 
+  List<ItemType> _typesForSelectedCategory({bool preferSerialTracked = true}) {
+    final selected = _selectedCategory.trim().toLowerCase();
+    final filtered = _itemTypes.where((t) {
+      final cat = (t.category ?? '').trim().toLowerCase();
+      if (cat != selected) return false;
+      // Always show SIM/devices in their tab even if requiresSerial was mis-flagged
+      if (selected == 'devices' || selected == 'sim') return true;
+      return t.requiresSerial == true;
+    }).toList();
+    if (preferSerialTracked) {
+      filtered.sort((a, b) {
+        final ar = a.requiresSerial == true ? 0 : 1;
+        final br = b.requiresSerial == true ? 0 : 1;
+        return ar.compareTo(br);
+      });
+    }
+    return filtered;
+  }
+
   void _updateSelectedItemType() {
-    final filtered = _itemTypes.where((t) => t.category == _selectedCategory && t.requiresSerial == true).toList();
+    final filtered = _typesForSelectedCategory();
     if (filtered.isNotEmpty) {
       _selectedItemTypeId = filtered.first.id;
       _isSim = _selectedCategory == 'sim';
+      _carrierName = _isSim
+          ? _resolveCarrierName(filtered.first, null)
+          : null;
     } else {
       _selectedItemTypeId = null;
       _isSim = _selectedCategory == 'sim';
+      _carrierName = _isSim ? 'STC' : null;
     }
-    _carrierName = _isSim ? 'STC' : null;
   }
 
   String? _resolveCarrierName(ItemType type, String? defaultCarrier) {
@@ -319,15 +342,8 @@ class _ShipmentScanPageState extends State<ShipmentScanPage>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.backgroundDark,
-      appBar: AppBar(
-        backgroundColor: AppColors.surfaceDark,
-        foregroundColor: Colors.white,
-        elevation: 0,
-        title: Text(
-          'استلام شحنة جديدة',
-          style: TextStyle(fontFamily: 'BeIN', fontWeight: FontWeight.bold, color: Colors.white),
-        ),
-        centerTitle: true,
+      appBar: RasscoAppBar(
+        titleText: 'استلام شحنة جديدة',
         bottom: TabBar(
           controller: _tabController,
           indicatorColor: AppColors.primary,
@@ -532,7 +548,7 @@ class _ShipmentScanPageState extends State<ShipmentScanPage>
       );
     }
 
-    final filtered = _itemTypes.where((t) => t.category == _selectedCategory && t.requiresSerial == true).toList();
+    final filtered = _typesForSelectedCategory();
     if (filtered.isEmpty) {
       return Container(
         padding: const EdgeInsets.all(16),
@@ -659,8 +675,15 @@ class _ShipmentScanPageState extends State<ShipmentScanPage>
                       builder: (context) => BarcodeScannerWidget(
                         title: 'مسح باركود الأجهزة والشرائح',
                         isMultiScan: true,
-                        itemTypes: _itemTypes.where((t) => t.category == _selectedCategory && t.requiresSerial == true).toList(),
+                        itemTypes: _typesForSelectedCategory(),
                         selectedItemTypeId: _selectedItemTypeId,
+                        categoryHint: _selectedCategory,
+                        // SIM: union all carriers so STC default does not block 19-digit Lebara/Zain.
+                        allowUnionOfItemTypes:
+                            _selectedItemTypeId == null || _isSim,
+                        existingValues: _scannedBatchItems
+                            .map((e) => e.serialNumber)
+                            .toList(),
                       ),
                     ),
                   );
@@ -707,7 +730,7 @@ class _ShipmentScanPageState extends State<ShipmentScanPage>
                           
                           // 2. إذا لم يطابق، نبحث في بقية الأصناف النشطة المتاحة لهذا القسم
                           if (targetType == null) {
-                            final categoryTypes = _itemTypes.where((t) => t.category == _selectedCategory && t.requiresSerial == true).toList();
+                            final categoryTypes = _typesForSelectedCategory();
                             for (final type in categoryTypes) {
                               if (BarcodeValidator.validate(normalized, type) == null) {
                                 targetType = type;
@@ -1154,8 +1177,13 @@ class _ShipmentScanPageState extends State<ShipmentScanPage>
                       builder: (context) => BarcodeScannerWidget(
                         title: 'مسح للبحث في العهدة',
                         isMultiScan: false,
-                        itemTypes: _itemTypes.where((t) => t.requiresSerial == true).toList(),
+                        itemTypes: _typesForSelectedCategory(preferSerialTracked: false).isNotEmpty
+                            ? _typesForSelectedCategory()
+                            : _itemTypes.where((t) => t.requiresSerial == true || t.category == 'devices' || t.category == 'sim').toList(),
                         selectedItemTypeId: _selectedItemTypeId,
+                        categoryHint: _selectedCategory,
+                        allowUnionOfItemTypes:
+                            _selectedItemTypeId == null || _isSim,
                       ),
                     ),
                   );

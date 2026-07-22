@@ -6,6 +6,7 @@ import 'package:intl/intl.dart' hide TextDirection;
 import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/widgets/app_drawer.dart';
 import '../../../../shared/widgets/design_system.dart';
+import '../../../../shared/widgets/rassco_app_bar.dart';
 import '../../../dashboard/presentation/controllers/dashboard_controller.dart';
 import '../../../courier_requests/presentation/controllers/courier_requests_controller.dart';
 import '../../../../core/routing/app_pages.dart';
@@ -52,19 +53,8 @@ class _SerializedCustodyPageState extends State<SerializedCustodyPage>
     return Scaffold(
       backgroundColor: AppColors.backgroundDark,
       drawer: const AppDrawer(),
-      appBar: AppBar(
-        title: Text(
-          'كشف حساب العهدة (Ledger)',
-          style: TextStyle(fontFamily: 'BeIN', 
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-            fontSize: 18,
-          ),
-        ),
-        backgroundColor: AppColors.surfaceDark,
-        foregroundColor: Colors.white,
-        elevation: 0,
-        centerTitle: true,
+      appBar: RasscoAppBar(
+        titleText: 'كشف حساب العهدة (Ledger)',
         actions: [
           IconButton(
             icon: const Icon(Icons.edit_note, color: Colors.white),
@@ -178,7 +168,16 @@ class _SerializedCustodyPageState extends State<SerializedCustodyPage>
 
         if (category == 'devices' || category == 'sim') {
           final count = dashboardController.serializedItems
-              .where((si) => si['itemTypeId'] == itemTypeId)
+              .where((si) {
+                final status = '${si['status'] ?? ''}'.toUpperCase();
+                final active = status.isEmpty ||
+                    status == 'RECEIVED_BY_TECHNICIAN' ||
+                    status == 'IN_TRANSIT_CUSTODY' ||
+                    status.contains('TRANSIT') ||
+                    status.contains('RECEIVED');
+                final delivered = status == 'DELIVERED' || status == 'RETURNED';
+                return si['itemTypeId'] == itemTypeId && active && !delivered;
+              })
               .length;
           sum += count;
         } else {
@@ -983,39 +982,21 @@ class _SerializedCustodyPageState extends State<SerializedCustodyPage>
       ));
     }
 
-    // 3. Fallbacks to look realistic
-    if (logs.isEmpty) {
-      final now = DateTime.now();
-      logs.addAll([
-        _LedgerLog(
-          title: 'استلام عهدة من المستودع (Scan-In)',
-          details: 'تم قبول شحنة أجهزة POS Nexgo K300 بعدد 5 أجهزة من المستودع الرئيسي.',
-          time: now.subtract(const Duration(days: 1, hours: 2)),
-          isPositive: true,
-        ),
-        _LedgerLog(
-          title: 'تسليم عهدة للعميل (Scan-Out)',
-          details: 'توصيل وتركيب جهاز POS رقم TID: 5028491 لعميل: مطاعم الطازج.',
-          time: now.subtract(const Duration(days: 1, hours: 5)),
-          isPositive: false,
-        ),
-        _LedgerLog(
-          title: 'سحب جهاز مرتجع من عميل',
-          details: 'سحب جهاز POS تالف Pax A920 من عميل: صيدلية الدواء.',
-          time: now.subtract(const Duration(days: 2)),
-          isPositive: true,
-        ),
-        _LedgerLog(
-          title: 'استلام عهدة من المستودع (Scan-In)',
-          details: 'تم قبول شحنة شرائح SIM STC بعدد 15 شريحة من المستودع الرئيسي.',
-          time: now.subtract(const Duration(days: 3)),
-          isPositive: true,
-        ),
-      ]);
-    }
-
     // Sort by time descending
     logs.sort((a, b) => b.time.compareTo(a.time));
+
+    if (logs.isEmpty) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(24),
+          child: Text(
+            'لا يوجد سجل عهدة حالياً',
+            style: TextStyle(fontFamily: 'BeIN', color: Colors.white70),
+            textAlign: TextAlign.center,
+          ),
+        ),
+      );
+    }
 
     return ListView.builder(
       padding: const EdgeInsets.all(16),
@@ -1316,15 +1297,6 @@ class _SerializedCustodyPageState extends State<SerializedCustodyPage>
       default:
         return 'عهدة عامة';
     }
-  }
-
-  List<String> _getSimulatedSerials(String category, int count) {
-    if (category == 'devices') {
-      return List.generate(count, (index) => 'NXG-${847291 + index}');
-    } else if (category == 'sim') {
-      return List.generate(count, (index) => 'SIM-${928374 + index}');
-    }
-    return [];
   }
 
   void _showManualUpdateSelector(BuildContext context) {

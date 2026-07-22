@@ -5,6 +5,7 @@ import '../controllers/fixed_inventory_controller.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/models/item_type.dart';
 import '../../../../shared/widgets/app_drawer.dart';
+import '../../../../shared/widgets/rassco_app_bar.dart';
 import '../../../../shared/utils/icon_mapper.dart';
 import '../../../dashboard/presentation/widgets/shimmer_loading.dart';
 import '../../../dashboard/presentation/pages/update_inventory_page.dart';
@@ -28,17 +29,8 @@ class FixedInventoryPage extends GetView<FixedInventoryController> {
     return Scaffold(
       backgroundColor: AppColors.backgroundDark,
       drawer: const AppDrawer(),
-      appBar: AppBar(
-        title: Text(
-          'المخزون الثابت',
-          style: TextStyle(fontFamily: 'BeIN', 
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-        ),
-        backgroundColor: AppColors.surfaceDark,
-        foregroundColor: Colors.white,
-        elevation: 0,
+      appBar: RasscoAppBar(
+        titleText: 'المخزون الثابت',
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),

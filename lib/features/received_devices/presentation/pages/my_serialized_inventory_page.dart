@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../shared/widgets/rassco_app_bar.dart';
 import '../../../dashboard/presentation/controllers/dashboard_controller.dart';
 import '../../../auth/presentation/controllers/auth_controller.dart';
 
@@ -142,17 +143,8 @@ class _MySerializedInventoryPageState extends State<MySerializedInventoryPage>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF0A0A0F),
-      appBar: AppBar(
-        backgroundColor: AppColors.surfaceDark,
-        elevation: 0,
-        title: Text(
-          'أرقامي التسلسلية',
-          style: TextStyle(fontFamily: 'BeIN', 
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-            fontSize: 17,
-          ),
-        ),
+      appBar: RasscoAppBar(
+        titleText: 'أرقامي التسلسلية',
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Get.back(),

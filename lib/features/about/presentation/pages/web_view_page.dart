@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../shared/widgets/rassco_app_bar.dart';
 
 /// صفحة لعرض رابط ويب داخل التطبيق (WebView)
 class WebViewPage extends StatefulWidget {
@@ -41,17 +42,8 @@ class _WebViewPageState extends State<WebViewPage> {
       textDirection: TextDirection.rtl,
       child: Scaffold(
         backgroundColor: AppColors.backgroundDark,
-        appBar: AppBar(
-          title: Text(
-            widget.title,
-            style: TextStyle(fontFamily: 'BeIN', 
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
-          ),
-          backgroundColor: AppColors.surfaceDark,
-          foregroundColor: Colors.white,
-          elevation: 0,
+        appBar: RasscoAppBar(
+          titleText: widget.title,
         ),
         body: Stack(
           children: [

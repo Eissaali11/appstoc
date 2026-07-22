@@ -13,6 +13,11 @@ class ApiEndpoints {
   static const String login = '/api/auth/login';
   static const String logout = '/api/auth/logout';
   static const String currentUser = '/api/auth/me';
+  static const String updateFcmToken = '/api/auth/fcm-token';
+
+  // Employee detailed profile (synced with portal)
+  static String employeeProfile(String userId) =>
+      '/api/users/$userId/employee-profile';
 
   // Fixed Inventory
   static String fixedInventory(String technicianId) =>

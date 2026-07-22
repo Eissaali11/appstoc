@@ -11,6 +11,7 @@ import 'package:printing/printing.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/routing/app_pages.dart';
 import '../../../../core/utils/gps_helper.dart';
+import '../../../../shared/widgets/rassco_app_bar.dart';
 import '../../data/models/received_device.dart';
 
 class HandoverDetailsPage extends StatefulWidget {
@@ -25,59 +26,25 @@ class _HandoverDetailsPageState extends State<HandoverDetailsPage> {
 
   @override
   Widget build(BuildContext context) {
-    // قراءة البيانات الممررة من صفحة التسليم أو استخدام بيانات تجريبية افتراضية للحيلولة دون تعطل التطبيق
     final args = Get.arguments as Map<String, dynamic>? ?? {};
-    
+
     final String recipientType = args['recipientType'] ?? 'technician';
-    final String recipientName = args['recipientName'] ?? 'عيسى علي البشري';
-    final String recipientCity = args['recipientCity'] ?? 'مكة المكرمة';
+    final String recipientName = args['recipientName'] ?? 'غير محدد';
+    final String recipientCity = args['recipientCity'] ?? 'غير محددة';
     final String status = args['status'] ?? 'pending';
-    final DateTime date = args['date'] ?? DateTime.now().subtract(const Duration(hours: 2));
-    final double? latitude = args['latitude'];
-    final double? longitude = args['longitude'];
-    
-    // الأجهزة المحولة
-    final List<ReceivedDevice> devices = (args['devices'] as List<dynamic>?)?.cast<ReceivedDevice>() ?? [
-      ReceivedDevice(
-        id: 'mock-1',
-        serialNumber: 'SN-950-8821',
-        terminalId: 'T8821',
-        battery: true,
-        chargerCable: true,
-        chargerHead: true,
-        hasSim: true,
-        simCardType: 'STC',
-        status: 'approved',
-        createdAt: DateTime.now().subtract(const Duration(days: 3)),
-      ),
-      ReceivedDevice(
-        id: 'mock-2',
-        serialNumber: 'SN-950-7612',
-        terminalId: 'T7612',
-        battery: true,
-        chargerCable: true,
-        chargerHead: false,
-        hasSim: false,
-        status: 'approved',
-        createdAt: DateTime.now().subtract(const Duration(days: 5)),
-      ),
-    ];
+    final DateTime date = args['date'] as DateTime? ?? DateTime.now();
+    final double? latitude = args['latitude'] as double?;
+    final double? longitude = args['longitude'] as double?;
+
+    final List<ReceivedDevice> devices =
+        (args['devices'] as List<dynamic>?)?.cast<ReceivedDevice>() ?? const [];
 
     final formattedDate = intl.DateFormat('yyyy/MM/dd - hh:mm a').format(date);
 
     return Scaffold(
       backgroundColor: AppColors.backgroundDark,
-      appBar: AppBar(
-        title: Text(
-          'تفاصيل عملية التسليم',
-          style: TextStyle(fontFamily: 'BeIN', 
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-        ),
-        backgroundColor: AppColors.surfaceDark,
-        foregroundColor: Colors.white,
-        elevation: 0,
+      appBar: const RasscoAppBar(
+        titleText: 'تفاصيل عملية التسليم',
       ),
       body: SingleChildScrollView(
         child: Column(
@@ -225,10 +192,10 @@ class _HandoverDetailsPageState extends State<HandoverDetailsPage> {
             children: [
               CircleAvatar(
                 radius: 26,
-                backgroundColor: isTech ? Colors.indigo.withOpacity(0.2) : Colors.orange.withOpacity(0.2),
+                backgroundColor: isTech ? AppColors.primary.withOpacity(0.2) : AppColors.warning.withOpacity(0.2),
                 child: Icon(
                   isTech ? Icons.person : Icons.warehouse,
-                  color: isTech ? Colors.indigo[300] : Colors.orange[300],
+                  color: isTech ? AppColors.primary : AppColors.warning,
                   size: 28,
                 ),
               ),
@@ -251,13 +218,13 @@ class _HandoverDetailsPageState extends State<HandoverDetailsPage> {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                           decoration: BoxDecoration(
-                            color: isTech ? Colors.indigo.withOpacity(0.15) : Colors.orange.withOpacity(0.15),
+                            color: isTech ? AppColors.primary.withOpacity(0.15) : AppColors.warning.withOpacity(0.15),
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
                             isTech ? 'فني صيانة ميداني' : 'مستودع فرعي',
                             style: TextStyle(fontFamily: 'BeIN', 
-                              color: isTech ? Colors.indigo[200] : Colors.orange[200],
+                              color: isTech ? AppColors.primary : AppColors.warning,
                               fontSize: 10,
                               fontWeight: FontWeight.bold,
                             ),
@@ -696,7 +663,7 @@ class _HandoverDetailsPageState extends State<HandoverDetailsPage> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Icon(Icons.account_balance, color: Colors.indigo, size: 36),
+                  const Icon(Icons.account_balance, color: AppColors.primary, size: 36),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
@@ -865,7 +832,7 @@ class _HandoverDetailsPageState extends State<HandoverDetailsPage> {
                   Expanded(
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.indigo,
+                        backgroundColor: AppColors.primary,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                       ),
                       onPressed: () {

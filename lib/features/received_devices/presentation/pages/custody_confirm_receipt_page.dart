@@ -5,7 +5,10 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/widgets/design_system.dart';
 import '../../../../shared/widgets/barcode_scanner_widget.dart';
+import '../../../../shared/widgets/rassco_app_bar.dart';
 import '../../../../shared/utils/barcode_validator.dart';
+import '../../../../shared/scanner/scanner_item_types.dart';
+import '../../../../shared/models/item_type.dart';
 import '../../../moving_inventory/data/models/warehouse_transfer.dart';
 import '../../../dashboard/presentation/controllers/dashboard_controller.dart';
 
@@ -152,13 +155,36 @@ class _CustodyConfirmReceiptPageState extends State<CustodyConfirmReceiptPage>
     }
   }
 
+  ItemType? _resolveTransferItemType() {
+    final key = widget.transfer.itemType;
+    final fromMap = _controller.itemTypesMap[key];
+    if (fromMap != null) return fromMap;
+
+    final hint = key.trim().toLowerCase();
+    for (final t in ScannerItemTypes.serialTracked()) {
+      if (t.id.toLowerCase() == hint ||
+          t.nameEn.toLowerCase().contains(hint) ||
+          t.nameAr.toLowerCase().contains(hint)) {
+        return t;
+      }
+    }
+    return null;
+  }
+
   Future<void> _openCameraScanner() async {
-    final selectedType = _controller.itemTypesMap[widget.transfer.itemType];
+    final selectedType = _resolveTransferItemType();
+    final tracked = ScannerItemTypes.serialTracked();
+    // Always pass typed context — never open with null itemTypes (fail-open).
+    final types = selectedType != null
+        ? [selectedType]
+        : (tracked.isNotEmpty ? tracked : null);
     final result = await Get.to(() => BarcodeScannerWidget(
           title: 'مسح الأرقام التسلسلية',
           isMultiScan: true,
-          itemTypes: selectedType != null ? [selectedType] : null,
+          itemTypes: types,
           selectedItemTypeId: selectedType?.id,
+          categoryHint: selectedType?.category,
+          allowUnionOfItemTypes: selectedType == null,
         ));
 
     if (result != null) {
@@ -205,13 +231,8 @@ class _CustodyConfirmReceiptPageState extends State<CustodyConfirmReceiptPage>
 
     return Scaffold(
       backgroundColor: const Color(0xFF0A0A0F),
-      appBar: AppBar(
-        title: Text(
-          'استلام العهدة',
-          style: TextStyle(fontFamily: 'BeIN', fontWeight: FontWeight.bold, color: Colors.white),
-        ),
-        backgroundColor: AppColors.surfaceDark,
-        elevation: 0,
+      appBar: RasscoAppBar(
+        titleText: 'استلام العهدة',
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Get.back(),

@@ -182,10 +182,11 @@ class _HeroSectionState extends State<_HeroSection>
                 children: [
                   // Glowing logo ring
                   Container(
-                    width: 110,
-                    height: 110,
+                    width: 125,
+                    height: 125,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
+                      color: Colors.transparent,
                       boxShadow: [
                         BoxShadow(
                           color: AppColors.primary
@@ -202,19 +203,22 @@ class _HeroSectionState extends State<_HeroSection>
                       border: Border.all(
                         color: AppColors.primary
                             .withValues(alpha: 0.5 * _glowPulse.value),
-                        width: 2,
+                        width: 2.5,
                       ),
                     ),
                     child: ClipOval(
-                      child: Image.asset(
-                        'assets/images/rassco_logo.png',
-                        fit: BoxFit.contain,
-                        errorBuilder: (context, error, stack) => Container(
-                          color: AppColors.surfaceDark,
-                          child: const Icon(
-                            Icons.inventory_2_rounded,
-                            color: AppColors.primary,
-                            size: 48,
+                      child: Padding(
+                        padding: const EdgeInsets.all(12.0),
+                        child: Image.asset(
+                          'assets/images/logo-1.png',
+                          fit: BoxFit.contain,
+                          errorBuilder: (context, error, stack) => Container(
+                            color: AppColors.surfaceDark,
+                            child: const Icon(
+                              Icons.inventory_2_rounded,
+                              color: AppColors.primary,
+                              size: 48,
+                            ),
                           ),
                         ),
                       ),

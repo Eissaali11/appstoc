@@ -59,8 +59,25 @@ class ItemType {
     return nameAr;
   }
 
-  factory ItemType.fromJson(Map<String, dynamic> json) =>
-      _$ItemTypeFromJson(json);
+  factory ItemType.fromJson(Map<String, dynamic> json) {
+    // Accept both camelCase (API) and snake_case (raw/cache) field names.
+    final normalized = <String, dynamic>{
+      ...json,
+      'nameEn': json['nameEn'] ?? json['name_en'] ?? '',
+      'nameAr': json['nameAr'] ?? json['name_ar'] ?? '',
+      'iconName': json['iconName'] ?? json['icon_name'] ?? json['icon'],
+      'colorHex': json['colorHex'] ?? json['color_hex'] ?? json['color'],
+      'sortOrder': json['sortOrder'] ?? json['sort_order'] ?? 0,
+      'isActive': json['isActive'] ?? json['is_active'] ?? true,
+      'isVisible': json['isVisible'] ?? json['is_visible'] ?? true,
+      'requiresSerial': json['requiresSerial'] ?? json['requires_serial'],
+      'serialPrefix': json['serialPrefix'] ?? json['serial_prefix'],
+      'serialLength': json['serialLength'] ?? json['serial_length'],
+      'serialRegex': json['serialRegex'] ?? json['serial_regex'],
+      'category': (json['category'] as String?)?.trim().toLowerCase(),
+    };
+    return _$ItemTypeFromJson(normalized);
+  }
 
   Map<String, dynamic> toJson() => _$ItemTypeToJson(this);
 }

@@ -5,7 +5,9 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/routing/app_pages.dart';
 import '../../../../shared/widgets/app_drawer.dart';
 import '../../../../shared/widgets/barcode_scanner_widget.dart';
+import '../../../../shared/widgets/rassco_app_bar.dart';
 import '../../../../shared/utils/barcode_validator.dart';
+import '../../../../shared/scanner/scanner_item_types.dart';
 import '../../../../shared/widgets/lottie_feedback_dialog.dart';
 import '../controllers/device_handover_controller.dart';
 import '../../data/models/received_device.dart';
@@ -20,28 +22,25 @@ class DeviceHandoverPage extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.backgroundDark,
       drawer: const AppDrawer(),
-      appBar: AppBar(
-        title: Text(
-          'تسليم ونقل عهدة الأجهزة',
-          style: TextStyle(fontFamily: 'BeIN', 
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-        ),
-        backgroundColor: AppColors.surfaceDark,
-        foregroundColor: Colors.white,
-        elevation: 0,
+      appBar: RasscoAppBar(
+        titleText: 'تسليم ونقل عهدة الأجهزة',
         actions: [
           // زر مسح الباركود السريع بالكامل
           IconButton(
             icon: const Icon(Icons.qr_code_scanner, color: AppColors.primary),
             tooltip: 'مسح باركود الجهاز بالكاميرا',
             onPressed: () async {
-              final String? scannedValue = await Get.to<String>(
-                () => const BarcodeScannerWidget(
+              final scannedRaw = await Get.to(
+                () => BarcodeScannerWidget(
                   title: 'مسح باركود جهاز العهدة',
+                  itemTypes: ScannerItemTypes.devices(),
+                  categoryHint: 'devices',
+                  allowUnionOfItemTypes: true,
                 ),
               );
+              final scannedValue = scannedRaw is String
+                  ? scannedRaw
+                  : (scannedRaw is Map ? scannedRaw['code'] as String? : null);
 
               if (scannedValue != null && scannedValue.isNotEmpty) {
                 final cleanValue = scannedValue.trim();
@@ -194,7 +193,7 @@ class DeviceHandoverPage extends StatelessWidget {
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
                         color: controller.handoverType == 'technician'
-                            ? Colors.indigoAccent
+                            ? AppColors.primary
                             : Colors.transparent,
                         width: 1,
                       ),
@@ -239,7 +238,7 @@ class DeviceHandoverPage extends StatelessWidget {
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
                         color: controller.handoverType == 'warehouse'
-                            ? Colors.orangeAccent
+                            ? AppColors.warning
                             : Colors.transparent,
                         width: 1,
                       ),
@@ -319,7 +318,7 @@ class DeviceHandoverPage extends StatelessWidget {
                           children: [
                             const CircleAvatar(
                               radius: 12,
-                              backgroundColor: Colors.indigo,
+                              backgroundColor: AppColors.primary,
                               child: Icon(Icons.person, size: 14, color: Colors.white),
                             ),
                             const SizedBox(width: 10),
@@ -340,7 +339,7 @@ class DeviceHandoverPage extends StatelessWidget {
                           children: [
                             const CircleAvatar(
                               radius: 12,
-                              backgroundColor: Colors.orange,
+                              backgroundColor: AppColors.warning,
                               child: Icon(Icons.store, size: 14, color: Colors.white),
                             ),
                             const SizedBox(width: 10),

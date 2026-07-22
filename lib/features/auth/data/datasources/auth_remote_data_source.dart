@@ -8,12 +8,27 @@ abstract class AuthRemoteDataSource {
   Future<Map<String, dynamic>> login(String username, String password);
   Future<void> logout();
   Future<UserModel> getCurrentUser();
+  Future<void> updateFcmToken(String fcmToken);
 }
 
 class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   final ApiClient apiClient;
 
   AuthRemoteDataSourceImpl(this.apiClient);
+
+  @override
+  Future<void> updateFcmToken(String fcmToken) async {
+    try {
+      await apiClient.post(
+        ApiEndpoints.updateFcmToken,
+        data: {'fcmToken': fcmToken},
+      );
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ updateFcmToken Exception: $e');
+      }
+    }
+  }
 
   @override
   Future<Map<String, dynamic>> login(String username, String password) async {

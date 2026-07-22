@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/api/api_client.dart';
 import '../../../../shared/widgets/app_drawer.dart';
+import '../../../../shared/widgets/rassco_app_bar.dart';
 import '../../../../shared/utils/icon_mapper.dart';
 import '../../../inventory_requests/presentation/controllers/inventory_request_controller.dart';
 import '../../../inventory_requests/data/repositories/inventory_request_repository_impl.dart';
@@ -341,17 +342,8 @@ class _RequestInventoryPageState extends State<RequestInventoryPage>
     return Scaffold(
       backgroundColor: AppColors.backgroundDark,
       drawer: const AppDrawer(),
-      appBar: AppBar(
-        title: Text(
-          'طلب مخزون',
-          style: TextStyle(fontFamily: 'BeIN', 
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-        ),
-        backgroundColor: AppColors.surfaceDark,
-        foregroundColor: Colors.white,
-        elevation: 0,
+      appBar: RasscoAppBar(
+        titleText: 'طلب مخزون',
         bottom: TabBar(
           controller: _tabController,
           tabs: const [

@@ -4,7 +4,9 @@ import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../features/auth/presentation/controllers/auth_controller.dart';
 import '../../../../shared/models/item_type.dart';
+import '../../../../shared/widgets/rassco_app_bar.dart';
 import '../../data/models/received_device.dart';
 import '../controllers/devices_controller.dart';
 
@@ -88,14 +90,8 @@ class _WithdrawnDeviceDetailsPageState extends State<WithdrawnDeviceDetailsPage>
 
     return Scaffold(
       backgroundColor: AppColors.backgroundDark,
-      appBar: AppBar(
-        title: Text(
-          'تفاصيل ودورة حياة الجهاز',
-          style: TextStyle(fontFamily: 'BeIN', fontWeight: FontWeight.bold, color: Colors.white, fontSize: 18),
-        ),
-        backgroundColor: AppColors.surfaceDark,
-        foregroundColor: Colors.white,
-        elevation: 0,
+      appBar: RasscoAppBar(
+        titleText: 'تفاصيل ودورة حياة الجهاز',
         actions: [
           IconButton(
             icon: const Icon(Icons.share, color: AppColors.primary),
@@ -475,15 +471,20 @@ class _WithdrawnDeviceDetailsPageState extends State<WithdrawnDeviceDetailsPage>
         );
       case 2:
         final bool isCustodyActive = device.status == 'approved' || device.status == 'delivered';
+        final authUser = Get.isRegistered<AuthController>() ? Get.find<AuthController>().user : null;
+        final holderName = authUser?.fullName ?? 'غير محدد';
+        final holderCity = (authUser?.city != null && authUser!.city!.trim().isNotEmpty)
+            ? authUser.city!
+            : 'غير محددة';
         return _buildDetailsContainer(
           title: 'حالة العهدة الميدانية (Active Custody)',
           icon: Icons.inventory,
           accentColor: isCustodyActive ? AppColors.success : Colors.grey,
           rows: [
-            _buildDetailItem('حائز العهدة الحالي', 'المندوب التجريبي (tech1)'),
+            _buildDetailItem('حائز العهدة الحالي', holderName),
             _buildDetailItem('حالة العهدة فنية', isCustodyActive ? 'نشطة (في عهدة المندوب)' : 'غير مفعلة (بانتظار الاعتماد)'),
             _buildDetailItem('نوع العهدة الجغرافية', device.inventoryType == 'moving' ? 'حقيبة المندوب الميدانية' : 'الموقع الرئيسي المستودع'),
-            _buildDetailItem('الموقع الجغرافي المسجل', 'الرياض، المملكة العربية السعودية'),
+            _buildDetailItem('الموقع الجغرافي المسجل', holderCity),
           ],
         );
       case 3:
@@ -496,7 +497,7 @@ class _WithdrawnDeviceDetailsPageState extends State<WithdrawnDeviceDetailsPage>
             _buildDetailItem('حالة التسليم النهائي', isDelivered ? 'تم تسليم الجهاز بنجاح' : 'لم يتم التسليم بعد (عهدة نشطة)'),
             _buildDetailItem('إيصال التسليم الرقمي', isDelivered ? 'متوفر للتصدير والمشاركة' : 'سيتم إصداره فور تسليم الجهاز'),
             _buildDetailItem('التوقيع الإلكتروني للمستلم', isDelivered ? 'موقع رقمياً ومحفوظ بالقاعدة' : 'غير متوفر بعد'),
-            _buildDetailItem('إحداثيات التحقق GPS', '24.7136° N, 46.6753° E', copyable: true),
+            _buildDetailItem('إحداثيات التحقق GPS', 'غير متوفرة'),
           ],
         );
       default:
