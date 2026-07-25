@@ -225,11 +225,16 @@ class _NeoleapLeadsPageState extends State<NeoleapLeadsPage> {
     );
   }
 
-  Future<void> _launchWhatsApp(String phone, String name) async {
-    var p = phone.replaceAll(RegExp(r'\s+|-|\+'), '');
+  Future<void> _launchWhatsApp(LeadEntity lead) async {
+    if (lead.phone == null || lead.phone!.trim().isEmpty) {
+      _showPhoneDialog(lead);
+      return;
+    }
+    var p = lead.phone!.replaceAll(RegExp(r'\s+|-|\+'), '');
     if (!p.startsWith('966') && p.startsWith('5')) p = '966$p';
-    final msg = Uri.encodeComponent('مرحباً بكم في $name، نتواصل معكم من شركة RASSCO للمدفوعات الرقمية والأنظمة التقنية.');
-    final uri = Uri.parse('https://wa.me/$p?text=$msg');
+    final msgText = controller.buildFormattedWhatsAppMsg(lead);
+    final msgEncoded = Uri.encodeComponent(msgText);
+    final uri = Uri.parse('https://wa.me/$p?text=$msgEncoded');
     if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
       Get.snackbar('خطأ', 'تعذّر فتح تطبيق الواتساب');
     }
@@ -315,6 +320,10 @@ class _NeoleapLeadsPageState extends State<NeoleapLeadsPage> {
 
                     // 1. Discovery Setup Card
                     _buildDiscoverySetupCard(),
+                    const SizedBox(height: 16),
+
+                    // 1.5. WhatsApp Marketing Message Template Editor
+                    _buildWhatsAppTemplateCard(),
                     const SizedBox(height: 16),
 
                     // 2. Live Job Progress Metrics Card (if running or completed)
@@ -1115,7 +1124,7 @@ class _NeoleapLeadsPageState extends State<NeoleapLeadsPage> {
                     const SizedBox(width: 4),
                     _actionCircleBtn(LucideIcons.phoneCall, AppColors.primary, () => _launchCall(lead.phone!), 'اتصال'),
                     const SizedBox(width: 4),
-                    _actionCircleBtn(LucideIcons.messageSquare, AppColors.success, () => _launchWhatsApp(lead.phone!, lead.name), 'واتساب'),
+                    _actionCircleBtn(LucideIcons.messageSquare, AppColors.success, () => _launchWhatsApp(lead), 'واتساب'),
                   ],
                   const SizedBox(width: 4),
                   _actionCircleBtn(LucideIcons.edit2, AppColors.textMuted, () => _showPhoneDialog(lead), 'تعديل'),
@@ -1165,6 +1174,132 @@ class _NeoleapLeadsPageState extends State<NeoleapLeadsPage> {
             Text('اضغط "اكتشاف العملاء القريبين" للبدء في سحب واكتشاف الأنشطة الجغرافية', style: GoogleFonts.cairo(color: AppColors.textMuted, fontSize: 11)),
           ],
         ),
+      ),
+    );
+  }
+
+  // ── WhatsApp Marketing Template Card Widget ────────────────────────────────
+  Widget _buildWhatsAppTemplateCard() {
+    final TextEditingController templateCtrl = TextEditingController(text: controller.whatsappTemplate.value);
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.border),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.successLight,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(LucideIcons.messageSquare, color: AppColors.success, size: 18),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'قالب الرسالة التسويقية للواتساب',
+                      style: GoogleFonts.cairo(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                    ),
+                    Text(
+                      'تعديل نص الرسالة التلقائية المرسلة للأنشطة المكتشفة',
+                      style: GoogleFonts.cairo(fontSize: 11, color: AppColors.textMuted),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: templateCtrl,
+            maxLines: 3,
+            style: GoogleFonts.cairo(fontSize: 13, color: AppColors.textPrimary),
+            decoration: InputDecoration(
+              hintText: 'اكتب نص الرسالة التسويقية هنا...',
+              contentPadding: const EdgeInsets.all(12),
+              fillColor: AppColors.backgroundLight,
+              filled: true,
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: AppColors.border)),
+              enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: AppColors.border)),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      _tagChip('+ اسم المحل', () {
+                        templateCtrl.text += ' {lead_name}';
+                      }),
+                      const SizedBox(width: 4),
+                      _tagChip('+ النشاط', () {
+                        templateCtrl.text += ' {category}';
+                      }),
+                      const SizedBox(width: 4),
+                      _tagChip('+ المدينة', () {
+                        templateCtrl.text += ' {city}';
+                      }),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 6),
+              ElevatedButton.icon(
+                onPressed: () {
+                  controller.saveWhatsAppTemplate(templateCtrl.text);
+                },
+                icon: const Icon(LucideIcons.save, size: 14, color: Colors.white),
+                label: Text('حفظ القالب', style: GoogleFonts.cairo(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.success,
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _tagChip(String label, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(6),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: AppColors.primaryLight,
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+        ),
+        child: Text(label, style: GoogleFonts.cairo(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.primary)),
       ),
     );
   }

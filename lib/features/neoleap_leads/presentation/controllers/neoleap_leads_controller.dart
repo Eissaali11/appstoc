@@ -90,12 +90,49 @@ class NeoleapLeadsController extends GetxController {
   int get pendingCount => leads.where((l) => l.leadStatus == LeadStatus.discovered || l.leadStatus == LeadStatus.unassigned).length;
   bool get isApiKeyValid => apiKeyStatus.value == ApiKeyStatus.valid;
 
+  // WhatsApp Marketing Template State
+  final whatsappTemplate = ('مرحباً بكم في {lead_name} 👋، نتواصل معكم من شركة RASSCO لأنظمة حلول أجهزة المدفوعات ونقاط البيع السريعة. حابين نعرض عليكم حلول متكاملة ونقاط بيع لنشاطكم ({category}). هل يمكننا تزويدكم بالتفاصيل؟').obs;
+
   @override
   void onInit() {
     super.onInit();
     _loadLeads();
     _loadSavedApiKey();
     _loadSelectedRegions();
+    _loadWhatsAppTemplate();
+  }
+
+  Future<void> _loadWhatsAppTemplate() async {
+    try {
+      final saved = await _secureStorage.getWhatsAppTemplate();
+      if (saved != null && saved.trim().isNotEmpty) {
+        whatsappTemplate.value = saved;
+      }
+    } catch (_) {}
+  }
+
+  Future<void> saveWhatsAppTemplate(String newTemplate) async {
+    final trimmed = newTemplate.trim();
+    if (trimmed.isEmpty) return;
+    whatsappTemplate.value = trimmed;
+    try {
+      await _secureStorage.saveWhatsAppTemplate(trimmed);
+      Get.snackbar(
+        '✅ تم الحفظ',
+        'تم حفظ قالب الرسالة التسويقية للواتساب بنجاح',
+        snackPosition: SnackPosition.TOP,
+        duration: const Duration(seconds: 3),
+      );
+    } catch (_) {}
+  }
+
+  String buildFormattedWhatsAppMsg(LeadEntity lead) {
+    String tpl = whatsappTemplate.value;
+    tpl = tpl.replaceAll('{lead_name}', lead.name);
+    tpl = tpl.replaceAll('{category}', lead.category);
+    tpl = tpl.replaceAll('{address}', lead.formattedAddress ?? '');
+    tpl = tpl.replaceAll('{city}', currentCityName.value);
+    return tpl;
   }
 
   // ─── Direct Geo Discovery Job ──────────────────────────────────────────────

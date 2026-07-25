@@ -61,6 +61,17 @@ class SecureStorageService {
   Future<void> deleteGooglePlacesApiKey() async {
     await _storage.delete(key: _googlePlacesApiKeyKey);
   }
+
+  // ─── WhatsApp Marketing Template ──────────────────────────────────────────
+  static const String _whatsappTemplateKey = 'whatsapp_marketing_template';
+
+  Future<void> saveWhatsAppTemplate(String template) async {
+    await _storage.write(key: _whatsappTemplateKey, value: template);
+  }
+
+  Future<String?> getWhatsAppTemplate() async {
+    return await _storage.read(key: _whatsappTemplateKey);
+  }
   // ─────────────────────────────────────────────────────────────────────────
 
   Future<void> clearAll() async {
