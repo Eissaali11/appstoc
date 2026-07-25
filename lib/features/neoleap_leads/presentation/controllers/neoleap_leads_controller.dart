@@ -59,6 +59,10 @@ class NeoleapLeadsController extends GetxController {
   final selectedRegions = <RegionEntity>[].obs;
   final selectedCategoryIds = <String>{'restaurants', 'markets', 'pharmacies', 'electronics'}.obs;
   
+  // ── Regional Hierarchical Selection State ──────────────────────────────────
+  final activeMainRegionId = 'riyadh'.obs;
+  final selectedSubCities = <RegionEntity>[].obs;
+
   final apiKey = ''.obs;
   final apiKeyStatus = ApiKeyStatus.idle.obs;
   final apiKeyError = ''.obs;
@@ -169,7 +173,11 @@ class NeoleapLeadsController extends GetxController {
         selectedCategories.add(customQuery.trim());
       }
 
-      final regions = selectedRegions.map((r) => {
+      final targetCities = selectedSubCities.isNotEmpty
+          ? selectedSubCities.toList()
+          : (RegionEntity.mainSaudiRegions.firstWhere((g) => g.id == activeMainRegionId.value, orElse: () => RegionEntity.mainSaudiRegions.first).cities);
+
+      final regions = targetCities.map((r) => {
         'name': r.name,
         'latitude': r.latitude,
         'longitude': r.longitude,
@@ -421,25 +429,54 @@ class NeoleapLeadsController extends GetxController {
     );
   }
 
-  void toggleRegion(RegionEntity region) {
-    final index = selectedRegions.indexWhere((r) => r.name == region.name);
+  // ── Regional Selection Logic ────────────────────────────────────────────────
+  void selectMainRegionTab(String mainRegionId) {
+    activeMainRegionId.value = mainRegionId;
+  }
+
+  void toggleSubCity(RegionEntity city) {
+    final index = selectedSubCities.indexWhere((c) => c.name == city.name);
     if (index != -1) {
-      selectedRegions.removeAt(index);
+      selectedSubCities.removeAt(index);
     } else {
-      selectedRegions.add(region.copyWith(isSelected: true));
+      selectedSubCities.add(city.copyWith(isSelected: true));
     }
-    selectedRegions.refresh();
-    repository.saveSelectedRegions(selectedRegions.toList());
+    selectedSubCities.refresh();
+    repository.saveSelectedRegions(selectedSubCities.toList());
+  }
+
+  bool isSubCitySelected(RegionEntity city) {
+    return selectedSubCities.any((c) => c.name == city.name);
+  }
+
+  void selectAllSubCitiesForRegion(String parentRegionId) {
+    final group = RegionEntity.mainSaudiRegions.firstWhere(
+      (g) => g.id == parentRegionId,
+      orElse: () => RegionEntity.mainSaudiRegions.first,
+    );
+    for (final city in group.cities) {
+      if (!selectedSubCities.any((c) => c.name == city.name)) {
+        selectedSubCities.add(city.copyWith(isSelected: true));
+      }
+    }
+    selectedSubCities.refresh();
+    repository.saveSelectedRegions(selectedSubCities.toList());
+  }
+
+  void deselectAllSubCitiesForRegion(String parentRegionId) {
+    selectedSubCities.removeWhere((c) => c.parentRegionId == parentRegionId);
+    selectedSubCities.refresh();
+    repository.saveSelectedRegions(selectedSubCities.toList());
   }
 
   void selectAllRegions() {
-    final all = RegionEntity.saudiRegions.map((r) => r.copyWith(isSelected: true)).toList();
-    selectedRegions.assignAll(all);
+    final all = RegionEntity.allSaudiCities.map((r) => r.copyWith(isSelected: true)).toList();
+    selectedSubCities.assignAll(all);
     repository.saveSelectedRegions(all);
   }
 
   void deselectAllRegions() {
-    selectedRegions.clear();
+    selectedSubCities.clear();
     repository.saveSelectedRegions([]);
   }
 

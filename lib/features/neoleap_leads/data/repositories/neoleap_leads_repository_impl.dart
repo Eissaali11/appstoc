@@ -352,7 +352,7 @@ class NeoleapLeadsRepositoryImpl implements NeoleapLeadsRepository {
     try {
       final box = await _openRegionsBox();
       final List<RegionEntity> selected = [];
-      for (final region in RegionEntity.saudiRegions) {
+      for (final region in RegionEntity.allSaudiCities) {
         final isSavedSelected = box.get(region.name) == 'true';
         if (isSavedSelected) {
           selected.add(RegionEntity(
@@ -360,6 +360,7 @@ class NeoleapLeadsRepositoryImpl implements NeoleapLeadsRepository {
             emoji: region.emoji,
             latitude: region.latitude,
             longitude: region.longitude,
+            parentRegionId: region.parentRegionId,
             isSelected: true,
           ));
         }

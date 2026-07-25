@@ -4,6 +4,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../domain/entities/lead_entity.dart';
+import '../../domain/entities/region_entity.dart';
 import '../controllers/neoleap_leads_controller.dart';
 import '../../../../shared/widgets/rassco_app_bar.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -653,6 +654,10 @@ class _NeoleapLeadsPageState extends State<NeoleapLeadsPage> {
           ),
           const SizedBox(height: 16),
 
+          // Regional Hierarchy Selection (6 Core Regions + Sub-cities & Villages)
+          _buildRegionalSelectionSection(),
+          const SizedBox(height: 16),
+
           // Category Chips Selection
           Text('فئات الأنشطة المستهدفة بالبحث:', style: GoogleFonts.cairo(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
           const SizedBox(height: 8),
@@ -676,7 +681,7 @@ class _NeoleapLeadsPageState extends State<NeoleapLeadsPage> {
           // Discovery Trigger Button
           SizedBox(
             width: double.infinity,
-            height: 48,
+            height: 50,
             child: ElevatedButton.icon(
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
@@ -690,9 +695,179 @@ class _NeoleapLeadsPageState extends State<NeoleapLeadsPage> {
                   ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                   : const Icon(LucideIcons.radar, color: Colors.white, size: 20),
               label: Text(
-                controller.isDiscovering.value ? 'جارٍ فحص المناطق واكتشاف الأنشطة...' : 'اكتشاف العملاء القريبين',
-                style: GoogleFonts.cairo(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
+                controller.isDiscovering.value
+                    ? 'جارٍ فحص المناطق واكتشاف الأنشطة...'
+                    : 'جلب بيانات الأنشطة التجارية حسب تحديد المناطق (${controller.selectedSubCities.length} مدينة وهجرة)',
+                style: GoogleFonts.cairo(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white),
               ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRegionalSelectionSection() {
+    final activeGroup = RegionEntity.mainSaudiRegions.firstWhere(
+      (g) => g.id == controller.activeMainRegionId.value,
+      orElse: () => RegionEntity.mainSaudiRegions.first,
+    );
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.backgroundLight,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(LucideIcons.map, size: 18, color: AppColors.primary),
+              const SizedBox(width: 8),
+              Text(
+                'اختيار المناطق والمدن والقرى والهجر المستهدفة:',
+                style: GoogleFonts.cairo(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'اختر المنطقة الرئيسية لعرض كافة المدن والقرى والهجر التابعة لها:',
+            style: GoogleFonts.cairo(fontSize: 11, color: AppColors.textSecondary),
+          ),
+          const SizedBox(height: 10),
+
+          // Main Regions Tabs
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
+            child: Row(
+              children: RegionEntity.mainSaudiRegions.map((group) {
+                final isSelected = controller.activeMainRegionId.value == group.id;
+                final selectedCitiesCount = group.cities.where((c) => controller.isSubCitySelected(c)).length;
+
+                return Padding(
+                  padding: const EdgeInsets.only(left: 6),
+                  child: InkWell(
+                    onTap: () => controller.selectMainRegionTab(group.id),
+                    borderRadius: BorderRadius.circular(20),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: isSelected ? AppColors.primary : Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: isSelected ? AppColors.primary : AppColors.border,
+                        ),
+                        boxShadow: isSelected
+                            ? [BoxShadow(color: AppColors.primary.withValues(alpha: 0.3), blurRadius: 6, offset: const Offset(0, 2))]
+                            : [],
+                      ),
+                      child: Row(
+                        children: [
+                          Text(group.emoji, style: const TextStyle(fontSize: 14)),
+                          const SizedBox(width: 6),
+                          Text(
+                            group.nameAr,
+                            style: GoogleFonts.cairo(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: isSelected ? Colors.white : AppColors.textPrimary,
+                            ),
+                          ),
+                          if (selectedCitiesCount > 0) ...[
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: isSelected ? Colors.white : AppColors.primary,
+                                shape: BoxShape.circle,
+                              ),
+                              child: Text(
+                                '$selectedCitiesCount',
+                                style: GoogleFonts.cairo(
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.bold,
+                                  color: isSelected ? AppColors.primary : Colors.white,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+          const SizedBox(height: 14),
+
+          // Sub-Cities & Villages Container for Active Main Region
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'المدن والقرى والهجر التابعة لـ ${activeGroup.nameAr} (${activeGroup.cities.length} موقع):',
+                        style: GoogleFonts.cairo(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primary),
+                      ),
+                    ),
+                    Row(
+                      children: [
+                        TextButton.icon(
+                          style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 6), minimumSize: Size.zero),
+                          onPressed: () => controller.selectAllSubCitiesForRegion(activeGroup.id),
+                          icon: const Icon(LucideIcons.checkCheck, size: 13, color: AppColors.success),
+                          label: Text('تحديد الكل', style: GoogleFonts.cairo(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.success)),
+                        ),
+                        const SizedBox(width: 4),
+                        TextButton.icon(
+                          style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 6), minimumSize: Size.zero),
+                          onPressed: () => controller.deselectAllSubCitiesForRegion(activeGroup.id),
+                          icon: const Icon(LucideIcons.x, size: 13, color: AppColors.error),
+                          label: Text('إلغاء', style: GoogleFonts.cairo(fontSize: 10, color: AppColors.error)),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: activeGroup.cities.map((city) {
+                    final isSelected = controller.isSubCitySelected(city);
+                    return FilterChip(
+                      label: Text('${city.emoji} ${city.name}',
+                          style: GoogleFonts.cairo(
+                            fontSize: 11,
+                            color: isSelected ? Colors.white : AppColors.textPrimary,
+                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                          )),
+                      selected: isSelected,
+                      selectedColor: AppColors.primary,
+                      backgroundColor: AppColors.backgroundLight,
+                      side: BorderSide(color: isSelected ? AppColors.primary : AppColors.border),
+                      onSelected: (_) => controller.toggleSubCity(city),
+                    );
+                  }).toList(),
+                ),
+              ],
             ),
           ),
         ],
@@ -1059,6 +1234,11 @@ class _NeoleapLeadsPageState extends State<NeoleapLeadsPage> {
         ? _selectedMapLead
         : (leadsToDisplay.isNotEmpty ? leadsToDisplay.first : null);
 
+    final mapZoom = (radius <= 10) ? 13 : ((radius <= 35) ? 11 : 9);
+    final String staticMapUrl = controller.apiKey.value.isNotEmpty
+        ? 'https://maps.googleapis.com/maps/api/staticmap?center=$centerLat,$centerLng&zoom=$mapZoom&size=800x420&scale=2&maptype=roadmap&key=${controller.apiKey.value}'
+        : 'https://staticmap.openstreetmap.de/staticmap.php?center=$centerLat,$centerLng&zoom=$mapZoom&size=800x420&markers=$centerLat,$centerLng,ol-marker';
+
     return Container(
       height: 420,
       width: double.infinity,
@@ -1076,12 +1256,42 @@ class _NeoleapLeadsPageState extends State<NeoleapLeadsPage> {
       ),
       child: Stack(
         children: [
-          // 1. Radar Grid Circles & Grid lines
+          // 1. Live Google Map / OSM Tile Image Background inside the App
           Positioned.fill(
             child: ClipRRect(
               borderRadius: BorderRadius.circular(16),
-              child: CustomPaint(
-                painter: _RadarMapPainter(radiusKm: radius),
+              child: Stack(
+                children: [
+                  Image.network(
+                    staticMapUrl,
+                    fit: BoxFit.cover,
+                    width: double.infinity,
+                    height: double.infinity,
+                    errorBuilder: (ctx, err, stack) {
+                      return CustomPaint(
+                        painter: _RadarMapPainter(radiusKm: radius),
+                        size: Size.infinite,
+                      );
+                    },
+                    loadingBuilder: (ctx, child, progress) {
+                      if (progress == null) return child;
+                      return Stack(
+                        children: [
+                          CustomPaint(
+                            painter: _RadarMapPainter(radiusKm: radius),
+                            size: Size.infinite,
+                          ),
+                          const Center(
+                            child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                  Container(
+                    color: Colors.black.withValues(alpha: 0.15),
+                  ),
+                ],
               ),
             ),
           ),
