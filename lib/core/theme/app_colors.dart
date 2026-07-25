@@ -60,7 +60,7 @@ class AppColors {
   // ===== Gradient Pairs =====
   static const gradientPrimary = [Color(0xFF00A896), Color(0xFF028090)];
   static const gradientSuccess = [Color(0xFF10B981), Color(0xFF059669)];
-  static const gradientWarning = [Color(0xFFF59E0B), Color(0xD97706)];
+  static const gradientWarning = [Color(0xFFF59E0B), Color(0xFFD97706)];
   static const gradientError = [Color(0xFFEF4444), Color(0xFFDC2626)];
   static const gradientPurple = [Color(0xFF00A896), Color(0xFF2563EB)];
   static const gradientDark = [Color(0xFFFFFFFF), Color(0xFFF8FAFC)];
