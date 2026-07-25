@@ -10,6 +10,7 @@ import '../../../../shared/widgets/barcode_scanner_widget.dart';
 import '../../../../shared/widgets/rassco_app_bar.dart';
 import '../../../../shared/utils/icon_mapper.dart';
 import '../../../../shared/utils/barcode_validator.dart';
+import '../../../../core/api/interceptors/auth_interceptor.dart';
 
 import '../../../moving_inventory/data/models/serialized_item.dart';
 import '../../../dashboard/presentation/controllers/dashboard_controller.dart';
@@ -303,6 +304,8 @@ class _ShipmentScanPageState extends State<ShipmentScanPage>
     setState(() { _isScanLoading = true; _scanError = null; _scanSuccess = null; });
 
     try {
+      await AuthInterceptor.ensureFreshAccessToken();
+
       final body = <String, dynamic>{
         'items': _scannedBatchItems.map((item) => {
           'serialNumber': item.serialNumber,
@@ -312,12 +315,19 @@ class _ShipmentScanPageState extends State<ShipmentScanPage>
         }).toList(),
       };
 
-      await _dio.post('/api/serialized-items/batch-scan-in', data: body);
+      final resp = await _dio.post('/api/serialized-items/batch-scan-in', data: body);
 
       HapticFeedback.mediumImpact();
-      final count = _scannedBatchItems.length;
+      final respData = resp.data;
+      final addedCount = (respData is Map && respData['data'] is List)
+          ? (respData['data'] as List).length
+          : _scannedBatchItems.length;
+      final rejectedCount = (respData is Map && respData['rejectedCount'] != null)
+          ? respData['rejectedCount'] as int
+          : 0;
+
       setState(() {
-        _scanSuccess = 'تم حفظ $count من الأجهزة والشرائح بنجاح في عهدتك ✓';
+        _scanSuccess = 'تمت إضافة الأجهزة بنجاح\nعدد الأجهزة المضافة: $addedCount\nعدد الأجهزة المرفوضة: $rejectedCount';
         _scannedBatchItems.clear();
       });
       await _loadCustody();

@@ -7,6 +7,7 @@ class BarcodeRule {
   final List<String> prefixes;
   final int fullLength;
   final RegExp regex;
+  final bool requiresContext;
 
   const BarcodeRule({
     required this.id,
@@ -14,11 +15,12 @@ class BarcodeRule {
     required this.prefixes,
     required this.fullLength,
     required this.regex,
+    this.requiresContext = false,
   });
 
   bool matches(String normalized) {
     if (normalized.length != fullLength) return false;
-    if (!prefixes.any(normalized.startsWith)) return false;
+    if (prefixes.isNotEmpty && !prefixes.any(normalized.startsWith)) return false;
     return regex.hasMatch(normalized);
   }
 }
@@ -41,15 +43,23 @@ class BarcodeRuleRegistry {
       id: 'i9100',
       label: 'Urovo i9100',
       prefixes: const ['SAW'],
-      fullLength: 11,
-      regex: RegExp(r'^SAW[0-9]{8}$'),
+      fullLength: 14,
+      regex: RegExp(r'^SAW[0-9]{11}$'),
     ),
     BarcodeRule(
       id: 'i9000s',
       label: 'Urovo i9000S',
       prefixes: const ['SAS'],
-      fullLength: 11,
-      regex: RegExp(r'^SAS[0-9]{8}$'),
+      fullLength: 14,
+      regex: RegExp(r'^SAS[0-9]{11}$'),
+    ),
+    BarcodeRule(
+      id: 'a960',
+      label: 'PAX A960',
+      prefixes: const [],
+      fullLength: 10,
+      regex: RegExp(r'^[0-9]{10}$'),
+      requiresContext: true,
     ),
     BarcodeRule(
       id: 'sim_89966_19',
@@ -131,6 +141,7 @@ class BarcodeRuleRegistry {
         prefixes: enterprise.prefixes,
         fullLength: enterprise.fullLength,
         regex: enterprise.regex,
+        requiresContext: enterprise.requiresContext,
       );
     }
 
@@ -210,6 +221,9 @@ class BarcodeRuleRegistry {
         key.contains('urovoi9000') ||
         (key.contains('9000') && !key.contains('9100'))) {
       return fallbackRules.firstWhere((r) => r.id == 'i9000s');
+    }
+    if (key.contains('a960') || key.contains('pax') || key.contains('paxa960')) {
+      return fallbackRules.firstWhere((r) => r.id == 'a960');
     }
     if (key.contains('stc') || key.contains('اتصالات')) {
       return fallbackRules.firstWhere((r) => r.id == 'sim_stc');

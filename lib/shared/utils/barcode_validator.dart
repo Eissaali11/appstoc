@@ -114,7 +114,18 @@ class BarcodeValidator {
       return 'لا توجد قاعدة تحقق معتمدة لهذا النوع — اختر نوع الصنف أولاً';
     }
 
-    if (!rule.prefixes.any(normalized.startsWith)) {
+    final ruleId = rule.id.toLowerCase();
+    if (ruleId.contains('i9100')) {
+      return 'الرقم يجب أن يبدأ بـ SAW ويتكون من 14 خانة.';
+    }
+    if (ruleId.contains('i9000')) {
+      return 'الرقم يجب أن يبدأ بـ SAS ويتكون من 14 خانة.';
+    }
+    if (ruleId.contains('a960')) {
+      return 'الرقم التسلسلي يجب أن يتكون من 10 أرقام.';
+    }
+
+    if (rule.prefixes.isNotEmpty && !rule.prefixes.any(normalized.startsWith)) {
       final isAlpha = rule.prefixes.any((p) => RegExp(r'^[A-Z]+$').hasMatch(p));
       if (isAlpha) {
         return 'الرمز مرفوض: يجب أن يبدأ بأحد البوادئ المعتمدة (${rule.prefixes.join(" / ")}) — لا يُقبل الرقم بدون بادئة';

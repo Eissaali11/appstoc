@@ -20,7 +20,16 @@ class IdentifierNormalizationService {
         .trim()
         .toUpperCase();
 
-    // Numeric identity (ICCID): strip grouping spaces/dashes only.
+    // Strip common label prefixes like S/N: or SN:
+    if (s.startsWith('S/N:')) {
+      s = s.substring(4).trim();
+    } else if (s.startsWith('SN:')) {
+      s = s.substring(3).trim();
+    } else if (s.startsWith('S/N')) {
+      s = s.substring(3).trim();
+    }
+
+    // Numeric identity (ICCID/Serials): strip grouping spaces/dashes only.
     // Device serials with letter prefixes (NCD/NCC/SAW/SAS) stay intact.
     if (_isNumericIdentity(s)) {
       s = s.replaceAll(RegExp(r'[\s\u00A0\u2007\u202F\-]+'), '');

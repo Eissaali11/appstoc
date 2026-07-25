@@ -55,12 +55,12 @@ class ScannerContext {
     final all = BarcodeRuleRegistry.fallbackRules;
     final hint = categoryHint?.toLowerCase();
     if (hint == 'devices' || hint == 'device' || hint == 'pos') {
-      return all.where((r) => !r.id.startsWith('sim')).toList();
+      return all.where((r) => !r.id.startsWith('sim') && !r.requiresContext).toList();
     }
     if (hint == 'sim' || hint == 'sim_card') {
-      return all.where((r) => r.id.startsWith('sim')).toList();
+      return all.where((r) => r.id.startsWith('sim') && !r.requiresContext).toList();
     }
-    return all;
+    return all.where((r) => !r.requiresContext).toList();
   }
 
   factory ScannerContext.create({

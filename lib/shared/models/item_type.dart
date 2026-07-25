@@ -46,8 +46,11 @@ class ItemType {
   }) : nameAr = _sanitizeNameAr(id, nameAr);
 
   static String _sanitizeNameAr(String id, String nameAr) {
-    if (id.toLowerCase() == 'n950' ||
-        nameAr.toLowerCase().contains('n950') ||
+    final lowerId = id.toLowerCase();
+    final lowerName = nameAr.toLowerCase();
+
+    if (lowerId == 'n950' ||
+        lowerName.contains('n950') ||
         nameAr.contains('ان 950') ||
         nameAr.contains('ان950') ||
         nameAr.contains('ن 950') ||
@@ -55,6 +58,17 @@ class ItemType {
         nameAr.contains('ن ٩٥٠') ||
         nameAr.contains('ان ٩٥٠')) {
       return 'N950';
+    }
+    if (lowerId == 'a960' ||
+        lowerName.contains('a960') ||
+        nameAr.contains('ا٩٦٠') ||
+        nameAr.contains('أ960')) {
+      return 'A960';
+    }
+    if (lowerId == 'i9100' ||
+        lowerName.contains('i9100') ||
+        nameAr.contains('اي9100')) {
+      return 'i9100';
     }
     return nameAr;
   }
