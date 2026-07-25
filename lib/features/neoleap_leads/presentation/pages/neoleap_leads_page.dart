@@ -561,12 +561,41 @@ class _NeoleapLeadsPageState extends State<NeoleapLeadsPage> {
   }
 
   Widget _buildApiKeyField() {
+    final status = controller.apiKeyStatus.value;
+    final isChecking = status == ApiKeyStatus.checking;
+    final isValid = status == ApiKeyStatus.valid;
+
+    String statusText;
+    Color statusColor;
+    Color statusBg;
+    IconData statusIcon;
+
+    if (isChecking) {
+      statusText = 'جاري الفحص...';
+      statusColor = AppColors.info;
+      statusBg = AppColors.infoLight;
+      statusIcon = LucideIcons.refreshCw;
+    } else if (isValid) {
+      statusText = 'متصل';
+      statusColor = AppColors.success;
+      statusBg = AppColors.successLight;
+      statusIcon = LucideIcons.checkCircle2;
+    } else {
+      statusText = 'غير متصل';
+      statusColor = AppColors.error;
+      statusBg = AppColors.errorLight;
+      statusIcon = LucideIcons.xCircle;
+    }
+
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: AppColors.backgroundLight,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: isValid ? AppColors.success.withValues(alpha: 0.4) : AppColors.border,
+          width: 1.2,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -576,52 +605,136 @@ class _NeoleapLeadsPageState extends State<NeoleapLeadsPage> {
             children: [
               Row(
                 children: [
-                  const Icon(LucideIcons.key, size: 16, color: AppColors.primary),
-                  const SizedBox(width: 6),
-                  Text('مفتاح Google Places API', style: GoogleFonts.cairo(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+                  const Icon(LucideIcons.key, size: 18, color: AppColors.primary),
+                  const SizedBox(width: 8),
+                  Text(
+                    'إعدادات مفتاح Google Places API',
+                    style: GoogleFonts.cairo(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
                 ],
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: controller.isApiKeyValid ? AppColors.successLight : AppColors.warningLight,
-                  borderRadius: BorderRadius.circular(12),
+                  color: statusBg,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: statusColor.withValues(alpha: 0.3)),
                 ),
-                child: Text(
-                  controller.isApiKeyValid ? 'متصل' : 'تحقق مطلوبة',
-                  style: GoogleFonts.cairo(fontSize: 10, color: controller.isApiKeyValid ? AppColors.success : AppColors.warning, fontWeight: FontWeight.bold),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (isChecking)
+                      const SizedBox(
+                        width: 12,
+                        height: 12,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.info),
+                      )
+                    else
+                      Icon(statusIcon, size: 14, color: statusColor),
+                    const SizedBox(width: 6),
+                    Text(
+                      statusText,
+                      style: GoogleFonts.cairo(
+                        fontSize: 11,
+                        color: statusColor,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
           TextField(
             controller: _apiKeyCtrl,
             obscureText: _obscureKey,
-            style: GoogleFonts.robotoMono(fontSize: 12, color: AppColors.textPrimary),
+            style: GoogleFonts.robotoMono(fontSize: 12, color: AppColors.textPrimary, fontWeight: FontWeight.w600),
             decoration: InputDecoration(
               hintText: 'AIzaSy...',
               filled: true,
               fillColor: Colors.white,
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: AppColors.border)),
-              enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: AppColors.border)),
-              focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: AppColors.primary)),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-              suffixIcon: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  IconButton(
-                    icon: Icon(_obscureKey ? Icons.visibility : Icons.visibility_off, size: 16, color: AppColors.textMuted),
-                    onPressed: () => setState(() => _obscureKey = !_obscureKey),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.check_circle, size: 18, color: AppColors.primary),
-                    onPressed: () => controller.saveAndValidateApiKey(_apiKeyCtrl.text),
-                  ),
-                ],
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: AppColors.border),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: AppColors.border),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: AppColors.primary, width: 2),
+              ),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              prefixIcon: const Icon(LucideIcons.shieldCheck, size: 18, color: AppColors.primary),
+              suffixIcon: IconButton(
+                icon: Icon(_obscureKey ? Icons.visibility : Icons.visibility_off, size: 18, color: AppColors.textMuted),
+                onPressed: () => setState(() => _obscureKey = !_obscureKey),
               ),
             ),
           ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: SizedBox(
+                  height: 42,
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: isValid ? AppColors.success : AppColors.primary,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    onPressed: isChecking
+                        ? null
+                        : () => controller.saveAndValidateApiKey(_apiKeyCtrl.text),
+                    icon: isChecking
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          )
+                        : const Icon(LucideIcons.plugZap, size: 18, color: Colors.white),
+                    label: Text(
+                      isChecking ? 'جاري فحص الاتصال...' : 'فحص الاتصال بـ API',
+                      style: GoogleFonts.cairo(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  side: const BorderSide(color: AppColors.border),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                onPressed: () {
+                  _apiKeyCtrl.text = 'AIzaSyDDugb3nnytT46ALy6E1ER-F9mk3TKOvkE';
+                  controller.saveAndValidateApiKey(_apiKeyCtrl.text);
+                },
+                icon: const Icon(LucideIcons.rotateCcw, size: 14, color: AppColors.textSecondary),
+                label: Text(
+                  'الافتراضي',
+                  style: GoogleFonts.cairo(fontSize: 11, color: AppColors.textSecondary, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+          if (controller.apiKeyError.value.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text(
+              controller.apiKeyError.value,
+              style: GoogleFonts.cairo(fontSize: 11, color: AppColors.error, fontWeight: FontWeight.bold),
+            ),
+          ],
         ],
       ),
     );

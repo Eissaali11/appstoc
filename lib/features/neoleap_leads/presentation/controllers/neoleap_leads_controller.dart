@@ -237,10 +237,12 @@ class NeoleapLeadsController extends GetxController {
   Future<void> _loadSavedApiKey() async {
     try {
       final savedKey = await _secureStorage.getGooglePlacesApiKey();
-      if (savedKey != null && savedKey.isNotEmpty) {
-        apiKey.value = savedKey;
-        await _pingGooglePlaces(savedKey, silent: true);
-      }
+      final keyToUse = (savedKey != null && savedKey.isNotEmpty)
+          ? savedKey
+          : 'AIzaSyDDugb3nnytT46ALy6E1ER-F9mk3TKOvkE';
+      apiKey.value = keyToUse;
+      await _secureStorage.saveGooglePlacesApiKey(keyToUse);
+      await _pingGooglePlaces(keyToUse, silent: true);
     } catch (e) {
       debugPrint('Failed to load API Key: $e');
     }
