@@ -270,19 +270,29 @@ class _NeoleapLeadsPageState extends State<NeoleapLeadsPage> {
         child: Scaffold(
           appBar: RasscoAppBar(
             titleText: 'اكتشاف الأنشطة الجغرافية',
-            bottom: TabBar(
-              isScrollable: true,
-              indicatorColor: Colors.white,
-              indicatorWeight: 3,
-              labelColor: Colors.white,
-              unselectedLabelColor: Colors.white.withValues(alpha: 0.7),
-              labelStyle: GoogleFonts.cairo(fontWeight: FontWeight.bold, fontSize: 12),
-              tabs: [
-                const Tab(text: '📡 الإعدادات والقالب'),
-                Tab(text: '📋 جميع العملاء (${controller.totalLeads})'),
-                Tab(text: '💬 تمت المراسلة (${controller.contactedCount})'),
-                Tab(text: '⏳ متبقي للمراسلة (${controller.pendingCount})'),
-              ],
+            bottom: PreferredSize(
+              preferredSize: const Size.fromHeight(48),
+              child: Container(
+                color: AppColors.primaryDark.withValues(alpha: 0.2),
+                child: TabBar(
+                  isScrollable: true,
+                  indicatorColor: Colors.white,
+                  indicatorWeight: 3,
+                  indicatorSize: TabBarIndicatorSize.tab,
+                  labelColor: Colors.white,
+                  unselectedLabelColor: Colors.white.withValues(alpha: 0.7),
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  labelPadding: const EdgeInsets.symmetric(horizontal: 14),
+                  labelStyle: GoogleFonts.cairo(fontWeight: FontWeight.bold, fontSize: 12),
+                  unselectedLabelStyle: GoogleFonts.cairo(fontWeight: FontWeight.normal, fontSize: 11),
+                  tabs: [
+                    const Tab(text: '📡 الإعدادات والقالب'),
+                    Tab(text: '📋 جميع العملاء (${controller.totalLeads})'),
+                    Tab(text: '💬 تمت المراسلة (${controller.contactedCount})'),
+                    Tab(text: '⏳ متبقي للمراسلة (${controller.pendingCount})'),
+                  ],
+                ),
+              ),
             ),
           ),
           body: Container(
@@ -713,89 +723,99 @@ class _NeoleapLeadsPageState extends State<NeoleapLeadsPage> {
       orElse: () => RegionEntity.mainSaudiRegions.first,
     );
 
+    final activeSelectedCount = activeGroup.cities.where((c) => controller.isSubCitySelected(c)).length;
+
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppColors.backgroundLight,
-        borderRadius: BorderRadius.circular(14),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppColors.border),
+        boxShadow: const [
+          BoxShadow(color: Color(0x08000000), blurRadius: 10, offset: Offset(0, 2)),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(LucideIcons.mapPin, size: 18, color: AppColors.primary),
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: AppColors.primaryLight,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(LucideIcons.mapPin, size: 16, color: AppColors.primary),
+              ),
               const SizedBox(width: 8),
               Text(
-                'تحديد المنطقة الجغرافية والمدن المستهدفة:',
+                'تحديد المنطقة والمدن المستهدفة:',
                 style: GoogleFonts.cairo(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
               ),
             ],
           ),
-          const SizedBox(height: 10),
-
-          // 1. Dropdown for Main Region Selection (قائمة منسدلة اختيار المنطقة)
-          DropdownButtonFormField<String>(
-            initialValue: activeGroup.id,
-            decoration: InputDecoration(
-              labelText: 'اختر المنطقة الإدارية',
-              labelStyle: GoogleFonts.cairo(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.primary),
-              prefixIcon: const Icon(LucideIcons.map, color: AppColors.primary, size: 20),
-              filled: true,
-              fillColor: Colors.white,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.border)),
-              enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.border)),
-              focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primary, width: 2)),
-            ),
-            dropdownColor: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            items: RegionEntity.mainSaudiRegions.map((group) {
-              final selectedCount = group.cities.where((c) => controller.isSubCitySelected(c)).length;
-              return DropdownMenuItem<String>(
-                value: group.id,
-                child: Row(
-                  children: [
-                    Text(group.emoji, style: const TextStyle(fontSize: 15)),
-                    const SizedBox(width: 8),
-                    Text(
-                      group.nameAr,
-                      style: GoogleFonts.cairo(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      '(${group.cities.length} موقع)',
-                      style: GoogleFonts.cairo(fontSize: 10, color: AppColors.textSecondary),
-                    ),
-                    if (selectedCount > 0) ...[
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(10)),
-                        child: Text(
-                          '$selectedCount محددة',
-                          style: GoogleFonts.cairo(fontSize: 9, color: Colors.white, fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              );
-            }).toList(),
-            onChanged: (val) {
-              if (val != null) controller.selectMainRegionTab(val);
-            },
-          ),
-
           const SizedBox(height: 12),
 
-          // 2. Dropdown Header & Selector for Cities / Villages of the Region
+          // 1. Premium Interactive Mobile Region Selector Field (خيار القائمة المنسدلة الاحترافي)
+          InkWell(
+            onTap: _showRegionPickerModalSheet,
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              decoration: BoxDecoration(
+                color: AppColors.backgroundLight,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.primary.withValues(alpha: 0.4), width: 1.5),
+              ),
+              child: Row(
+                children: [
+                  Text(activeGroup.emoji, style: const TextStyle(fontSize: 18)),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'المنطقة الإدارية الرئيسية',
+                          style: GoogleFonts.cairo(fontSize: 10, color: AppColors.textMuted, fontWeight: FontWeight.bold),
+                        ),
+                        Text(
+                          '${activeGroup.nameAr} (${activeGroup.cities.length} موقع)',
+                          style: GoogleFonts.cairo(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      '$activeSelectedCount محددة',
+                      style: GoogleFonts.cairo(fontSize: 10, color: Colors.white, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  const Icon(LucideIcons.chevronDown, size: 18, color: AppColors.primary),
+                ],
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 14),
+
+          // 2. Sub-Cities Header & Quick Actions Box
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
+              color: AppColors.backgroundLight,
+              borderRadius: BorderRadius.circular(14),
               border: Border.all(color: AppColors.border),
             ),
             child: Column(
@@ -805,9 +825,19 @@ class _NeoleapLeadsPageState extends State<NeoleapLeadsPage> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Expanded(
-                      child: Text(
-                        'قائمة المدن والقرى والهجر في ${activeGroup.nameAr} (${activeGroup.cities.length} موقع):',
-                        style: GoogleFonts.cairo(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primary),
+                      child: Row(
+                        children: [
+                          const Icon(LucideIcons.building2, size: 15, color: AppColors.primary),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              'المدن والقرى والهجر (${activeGroup.cities.length} موقع):',
+                              style: GoogleFonts.cairo(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                     Row(
@@ -829,22 +859,26 @@ class _NeoleapLeadsPageState extends State<NeoleapLeadsPage> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 10),
                 Wrap(
                   spacing: 6,
                   runSpacing: 6,
                   children: activeGroup.cities.map((city) {
                     final isSelected = controller.isSubCitySelected(city);
                     return FilterChip(
-                      label: Text('${city.emoji} ${city.name}',
-                          style: GoogleFonts.cairo(
-                            fontSize: 11,
-                            color: isSelected ? Colors.white : AppColors.textPrimary,
-                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                          )),
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      label: Text(
+                        '${city.emoji} ${city.name}',
+                        style: GoogleFonts.cairo(
+                          fontSize: 11,
+                          color: isSelected ? Colors.white : AppColors.textPrimary,
+                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                        ),
+                      ),
                       selected: isSelected,
                       selectedColor: AppColors.primary,
-                      backgroundColor: AppColors.backgroundLight,
+                      backgroundColor: Colors.white,
+                      elevation: isSelected ? 1 : 0,
                       side: BorderSide(color: isSelected ? AppColors.primary : AppColors.border),
                       onSelected: (_) => controller.toggleSubCity(city),
                     );
@@ -855,6 +889,136 @@ class _NeoleapLeadsPageState extends State<NeoleapLeadsPage> {
           ),
         ],
       ),
+    );
+  }
+
+  void _showRegionPickerModalSheet() {
+    Get.bottomSheet(
+      Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        child: Directionality(
+          textDirection: TextDirection.rtl,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.border,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryLight,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(LucideIcons.map, color: AppColors.primary, size: 20),
+                  ),
+                  const SizedBox(width: 10),
+                  Text(
+                    'اختر المنطقة الإدارية الرئيسية',
+                    style: GoogleFonts.cairo(fontSize: 15, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              Flexible(
+                child: SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  child: Column(
+                    children: RegionEntity.mainSaudiRegions.map((group) {
+                      final isSelected = controller.activeMainRegionId.value == group.id;
+                      final selectedCount = group.cities.where((c) => controller.isSubCitySelected(c)).length;
+
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: InkWell(
+                          onTap: () {
+                            controller.selectMainRegionTab(group.id);
+                            Get.back();
+                          },
+                          borderRadius: BorderRadius.circular(14),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                            decoration: BoxDecoration(
+                              color: isSelected ? AppColors.primaryLight : AppColors.backgroundLight,
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(
+                                color: isSelected ? AppColors.primary : AppColors.border,
+                                width: isSelected ? 1.8 : 1,
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Text(group.emoji, style: const TextStyle(fontSize: 22)),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        group.nameAr,
+                                        style: GoogleFonts.cairo(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.bold,
+                                          color: isSelected ? AppColors.primary : AppColors.textPrimary,
+                                        ),
+                                      ),
+                                      Text(
+                                        'تضم ${group.cities.length} مدينة وهجرة وقرية',
+                                        style: GoogleFonts.cairo(fontSize: 10, color: AppColors.textSecondary),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: isSelected ? AppColors.primary : Colors.white,
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(color: isSelected ? AppColors.primary : AppColors.border),
+                                  ),
+                                  child: Text(
+                                    '$selectedCount محددة',
+                                    style: GoogleFonts.cairo(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                      color: isSelected ? Colors.white : AppColors.primary,
+                                    ),
+                                  ),
+                                ),
+                                if (isSelected) ...[
+                                  const SizedBox(width: 8),
+                                  const Icon(LucideIcons.checkCircle2, color: AppColors.primary, size: 18),
+                                ],
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+            ],
+          ),
+        ),
+      ),
+      isScrollControlled: true,
     );
   }
 
