@@ -5,7 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../domain/entities/lead_entity.dart';
 import '../controllers/neoleap_leads_controller.dart';
-import '../../../../shared/widgets/app_scaffold.dart';
+import '../../../../shared/widgets/rassco_app_bar.dart';
 import '../../../../core/theme/app_colors.dart';
 
 class NeoleapLeadsPage extends StatefulWidget {
@@ -240,12 +240,6 @@ class _NeoleapLeadsPageState extends State<NeoleapLeadsPage> {
     }
   }
 
-  Future<void> _launchCall(String phone) async {
-    if (!await launchUrl(Uri.parse('tel:$phone'))) {
-      Get.snackbar('خطأ', 'تعذّر إجراء الاتصال');
-    }
-  }
-
   Future<void> _openMap(double lat, double lng, String name) async {
     final uri = Uri.parse('https://www.google.com/maps/search/?api=1&query=$lat,$lng');
     if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
@@ -253,142 +247,278 @@ class _NeoleapLeadsPageState extends State<NeoleapLeadsPage> {
     }
   }
 
-  // ── Build Screen ──────────────────────────────────────────────────────────
+  Future<void> _launchCall(LeadEntity lead) async {
+    if (lead.phone == null || lead.phone!.trim().isEmpty) {
+      _showPhoneDialog(lead);
+      return;
+    }
+    controller.updateLeadStatus(lead.id, LeadStatus.contacted);
+    if (!await launchUrl(Uri.parse('tel:${lead.phone!}'))) {
+      Get.snackbar('خطأ', 'تعذّر إجراء الاتصال');
+    }
+  }
+
+  // ── Build Screen with 4 TabBar Tabs ────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
-    return AppScaffold(
-      title: 'اكتشاف الأنشطة التجارية القريبة',
-      body: Obx(() => Directionality(
+    return DefaultTabController(
+      length: 4,
+      child: Obx(() => Directionality(
         textDirection: TextDirection.rtl,
-        child: Container(
-          color: AppColors.backgroundLight,
-          child: Column(
+        child: Scaffold(
+          appBar: RasscoAppBar(
+            titleText: 'اكتشاف الأنشطة الجغرافية',
+            bottom: TabBar(
+              isScrollable: true,
+              indicatorColor: Colors.white,
+              indicatorWeight: 3,
+              labelColor: Colors.white,
+              unselectedLabelColor: Colors.white.withValues(alpha: 0.7),
+              labelStyle: GoogleFonts.cairo(fontWeight: FontWeight.bold, fontSize: 12),
+              tabs: [
+                const Tab(text: '📡 الإعدادات والقالب'),
+                Tab(text: '📋 جميع العملاء (${controller.totalLeads})'),
+                Tab(text: '💬 تمت المراسلة (${controller.contactedCount})'),
+                Tab(text: '⏳ متبقي للمراسلة (${controller.pendingCount})'),
+              ],
+            ),
+          ),
+          body: Container(
+            color: AppColors.backgroundLight,
+            child: TabBarView(
+              children: [
+                _buildDiscoveryTab(),
+                _buildAllLeadsTab(),
+                _buildContactedLeadsTab(),
+                _buildPendingLeadsTab(),
+              ],
+            ),
+          ),
+        ),
+      )),
+    );
+  }
+
+  // ── Tab 1: Discovery & Settings Tab ───────────────────────────────────────
+  Widget _buildDiscoveryTab() {
+    return ListView(
+      physics: const BouncingScrollPhysics(),
+      padding: const EdgeInsets.all(16),
+      children: [
+        _buildHeaderNoticeBanner(),
+        const SizedBox(height: 12),
+        if (controller.error.value.isNotEmpty) _buildErrorBanner(),
+        _buildDiscoverySetupCard(),
+        const SizedBox(height: 16),
+        _buildWhatsAppTemplateCard(),
+        const SizedBox(height: 16),
+        if (controller.isDiscovering.value || controller.jobPlacesFound.value > 0)
+          _buildJobProgressCard(),
+      ],
+    );
+  }
+
+  // ── Tab 2: All Discovered Leads Tab ───────────────────────────────────────
+  Widget _buildAllLeadsTab() {
+    return ListView(
+      physics: const BouncingScrollPhysics(),
+      padding: const EdgeInsets.all(16),
+      children: [
+        _buildHeaderNoticeBanner(),
+        const SizedBox(height: 12),
+        _buildStatsRow(),
+        const SizedBox(height: 16),
+        _buildFilterAndSearchRow(),
+        const SizedBox(height: 12),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'الأنشطة المكتشفة (${controller.filteredLeads.length})',
+              style: GoogleFonts.cairo(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+            ),
+            Row(
+              children: [
+                Text(
+                  'النطاق النشط: ${controller.radiusKm.value} كم',
+                  style: GoogleFonts.cairo(fontSize: 11, color: AppColors.primary, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(width: 8),
+                IconButton(
+                  icon: const Icon(LucideIcons.fileSpreadsheet, size: 18, color: AppColors.success),
+                  tooltip: 'تصدير كـ CSV',
+                  onPressed: controller.exportToCSV,
+                ),
+              ],
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        controller.isMapView.value
+            ? _buildMapViewPlaceholder()
+            : (controller.filteredLeads.isEmpty
+                ? _buildEmptyState()
+                : ListView.separated(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: controller.filteredLeads.length,
+                    separatorBuilder: (ctx, idx) => const SizedBox(height: 12),
+                    itemBuilder: (_, index) => _buildLeadCard(controller.filteredLeads[index]),
+                  )),
+      ],
+    );
+  }
+
+  // ── Tab 3: Contacted Leads Tab ───────────────────────────────────────────
+  Widget _buildContactedLeadsTab() {
+    final contactedLeads = controller.leads.where((l) => l.isSent || l.leadStatus == LeadStatus.contacted || l.leadStatus == LeadStatus.visited || l.leadStatus == LeadStatus.won).toList();
+
+    return ListView(
+      physics: const BouncingScrollPhysics(),
+      padding: const EdgeInsets.all(16),
+      children: [
+        _buildHeaderNoticeBanner(),
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: AppColors.successLight,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppColors.success.withValues(alpha: 0.3)),
+          ),
+          child: Row(
             children: [
-              // ── Header Notice Banner ──────────────────────────────────────
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  border: Border(bottom: BorderSide(color: AppColors.border)),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: AppColors.primaryLight,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Icon(LucideIcons.compass, color: AppColors.primary, size: 20),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'نظام اكتشاف العملاء الجغرافي (Saudi Geo Leads)',
-                            style: GoogleFonts.cairo(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                          Text(
-                            'سيتم البحث عن الأنشطة ضمن النطاق المحدد وإضافتها لقائمتك بعد إزالة التكرار.',
-                            style: GoogleFonts.cairo(
-                              fontSize: 11,
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // ── Main Content Scroll View ──────────────────────────────────
+              const Icon(LucideIcons.checkCircle2, color: AppColors.success, size: 20),
+              const SizedBox(width: 10),
               Expanded(
-                child: ListView(
-                  physics: const BouncingScrollPhysics(),
-                  padding: const EdgeInsets.all(16),
-                  children: [
-                    // Error alert if present
-                    if (controller.error.value.isNotEmpty) _buildErrorBanner(),
-
-                    // 1. Discovery Setup Card
-                    _buildDiscoverySetupCard(),
-                    const SizedBox(height: 16),
-
-                    // 1.5. WhatsApp Marketing Message Template Editor
-                    _buildWhatsAppTemplateCard(),
-                    const SizedBox(height: 16),
-
-                    // 2. Live Job Progress Metrics Card (if running or completed)
-                    if (controller.isDiscovering.value || controller.jobPlacesFound.value > 0)
-                      _buildJobProgressCard(),
-                    if (controller.isDiscovering.value || controller.jobPlacesFound.value > 0)
-                      const SizedBox(height: 16),
-
-                    // 3. Stats & Counters Overview
-                    _buildStatsRow(),
-                    const SizedBox(height: 16),
-
-                    // 4. View Mode Toggle & Filter Bar
-                    _buildFilterAndSearchRow(),
-                    const SizedBox(height: 12),
-
-                    // 5. Results Section Header
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'الأنشطة المكتشفة (${controller.filteredLeads.length})',
-                          style: GoogleFonts.cairo(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                        Row(
-                          children: [
-                            Text(
-                              'النطاق النشط: ${controller.radiusKm.value} كم',
-                              style: GoogleFonts.cairo(fontSize: 11, color: AppColors.primary, fontWeight: FontWeight.bold),
-                            ),
-                            const SizedBox(width: 8),
-                            IconButton(
-                              icon: const Icon(LucideIcons.fileSpreadsheet, size: 18, color: AppColors.success),
-                              tooltip: 'تصدير كـ CSV',
-                              onPressed: controller.exportToCSV,
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-
-                    // 6. Map or List Representation
-                    controller.isMapView.value
-                        ? _buildMapViewPlaceholder()
-                        : (controller.filteredLeads.isEmpty
-                            ? _buildEmptyState()
-                            : ListView.separated(
-                                shrinkWrap: true,
-                                physics: const NeverScrollableScrollPhysics(),
-                                itemCount: controller.filteredLeads.length,
-                                separatorBuilder: (ctx, index) => const SizedBox(height: 10),
-                                itemBuilder: (ctx, i) => _buildLeadCard(controller.filteredLeads[i]),
-                              )),
-                  ],
+                child: Text(
+                  'تمت مراسلة ووُجّهت العروض لـ ${contactedLeads.length} عميل من أصل ${controller.totalLeads}',
+                  style: GoogleFonts.cairo(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
                 ),
               ),
             ],
           ),
         ),
-      )),
+        const SizedBox(height: 16),
+        contactedLeads.isEmpty
+            ? Center(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 40),
+                  child: Column(
+                    children: [
+                      const Icon(LucideIcons.messageSquare, size: 44, color: AppColors.textMuted),
+                      const SizedBox(height: 12),
+                      Text('لم تقم بمراسلة أي عميل بعد', style: GoogleFonts.cairo(fontSize: 13, color: AppColors.textSecondary)),
+                      Text('انتقل لتبويب "متبقي للمراسلة" للبدء في التواصل الفوري مع العملاء', style: GoogleFonts.cairo(fontSize: 11, color: AppColors.textMuted)),
+                    ],
+                  ),
+                ),
+              )
+            : ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: contactedLeads.length,
+                separatorBuilder: (ctx, idx) => const SizedBox(height: 12),
+                itemBuilder: (_, index) => _buildLeadCard(contactedLeads[index]),
+              ),
+      ],
+    );
+  }
+
+  // ── Tab 4: Pending Uncontacted Leads Tab ─────────────────────────────────
+  Widget _buildPendingLeadsTab() {
+    final pendingLeads = controller.leads.where((l) => !l.isSent && l.leadStatus != LeadStatus.contacted && l.leadStatus != LeadStatus.visited && l.leadStatus != LeadStatus.won).toList();
+
+    return ListView(
+      physics: const BouncingScrollPhysics(),
+      padding: const EdgeInsets.all(16),
+      children: [
+        _buildHeaderNoticeBanner(),
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: AppColors.warningLight,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppColors.warning.withValues(alpha: 0.3)),
+          ),
+          child: Row(
+            children: [
+              const Icon(LucideIcons.clock, color: AppColors.warning, size: 20),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'متبقي ${pendingLeads.length} عميل بانتظار المراسلة والتواصل',
+                  style: GoogleFonts.cairo(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        pendingLeads.isEmpty
+            ? Center(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 40),
+                  child: Column(
+                    children: [
+                      const Icon(LucideIcons.partyPopper, size: 44, color: AppColors.success),
+                      const SizedBox(height: 12),
+                      Text('أحسنت! تمت مراسلة جميع العملاء المكتشفين 🎉', style: GoogleFonts.cairo(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+                      Text('قم بتشغيل الاكتشاف الجغرافي لسحب أنشطة تجارية جديدة', style: GoogleFonts.cairo(fontSize: 11, color: AppColors.textMuted)),
+                    ],
+                  ),
+                ),
+              )
+            : ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: pendingLeads.length,
+                separatorBuilder: (ctx, idx) => const SizedBox(height: 12),
+                itemBuilder: (_, index) => _buildLeadCard(pendingLeads[index]),
+              ),
+      ],
+    );
+  }
+
+  // ── Header Notice Banner ──────────────────────────────────────────────────
+  Widget _buildHeaderNoticeBanner() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: AppColors.primaryLight,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Icon(LucideIcons.compass, color: AppColors.primary, size: 18),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'نظام اكتشاف العملاء الجغرافي (Saudi Geo Leads)',
+                  style: GoogleFonts.cairo(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.textPrimary),
+                ),
+                Text(
+                  'يتم حفظ جميع العملاء وحالات المراسلة تلقائياً وتحديث التبويبات فورياً.',
+                  style: GoogleFonts.cairo(fontSize: 10, color: AppColors.textSecondary),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -1122,7 +1252,7 @@ class _NeoleapLeadsPageState extends State<NeoleapLeadsPage> {
                   _actionCircleBtn(LucideIcons.navigation, AppColors.secondaryBlue, () => _openMap(lead.latitude, lead.longitude, lead.name), 'ملاحة'),
                   if (hasPhone) ...[
                     const SizedBox(width: 4),
-                    _actionCircleBtn(LucideIcons.phoneCall, AppColors.primary, () => _launchCall(lead.phone!), 'اتصال'),
+                    _actionCircleBtn(LucideIcons.phoneCall, AppColors.primary, () => _launchCall(lead), 'اتصال'),
                     const SizedBox(width: 4),
                     _actionCircleBtn(LucideIcons.messageSquare, AppColors.success, () => _launchWhatsApp(lead), 'واتساب'),
                   ],
