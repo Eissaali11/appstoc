@@ -725,89 +725,72 @@ class _NeoleapLeadsPageState extends State<NeoleapLeadsPage> {
         children: [
           Row(
             children: [
-              const Icon(LucideIcons.map, size: 18, color: AppColors.primary),
+              const Icon(LucideIcons.mapPin, size: 18, color: AppColors.primary),
               const SizedBox(width: 8),
               Text(
-                'اختيار المناطق والمدن والقرى والهجر المستهدفة:',
+                'تحديد المنطقة الجغرافية والمدن المستهدفة:',
                 style: GoogleFonts.cairo(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
               ),
             ],
           ),
-          const SizedBox(height: 4),
-          Text(
-            'اختر المنطقة الرئيسية لعرض كافة المدن والقرى والهجر التابعة لها:',
-            style: GoogleFonts.cairo(fontSize: 11, color: AppColors.textSecondary),
-          ),
           const SizedBox(height: 10),
 
-          // Main Regions Tabs
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            physics: const BouncingScrollPhysics(),
-            child: Row(
-              children: RegionEntity.mainSaudiRegions.map((group) {
-                final isSelected = controller.activeMainRegionId.value == group.id;
-                final selectedCitiesCount = group.cities.where((c) => controller.isSubCitySelected(c)).length;
-
-                return Padding(
-                  padding: const EdgeInsets.only(left: 6),
-                  child: InkWell(
-                    onTap: () => controller.selectMainRegionTab(group.id),
-                    borderRadius: BorderRadius.circular(20),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: isSelected ? AppColors.primary : Colors.white,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: isSelected ? AppColors.primary : AppColors.border,
-                        ),
-                        boxShadow: isSelected
-                            ? [BoxShadow(color: AppColors.primary.withValues(alpha: 0.3), blurRadius: 6, offset: const Offset(0, 2))]
-                            : [],
-                      ),
-                      child: Row(
-                        children: [
-                          Text(group.emoji, style: const TextStyle(fontSize: 14)),
-                          const SizedBox(width: 6),
-                          Text(
-                            group.nameAr,
-                            style: GoogleFonts.cairo(
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                              color: isSelected ? Colors.white : AppColors.textPrimary,
-                            ),
-                          ),
-                          if (selectedCitiesCount > 0) ...[
-                            const SizedBox(width: 6),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: isSelected ? Colors.white : AppColors.primary,
-                                shape: BoxShape.circle,
-                              ),
-                              child: Text(
-                                '$selectedCitiesCount',
-                                style: GoogleFonts.cairo(
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.bold,
-                                  color: isSelected ? AppColors.primary : Colors.white,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                  ),
-                );
-              }).toList(),
+          // 1. Dropdown for Main Region Selection (قائمة منسدلة اختيار المنطقة)
+          DropdownButtonFormField<String>(
+            initialValue: activeGroup.id,
+            decoration: InputDecoration(
+              labelText: 'اختر المنطقة الإدارية',
+              labelStyle: GoogleFonts.cairo(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.primary),
+              prefixIcon: const Icon(LucideIcons.map, color: AppColors.primary, size: 20),
+              filled: true,
+              fillColor: Colors.white,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.border)),
+              enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.border)),
+              focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primary, width: 2)),
             ),
+            dropdownColor: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            items: RegionEntity.mainSaudiRegions.map((group) {
+              final selectedCount = group.cities.where((c) => controller.isSubCitySelected(c)).length;
+              return DropdownMenuItem<String>(
+                value: group.id,
+                child: Row(
+                  children: [
+                    Text(group.emoji, style: const TextStyle(fontSize: 15)),
+                    const SizedBox(width: 8),
+                    Text(
+                      group.nameAr,
+                      style: GoogleFonts.cairo(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      '(${group.cities.length} موقع)',
+                      style: GoogleFonts.cairo(fontSize: 10, color: AppColors.textSecondary),
+                    ),
+                    if (selectedCount > 0) ...[
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(10)),
+                        child: Text(
+                          '$selectedCount محددة',
+                          style: GoogleFonts.cairo(fontSize: 9, color: Colors.white, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              );
+            }).toList(),
+            onChanged: (val) {
+              if (val != null) controller.selectMainRegionTab(val);
+            },
           ),
-          const SizedBox(height: 14),
 
-          // Sub-Cities & Villages Container for Active Main Region
+          const SizedBox(height: 12),
+
+          // 2. Dropdown Header & Selector for Cities / Villages of the Region
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
@@ -823,7 +806,7 @@ class _NeoleapLeadsPageState extends State<NeoleapLeadsPage> {
                   children: [
                     Expanded(
                       child: Text(
-                        'المدن والقرى والهجر التابعة لـ ${activeGroup.nameAr} (${activeGroup.cities.length} موقع):',
+                        'قائمة المدن والقرى والهجر في ${activeGroup.nameAr} (${activeGroup.cities.length} موقع):',
                         style: GoogleFonts.cairo(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primary),
                       ),
                     ),
