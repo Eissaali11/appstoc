@@ -132,13 +132,13 @@ class RasscoAppBar extends StatelessWidget implements PreferredSizeWidget {
       actions: actions,
       leading: leading,
       bottom: bottom,
-      backgroundColor: backgroundColor ?? AppColors.surfaceDark,
-      foregroundColor: foregroundColor ?? Colors.white,
+      backgroundColor: backgroundColor ?? AppColors.surfaceLight,
+      foregroundColor: foregroundColor ?? AppColors.textPrimary,
       elevation: elevation,
       centerTitle: centerTitle,
       automaticallyImplyLeading: automaticallyImplyLeading,
       titleSpacing: titleSpacing ?? 12,
-      iconTheme: iconTheme ?? const IconThemeData(color: Colors.white),
+      iconTheme: iconTheme ?? const IconThemeData(color: AppColors.textPrimary),
     );
   }
 }

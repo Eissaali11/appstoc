@@ -18,6 +18,8 @@ class App extends StatelessWidget {
       title: 'Stock',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.lightTheme,
+      themeMode: ThemeMode.light,
       translations: AppTranslations(),
       locale: Locale(initialLocaleCode),
       fallbackLocale: const Locale('ar'),

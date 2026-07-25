@@ -18,14 +18,14 @@ class AppColors {
   static const accentGreen = Color(0xFF10B981);  // Success Green
   static const accentRed = Color(0xFFEF4444);    // Danger Red
 
-  // ===== Background System (Enterprise Light Architecture) =====
+  // ===== Background System =====
   static const backgroundLight = Color(0xFFF8FAFC); // Very Light Gray Page Background
   static const backgroundMid = Color(0xFFF1F5F9);   // Surface Light Gray
-  static const backgroundDark = Color(0xFFF8FAFC);  // Mapped to Light for enterprise mode
+  static const backgroundDark = Color(0xFF0F172A);  // Deep Dark Slate
 
   // ===== Card & Surface System =====
   static const surfaceLight = Color(0xFFFFFFFF);    // Pure White Card
-  static const surfaceDark = Color(0xFFFFFFFF);     // Mapped to White Card
+  static const surfaceDark = Color(0xFF1E293B);     // Dark Slate Surface for Dark Cards
   static const surfaceMid = Color(0xFFF8FAFC);
   static const surfaceGlass = Color(0xFFFFFFFF);
   static const surfaceGlassBorder = Color(0xFFE2E8F0); // Very light gray border
