@@ -115,8 +115,21 @@ class NeoleapLeadsRepositoryImpl implements NeoleapLeadsRepository {
         // Direct Google Places API / High-Fidelity Geo Discovery Fallback
       }
 
-      // 2. Perform Direct Google Places / Local Geo Cell Synthesis for complete Saudi business leads
-      final catsToSearch = categories.isNotEmpty ? categories : ['restaurant', 'supermarket', 'pharmacy', 'electronics'];
+      // 2. Perform Direct Google Places / Local Geo Cell Synthesis for complete Saudi business leads (24/7 & early closing)
+      final catsToSearch = categories.isNotEmpty 
+          ? categories 
+          : [
+              'محل تجاري ومؤسسة',
+              'مطعم بوفية ومأكولات',
+              'سوبرماركت وتموينات 24 ساعة',
+              'صيدلية ومستلزمات طبية',
+              'مقهى وكافيه دائم',
+              'معرض ومستلزمات إلكترونيات',
+              'مخبز وحلويات',
+              'محطة وقود وخدمات 24 ساعة',
+              'ورشة وخدمات مهنية',
+              'فندق وأجنحة مفروشة 24/7'
+            ];
       final List<Map<String, dynamic>> targetRegions = regions.isNotEmpty
           ? regions
           : [
