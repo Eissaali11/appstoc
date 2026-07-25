@@ -27,7 +27,7 @@ class AppScaffold extends StatelessWidget {
         automaticallyImplyLeading: showBackButton,
         leading: showBackButton
             ? IconButton(
-                icon: const Icon(Icons.arrow_back),
+                icon: const Icon(Icons.arrow_back, color: Colors.white),
                 onPressed: () => Navigator.of(context).pop(),
               )
             : null,

@@ -58,10 +58,10 @@ class RasscoBrandTitle extends StatelessWidget {
         text,
         style: style ??
             const TextStyle(
-              fontFamily: 'BeIN',
+              fontFamily: 'Cairo',
               fontWeight: FontWeight.bold,
               color: Colors.white,
-              fontSize: 18,
+              fontSize: 17,
             ),
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
@@ -132,13 +132,13 @@ class RasscoAppBar extends StatelessWidget implements PreferredSizeWidget {
       actions: actions,
       leading: leading,
       bottom: bottom,
-      backgroundColor: backgroundColor ?? AppColors.surfaceLight,
-      foregroundColor: foregroundColor ?? AppColors.textPrimary,
+      backgroundColor: backgroundColor ?? AppColors.primary,
+      foregroundColor: foregroundColor ?? Colors.white,
       elevation: elevation,
       centerTitle: centerTitle,
       automaticallyImplyLeading: automaticallyImplyLeading,
       titleSpacing: titleSpacing ?? 12,
-      iconTheme: iconTheme ?? const IconThemeData(color: AppColors.textPrimary),
+      iconTheme: iconTheme ?? const IconThemeData(color: Colors.white),
     );
   }
 }
