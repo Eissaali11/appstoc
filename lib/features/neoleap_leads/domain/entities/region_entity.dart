@@ -13,6 +13,22 @@ class RegionEntity {
     this.isSelected = false,
   });
 
+  RegionEntity copyWith({
+    String? name,
+    String? emoji,
+    double? latitude,
+    double? longitude,
+    bool? isSelected,
+  }) {
+    return RegionEntity(
+      name: name ?? this.name,
+      emoji: emoji ?? this.emoji,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
+      isSelected: isSelected ?? this.isSelected,
+    );
+  }
+
   static const List<RegionEntity> saudiRegions = [
     RegionEntity(name: 'أبها', emoji: '⛰️', latitude: 18.2164, longitude: 42.5053),
     RegionEntity(name: 'أبو عريش', emoji: '🌴', latitude: 16.9678, longitude: 42.8314),

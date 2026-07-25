@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:dio/dio.dart';
 import 'package:get/get.dart';
+import 'package:collection/collection.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/models/item_type.dart';
 import '../../../../shared/widgets/design_system.dart';
@@ -10,7 +11,6 @@ import '../../../../shared/widgets/barcode_scanner_widget.dart';
 import '../../../../shared/widgets/rassco_app_bar.dart';
 import '../../../../shared/utils/icon_mapper.dart';
 import '../../../../shared/utils/barcode_validator.dart';
-import '../../../../core/api/interceptors/auth_interceptor.dart';
 
 import '../../../moving_inventory/data/models/serialized_item.dart';
 import '../../../dashboard/presentation/controllers/dashboard_controller.dart';
@@ -101,9 +101,13 @@ class _ShipmentScanPageState extends State<ShipmentScanPage>
   Future<void> _loadItemTypes() async {
     try {
       final response = await _dio.get('/api/item-types/active');
-      if (response.data is List) {
+      final rawData = response.data is List 
+          ? response.data 
+          : (response.data is Map ? (response.data['data'] ?? response.data['items']) : null);
+
+      if (rawData is List) {
         setState(() {
-          _itemTypes = (response.data as List)
+          _itemTypes = rawData
               .map((e) => ItemType.fromJson(e as Map<String, dynamic>))
               .toList();
           _updateSelectedItemType();
@@ -183,9 +187,13 @@ class _ShipmentScanPageState extends State<ShipmentScanPage>
     setState(() { _isCustodyLoading = true; _custodyError = null; });
     try {
       final response = await _dio.get('/api/my-serialized-custody');
-      if (response.data is List) {
+      final rawList = response.data is List 
+          ? response.data 
+          : (response.data is Map ? (response.data['data'] ?? response.data['items'] ?? response.data['custody']) : null);
+
+      if (rawList is List) {
         setState(() {
-          _custodyItems = (response.data as List)
+          _custodyItems = rawList
               .map((e) => SerializedItem.fromJson(e as Map<String, dynamic>))
               .toList();
         });
@@ -195,14 +203,17 @@ class _ShipmentScanPageState extends State<ShipmentScanPage>
       try {
         final token = _dio.options.headers['Authorization'];
         if (token != null) {
-          // Decode JWT to get user id — fallback: use /api/auth/me
           final meResp = await _dio.get('/api/auth/me');
-          final userId = meResp.data?['id'] as String?;
+          final userId = meResp.data?['id'] as String? ?? meResp.data?['user']?['id'] as String?;
           if (userId != null) {
             final resp2 = await _dio.get('/api/technicians/$userId/serialized-custody');
-            if (resp2.data is List) {
+            final rawList2 = resp2.data is List 
+                ? resp2.data 
+                : (resp2.data is Map ? (resp2.data['data'] ?? resp2.data['items']) : null);
+
+            if (rawList2 is List) {
               setState(() {
-                _custodyItems = (resp2.data as List)
+                _custodyItems = rawList2
                     .map((e) => SerializedItem.fromJson(e as Map<String, dynamic>))
                     .toList();
               });
@@ -235,7 +246,15 @@ class _ShipmentScanPageState extends State<ShipmentScanPage>
       return;
     }
 
-    final selectedType = _itemTypes.firstWhere((t) => t.id == _selectedItemTypeId);
+    final selectedType = _itemTypes.firstWhereOrNull((t) => t.id == _selectedItemTypeId);
+    if (selectedType == null) {
+      setState(() {
+        _scanError = 'نوع الصنف المحدد غير موجود';
+        _scanSuccess = null;
+      });
+      return;
+    }
+
     // Keep full uppercase form with letter prefix (e.g. NCC303042220)
     final serial = BarcodeValidator.toDisplaySerial(raw, selectedType);
 
@@ -304,8 +323,6 @@ class _ShipmentScanPageState extends State<ShipmentScanPage>
     setState(() { _isScanLoading = true; _scanError = null; _scanSuccess = null; });
 
     try {
-      await AuthInterceptor.ensureFreshAccessToken();
-
       final body = <String, dynamic>{
         'items': _scannedBatchItems.map((item) => {
           'serialNumber': item.serialNumber,
@@ -319,9 +336,11 @@ class _ShipmentScanPageState extends State<ShipmentScanPage>
 
       HapticFeedback.mediumImpact();
       final respData = resp.data;
-      final addedCount = (respData is Map && respData['data'] is List)
-          ? (respData['data'] as List).length
-          : _scannedBatchItems.length;
+      final addedCount = (respData is Map && respData['addedCount'] != null)
+          ? respData['addedCount'] as int
+          : ((respData is Map && respData['data'] is List)
+              ? (respData['data'] as List).length
+              : _scannedBatchItems.length);
       final rejectedCount = (respData is Map && respData['rejectedCount'] != null)
           ? respData['rejectedCount'] as int
           : 0;
@@ -359,7 +378,7 @@ class _ShipmentScanPageState extends State<ShipmentScanPage>
           indicatorColor: AppColors.primary,
           labelColor: Colors.white,
           unselectedLabelColor: Colors.white38,
-          labelStyle: TextStyle(fontFamily: 'BeIN', fontWeight: FontWeight.bold, fontSize: 14),
+          labelStyle: const TextStyle(fontFamily: 'BeIN', fontWeight: FontWeight.bold, fontSize: 14),
           tabs: [
             Tab(
               icon: const Icon(Icons.qr_code_scanner, size: 20),
@@ -620,10 +639,12 @@ class _ShipmentScanPageState extends State<ShipmentScanPage>
           }).toList(),
           onChanged: (val) {
             if (val == null) return;
-            final type = _itemTypes.firstWhere((t) => t.id == val);
+            final type = _itemTypes.firstWhereOrNull((t) => t.id == val);
             setState(() {
               _selectedItemTypeId = val;
-              _isSim = type.category == 'sim';
+              if (type != null) {
+                _isSim = type.category == 'sim';
+              }
             });
           },
         ),
@@ -713,8 +734,10 @@ class _ShipmentScanPageState extends State<ShipmentScanPage>
                     if (returnedItemTypeId != null) {
                       setState(() {
                         _selectedItemTypeId = returnedItemTypeId;
-                        final type = _itemTypes.firstWhere((t) => t.id == returnedItemTypeId);
-                        _isSim = type.category == 'sim';
+                        final type = _itemTypes.firstWhereOrNull((t) => t.id == returnedItemTypeId);
+                        if (type != null) {
+                          _isSim = type.category == 'sim';
+                        }
                       });
                     }
                     

@@ -4,11 +4,9 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../domain/entities/lead_entity.dart';
-import '../../domain/entities/region_entity.dart';
 import '../controllers/neoleap_leads_controller.dart';
 import '../../../../shared/widgets/app_scaffold.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../../shared/widgets/design_system.dart';
 
 class NeoleapLeadsPage extends StatefulWidget {
   const NeoleapLeadsPage({super.key});
@@ -24,7 +22,6 @@ class _NeoleapLeadsPageState extends State<NeoleapLeadsPage> {
   final TextEditingController _phoneCtrl = TextEditingController();
   final TextEditingController _searchFilterCtrl = TextEditingController();
 
-  double _radius = 5000;
   bool _obscureKey = true;
 
   @override
@@ -45,52 +42,36 @@ class _NeoleapLeadsPageState extends State<NeoleapLeadsPage> {
     super.dispose();
   }
 
-  // ── UI Helpers ──────────────────────────────────────────────────────────
-  Color get _statusColor {
-    switch (controller.apiKeyStatus.value) {
-      case ApiKeyStatus.valid:
-        return AppColors.success;
-      case ApiKeyStatus.invalid:
-        return AppColors.error;
-      case ApiKeyStatus.checking:
-        return AppColors.warning;
-      case ApiKeyStatus.idle:
-        return AppColors.textSecondary;
+  Color _getStatusColor(LeadStatus status) {
+    switch (status) {
+      case LeadStatus.discovered:
+      case LeadStatus.unassigned:
+        return const Color(0xFF2563EB); // Blue
+      case LeadStatus.assigned:
+      case LeadStatus.contacted:
+        return AppColors.primary; // Corporate Turquoise
+      case LeadStatus.visitPlanned:
+      case LeadStatus.visited:
+        return const Color(0xFF7C3AED); // Purple
+      case LeadStatus.interested:
+      case LeadStatus.won:
+        return AppColors.success; // Green
+      case LeadStatus.negotiation:
+        return AppColors.warning; // Orange
+      case LeadStatus.lost:
+      case LeadStatus.notEligible:
+        return AppColors.error; // Red
+      case LeadStatus.duplicate:
+        return AppColors.textMuted; // Gray
     }
   }
 
-  String get _statusLabel {
-    switch (controller.apiKeyStatus.value) {
-      case ApiKeyStatus.valid:
-        return 'api_key_connected'.tr;
-      case ApiKeyStatus.invalid:
-        return 'api_key_invalid'.tr;
-      case ApiKeyStatus.checking:
-        return 'api_key_checking'.tr;
-      case ApiKeyStatus.idle:
-        return 'api_key_idle'.tr;
-    }
-  }
-
-  Widget _statusIcon() {
-    switch (controller.apiKeyStatus.value) {
-      case ApiKeyStatus.checking:
-        return const PulsingDot(color: AppColors.warning, size: 8);
-      case ApiKeyStatus.valid:
-        return const PulsingDot(color: AppColors.success, size: 8);
-      case ApiKeyStatus.invalid:
-        return const PulsingDot(color: AppColors.error, size: 8);
-      case ApiKeyStatus.idle:
-        return const PulsingDot(color: AppColors.textSecondary, size: 8);
-    }
-  }
-
-  // ── Phone Dialog ─────────────────────────────────────────────────────────
+  // ── Phone Editing Dialog ──────────────────────────────────────────────────
   void _showPhoneDialog(LeadEntity lead) {
     _phoneCtrl.text = lead.phone ?? '';
     Get.dialog(
       Dialog(
-        backgroundColor: AppColors.surfaceDark,
+        backgroundColor: Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         child: Padding(
           padding: const EdgeInsets.all(20),
@@ -102,12 +83,19 @@ class _NeoleapLeadsPageState extends State<NeoleapLeadsPage> {
               children: [
                 Row(
                   children: [
-                    const Icon(LucideIcons.phone, color: AppColors.primary, size: 20),
-                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryLight,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(LucideIcons.phone, color: AppColors.primary, size: 20),
+                    ),
+                    const SizedBox(width: 10),
                     Text(
-                      lead.phone == null ? 'add_phone'.tr : 'edit_phone'.tr,
-                      style: TextStyle(fontFamily: 'BeIN', 
-                        color: Colors.white,
+                      lead.phone == null ? 'إضافة رقم الهاتف' : 'تعديل رقم الهاتف',
+                      style: GoogleFonts.cairo(
+                        color: AppColors.textPrimary,
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
                       ),
@@ -116,21 +104,21 @@ class _NeoleapLeadsPageState extends State<NeoleapLeadsPage> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'يرجى إدخال رقم الهاتف للتواصل المباشر مع العميل عبر الواتساب والمكالمات.',
-                  style: TextStyle(fontFamily: 'BeIN', color: AppColors.textSecondary, fontSize: 12),
+                  'أدخل رقم الهاتف للتواصل المباشر مع العميل عبر الواتساب والمكالمات الهاتفية.',
+                  style: GoogleFonts.cairo(color: AppColors.textSecondary, fontSize: 12),
                 ),
                 const SizedBox(height: 16),
                 TextField(
                   controller: _phoneCtrl,
                   keyboardType: TextInputType.phone,
-                  style: GoogleFonts.robotoMono(color: Colors.white),
+                  style: GoogleFonts.robotoMono(color: AppColors.textPrimary, fontWeight: FontWeight.bold),
                   decoration: InputDecoration(
-                    hintText: '966XXXXXXXXX',
-                    hintStyle: GoogleFonts.robotoMono(color: Colors.white24, fontSize: 13),
-                    labelText: 'whats_chat'.tr,
-                    labelStyle: TextStyle(fontFamily: 'BeIN', color: AppColors.textSecondary),
+                    hintText: '9665XXXXXXXX',
+                    hintStyle: GoogleFonts.robotoMono(color: AppColors.textMuted, fontSize: 13),
+                    labelText: 'رقم الهاتف / الواتساب',
+                    labelStyle: GoogleFonts.cairo(color: AppColors.textSecondary),
                     filled: true,
-                    fillColor: AppColors.backgroundDark,
+                    fillColor: AppColors.backgroundLight,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
                       borderSide: const BorderSide(color: AppColors.border),
@@ -141,9 +129,9 @@ class _NeoleapLeadsPageState extends State<NeoleapLeadsPage> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
-                      borderSide: const BorderSide(color: AppColors.primary),
+                      borderSide: const BorderSide(color: AppColors.primary, width: 2),
                     ),
-                    prefixIcon: const Icon(LucideIcons.phone, color: AppColors.textSecondary, size: 18),
+                    prefixIcon: const Icon(LucideIcons.phoneCall, color: AppColors.primary, size: 18),
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -152,15 +140,13 @@ class _NeoleapLeadsPageState extends State<NeoleapLeadsPage> {
                   children: [
                     TextButton(
                       onPressed: () => Get.back(),
-                      child: Text(
-                        'cancel'.tr,
-                        style: TextStyle(fontFamily: 'BeIN', color: AppColors.textSecondary),
-                      ),
+                      child: Text('إلغاء', style: GoogleFonts.cairo(color: AppColors.textSecondary)),
                     ),
                     const SizedBox(width: 12),
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
+                        elevation: 0,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                       ),
@@ -168,13 +154,7 @@ class _NeoleapLeadsPageState extends State<NeoleapLeadsPage> {
                         controller.updateLeadPhone(lead.id, _phoneCtrl.text.trim());
                         Get.back();
                       },
-                      child: Text(
-                        'save'.tr,
-                        style: TextStyle(fontFamily: 'BeIN', 
-                          color: AppColors.backgroundDark,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+                      child: Text('حفظ التغييرات', style: GoogleFonts.cairo(color: Colors.white, fontWeight: FontWeight.bold)),
                     ),
                   ],
                 ),
@@ -186,768 +166,704 @@ class _NeoleapLeadsPageState extends State<NeoleapLeadsPage> {
     );
   }
 
-  // ── Delete Confirmation Dialog ───────────────────────────────────────────
-  void _confirmDeleteLead(LeadEntity lead) {
-    Get.dialog(
-      Dialog(
-        backgroundColor: AppColors.surfaceDark,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Directionality(
-            textDirection: TextDirection.rtl,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Row(
-                  children: [
-                    Icon(LucideIcons.alertTriangle, color: AppColors.error, size: 22),
-                    const SizedBox(width: 8),
-                    Text(
-                      'حذف عميل محتمل',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  'هل أنت متأكد من رغبتك في حذف العميل "${lead.name}"؟ لا يمكن التراجع عن هذا الإجراء.',
-                  style: TextStyle(fontFamily: 'BeIN', color: AppColors.textSecondary, fontSize: 13),
-                ),
-                const SizedBox(height: 20),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    TextButton(
-                      onPressed: () => Get.back(),
-                      child: Text(
-                        'cancel'.tr,
-                        style: TextStyle(fontFamily: 'BeIN', color: AppColors.textSecondary),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.error,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                      ),
-                      onPressed: () {
-                        controller.deleteLead(lead.id);
-                        Get.back();
-                        Get.snackbar(
-                          'تم الحذف',
-                          'تم إزالة العميل بنجاح من القائمة',
-                          snackPosition: SnackPosition.BOTTOM,
-                          backgroundColor: AppColors.error,
-                          colorText: Colors.white,
-                        );
-                      },
-                      child: Text(
-                        'حذف',
-                        style: TextStyle(fontFamily: 'BeIN', 
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _showRegionsMultiSelectBottomSheet() {
-    String searchKeyword = '';
-    
+  // ── Status Action Sheet ────────────────────────────────────────────────────
+  void _showStatusUpdateSheet(LeadEntity lead) {
     Get.bottomSheet(
-      StatefulBuilder(
-        builder: (context, setSheetState) {
-          final filteredList = RegionEntity.saudiRegions.where((region) {
-            return region.name.contains(searchKeyword) || 
-                   region.name.toLowerCase().contains(searchKeyword.toLowerCase());
-          }).toList();
-
-          return Container(
-            height: context.height * 0.75,
-            decoration: const BoxDecoration(
-              color: AppColors.surfaceDark,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-            ),
-            child: Directionality(
-              textDirection: TextDirection.rtl,
-              child: Column(
+      Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        padding: const EdgeInsets.all(20),
+        child: Directionality(
+          textDirection: TextDirection.rtl,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const SizedBox(height: 8),
-                  Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: Colors.white24,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
+                  Text(
+                    'تحديث حالة العميل الميداني',
+                    style: GoogleFonts.cairo(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
                   ),
-                  const SizedBox(height: 16),
-
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'تحديد المدن المستهدفة بالبحث',
-                          style: TextStyle(fontFamily: 'BeIN', 
-                            fontSize: 15,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                        Text(
-                          '(${controller.selectedRegions.length} مختارة)',
-                          style: TextStyle(fontFamily: 'BeIN', 
-                            fontSize: 12,
-                            color: AppColors.primary,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: TextField(
-                      style: TextStyle(fontFamily: 'BeIN', color: Colors.white, fontSize: 13),
-                      onChanged: (val) {
-                        setSheetState(() {
-                          searchKeyword = val;
-                        });
-                      },
-                      decoration: InputDecoration(
-                        hintText: 'ابحث عن مدينة من مدن المملكة...',
-                        hintStyle: TextStyle(fontFamily: 'BeIN', color: Colors.white30, fontSize: 12),
-                        prefixIcon: const Icon(LucideIcons.search, size: 16, color: AppColors.textSecondary),
-                        filled: true,
-                        fillColor: AppColors.backgroundDark,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                          borderSide: const BorderSide(color: AppColors.border),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                          borderSide: const BorderSide(color: AppColors.border),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                          borderSide: const BorderSide(color: AppColors.primary),
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(vertical: 8),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        TextButton.icon(
-                          onPressed: () {
-                            controller.selectAllRegions();
-                            setSheetState(() {});
-                          },
-                          icon: const Icon(LucideIcons.checkSquare, size: 14, color: AppColors.primary),
-                          label: Text(
-                            'select_all'.tr,
-                            style: TextStyle(fontFamily: 'BeIN', fontSize: 12, color: AppColors.primary, fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        TextButton.icon(
-                          onPressed: () {
-                            controller.deselectAllRegions();
-                            setSheetState(() {});
-                          },
-                          icon: const Icon(LucideIcons.square, size: 14, color: AppColors.error),
-                          label: Text(
-                            'deselect_all'.tr,
-                            style: TextStyle(fontFamily: 'BeIN', fontSize: 12, color: AppColors.error, fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const Divider(color: Colors.white10, height: 16),
-
-                  Expanded(
-                    child: ListView.separated(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      itemCount: filteredList.length,
-                      separatorBuilder: (_, __) => const Divider(color: Colors.white10, height: 1),
-                      itemBuilder: (context, idx) {
-                        final r = filteredList[idx];
-                        final isSelected = controller.selectedRegions.any((s) => s.name == r.name);
-
-                        return ListTile(
-                          contentPadding: EdgeInsets.zero,
-                          leading: Text(r.emoji, style: const TextStyle(fontSize: 18)),
-                          title: Text(
-                            r.name,
-                            style: TextStyle(fontFamily: 'BeIN', 
-                              color: isSelected ? Colors.white : AppColors.textSecondary,
-                              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                              fontSize: 14,
-                            ),
-                          ),
-                          trailing: Theme(
-                            data: ThemeData(unselectedWidgetColor: Colors.white30),
-                            child: Checkbox(
-                              value: isSelected,
-                              activeColor: AppColors.primary,
-                              checkColor: AppColors.backgroundDark,
-                              onChanged: (val) {
-                                controller.toggleRegion(r);
-                                setSheetState(() {});
-                              },
-                            ),
-                          ),
-                          onTap: () {
-                            controller.toggleRegion(r);
-                            setSheetState(() {});
-                          },
-                        );
-                      },
-                    ),
-                  ),
-
-                  Padding(
-                    padding: const EdgeInsets.all(20),
-                    child: NeonButton(
-                      label: 'تأكيد الاختيار',
-                      onPressed: () => Get.back(),
-                    ),
-                  ),
+                  IconButton(onPressed: () => Get.back(), icon: const Icon(LucideIcons.x, size: 20, color: AppColors.textMuted)),
                 ],
               ),
-            ),
-          );
-        }
+              const SizedBox(height: 4),
+              Text(
+                lead.name,
+                style: GoogleFonts.cairo(fontSize: 13, color: AppColors.primary, fontWeight: FontWeight.bold),
+              ),
+              const Divider(height: 20, color: AppColors.border),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: LeadStatus.values.map((status) {
+                  final isSelected = lead.leadStatus == status;
+                  final statusColor = _getStatusColor(status);
+                  return ChoiceChip(
+                    label: Text(status.labelAr, style: GoogleFonts.cairo(fontSize: 12, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal, color: isSelected ? Colors.white : AppColors.textPrimary)),
+                    selected: isSelected,
+                    selectedColor: statusColor,
+                    backgroundColor: AppColors.backgroundLight,
+                    side: BorderSide(color: isSelected ? statusColor : AppColors.border),
+                    onSelected: (val) {
+                      if (val) {
+                        controller.updateLeadStatus(lead.id, status);
+                        Get.back();
+                      }
+                    },
+                  );
+                }).toList(),
+              ),
+            ],
+          ),
+        ),
       ),
-      isScrollControlled: true,
     );
   }
 
   Future<void> _launchWhatsApp(String phone, String name) async {
     var p = phone.replaceAll(RegExp(r'\s+|-|\+'), '');
     if (!p.startsWith('966') && p.startsWith('5')) p = '966$p';
-    final msg = Uri.encodeComponent('مرحباً عميلنا الكريم في $name، نحن من خدمة عملاء Neoleap للمدفوعات الرقمية. هل ترغب بطلب جهاز POS؟');
+    final msg = Uri.encodeComponent('مرحباً بكم في $name، نتواصل معكم من شركة RASSCO للمدفوعات الرقمية والأنظمة التقنية.');
     final uri = Uri.parse('https://wa.me/$p?text=$msg');
     if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
-      Get.snackbar('error'.tr, 'whatsapp_not_installed'.tr);
+      Get.snackbar('خطأ', 'تعذّر فتح تطبيق الواتساب');
     }
   }
 
   Future<void> _launchCall(String phone) async {
     if (!await launchUrl(Uri.parse('tel:$phone'))) {
-      Get.snackbar('error'.tr, 'cannot_launch_dialer'.tr);
+      Get.snackbar('خطأ', 'تعذّر إجراء الاتصال');
     }
   }
 
   Future<void> _openMap(double lat, double lng, String name) async {
     final uri = Uri.parse('https://www.google.com/maps/search/?api=1&query=$lat,$lng');
     if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
-      Get.snackbar('error'.tr, 'cannot_open_map'.tr);
+      Get.snackbar('خطأ', 'تعذّر تطبيق خرائط Google');
     }
   }
 
-  // ── Build ─────────────────────────────────────────────────────────────────
+  // ── Build Screen ──────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
     return AppScaffold(
-      title: 'leads_title'.tr,
+      title: 'اكتشاف الأنشطة التجارية القريبة',
       body: Obx(() => Directionality(
         textDirection: TextDirection.rtl,
-        child: Column(
-          children: [
-            // ── Error Banner ─────────────────────────────────────────────────
-            if (controller.error.value.isNotEmpty)
+        child: Container(
+          color: AppColors.backgroundLight,
+          child: Column(
+            children: [
+              // ── Header Notice Banner ──────────────────────────────────────
               Container(
                 width: double.infinity,
-                margin: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                decoration: BoxDecoration(
-                  color: AppColors.error.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.error.withOpacity(0.3)),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  border: Border(bottom: BorderSide(color: AppColors.border)),
                 ),
-                child: Row(children: [
-                  const Icon(LucideIcons.alertTriangle, color: AppColors.error, size: 20),
-                  const SizedBox(width: 10),
-                  Expanded(child: Text(controller.error.value,
-                      style: TextStyle(fontFamily: 'BeIN', color: AppColors.error, fontSize: 13, fontWeight: FontWeight.w500))),
-                  IconButton(
-                    icon: const Icon(LucideIcons.x, size: 18, color: AppColors.error),
-                    onPressed: () => controller.error.value = '',
-                    padding: EdgeInsets.zero, constraints: const BoxConstraints(),
-                  ),
-                ]),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryLight,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(LucideIcons.compass, color: AppColors.primary, size: 20),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'نظام اكتشاف العملاء الجغرافي (Saudi Geo Leads)',
+                            style: GoogleFonts.cairo(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                          Text(
+                            'سيتم البحث عن الأنشطة ضمن النطاق المحدد وإضافتها لقائمتك بعد إزالة التكرار.',
+                            style: GoogleFonts.cairo(
+                              fontSize: 11,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
 
-            Expanded(
-              child: ListView(
-                physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.all(16),
-                children: [
-                  // ── API Key Card ─────────────────────────────────────────────────
-                  _buildApiKeyCard(),
-                  const SizedBox(height: 16),
+              // ── Main Content Scroll View ──────────────────────────────────
+              Expanded(
+                child: ListView(
+                  physics: const BouncingScrollPhysics(),
+                  padding: const EdgeInsets.all(16),
+                  children: [
+                    // Error alert if present
+                    if (controller.error.value.isNotEmpty) _buildErrorBanner(),
 
-                  // ── Search & Filter Criteria ─────────────────────────────────────
-                  _buildSearchCard(),
-                  const SizedBox(height: 20),
+                    // 1. Discovery Setup Card
+                    _buildDiscoverySetupCard(),
+                    const SizedBox(height: 16),
 
-                  // ── Live Stats Summary ───────────────────────────────────────────
-                  _buildStatsSection(),
-                  const SizedBox(height: 20),
+                    // 2. Live Job Progress Metrics Card (if running or completed)
+                    if (controller.isDiscovering.value || controller.jobPlacesFound.value > 0)
+                      _buildJobProgressCard(),
+                    if (controller.isDiscovering.value || controller.jobPlacesFound.value > 0)
+                      const SizedBox(height: 16),
 
-                  // ── Filter and Export Action Bar ─────────────────────────────────
-                  _buildFilterAndExportBar(),
-                  const SizedBox(height: 12),
+                    // 3. Stats & Counters Overview
+                    _buildStatsRow(),
+                    const SizedBox(height: 16),
 
-                  // ── Results Label ────────────────────────────────────────────────
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'قائمة العملاء المستخرجين',
-                        style: TextStyle(fontFamily: 'BeIN', 
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                    // 4. View Mode Toggle & Filter Bar
+                    _buildFilterAndSearchRow(),
+                    const SizedBox(height: 12),
+
+                    // 5. Results Section Header
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'الأنشطة المكتشفة (${controller.filteredLeads.length})',
+                          style: GoogleFonts.cairo(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.textPrimary,
+                          ),
                         ),
-                      ),
-                      Text(
-                        '${controller.filteredLeads.length} عميل محتمل',
-                        style: TextStyle(fontFamily: 'BeIN', 
-                          fontSize: 12,
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.bold,
+                        Row(
+                          children: [
+                            Text(
+                              'النطاق النشط: ${controller.radiusKm.value} كم',
+                              style: GoogleFonts.cairo(fontSize: 11, color: AppColors.primary, fontWeight: FontWeight.bold),
+                            ),
+                            const SizedBox(width: 8),
+                            IconButton(
+                              icon: const Icon(LucideIcons.fileSpreadsheet, size: 18, color: AppColors.success),
+                              tooltip: 'تصدير كـ CSV',
+                              onPressed: controller.exportToCSV,
+                            ),
+                          ],
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
 
-                  // ── Leads List ───────────────────────────────────────────────────
-                  controller.filteredLeads.isEmpty
-                      ? _buildEmptyState()
-                      : ListView.separated(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          itemCount: controller.filteredLeads.length,
-                          separatorBuilder: (_, __) => const SizedBox(height: 10),
-                          itemBuilder: (_, i) => _leadCard(controller.filteredLeads[i]),
-                        ),
-                ],
+                    // 6. Map or List Representation
+                    controller.isMapView.value
+                        ? _buildMapViewPlaceholder()
+                        : (controller.filteredLeads.isEmpty
+                            ? _buildEmptyState()
+                            : ListView.separated(
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                itemCount: controller.filteredLeads.length,
+                                separatorBuilder: (ctx, index) => const SizedBox(height: 10),
+                                itemBuilder: (ctx, i) => _buildLeadCard(controller.filteredLeads[i]),
+                              )),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       )),
     );
   }
 
-  // ── API Key Card ──────────────────────────────────────────────────────────
-  Widget _buildApiKeyCard() {
-    final status = controller.apiKeyStatus.value;
-    final isChecking = status == ApiKeyStatus.checking;
+  // ── Error Banner ──────────────────────────────────────────────────────────
+  Widget _buildErrorBanner() {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.errorLight,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        children: [
+          const Icon(LucideIcons.alertTriangle, color: AppColors.error, size: 18),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              controller.error.value,
+              style: GoogleFonts.cairo(color: AppColors.error, fontSize: 12, fontWeight: FontWeight.bold),
+            ),
+          ),
+          IconButton(
+            icon: const Icon(LucideIcons.x, size: 16, color: AppColors.error),
+            onPressed: () => controller.error.value = '',
+          ),
+        ],
+      ),
+    );
+  }
 
-    return GlassCard(
-      borderColor: _statusColor.withOpacity(0.3),
-      backgroundColor: AppColors.surfaceDark,
+  // ── Discovery Setup Card ──────────────────────────────────────────────────
+  Widget _buildDiscoverySetupCard() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.border),
+        boxShadow: const [
+          BoxShadow(color: Color(0x0A000000), blurRadius: 10, offset: Offset(0, 2)),
+        ],
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Technician Location Header
           Row(
             children: [
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.1),
+                  color: AppColors.primaryLight,
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Icon(LucideIcons.key, color: AppColors.primary, size: 20),
+                child: const Icon(LucideIcons.mapPin, color: AppColors.primary, size: 18),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'google_places_settings'.tr,
-                      style: TextStyle(fontFamily: 'BeIN', fontWeight: FontWeight.bold, fontSize: 14, color: Colors.white),
+                      'الموقع الحالي للفني',
+                      style: GoogleFonts.cairo(fontSize: 11, color: AppColors.textMuted, fontWeight: FontWeight.bold),
                     ),
-                    const SizedBox(height: 2),
-                    Row(
-                      children: [
-                        _statusIcon(),
-                        const SizedBox(width: 6),
-                        Text(
-                          _statusLabel,
-                          style: TextStyle(fontFamily: 'BeIN', 
-                            fontSize: 11,
-                            color: _statusColor,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
+                    Text(
+                      '${controller.currentCityName.value} — ${controller.currentRegionName.value}',
+                      style: GoogleFonts.cairo(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
                     ),
                   ],
                 ),
               ),
-              if (controller.apiKey.value.isNotEmpty)
-                IconButton(
-                  icon: const Icon(LucideIcons.trash2, size: 18, color: AppColors.error),
-                  tooltip: 'api_key_clear'.tr,
-                  onPressed: () {
-                    _apiKeyCtrl.clear();
-                    controller.clearApiKey();
-                  },
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppColors.successLight,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: AppColors.success.withValues(alpha: 0.3)),
                 ),
+                child: Row(
+                  children: [
+                    const Icon(LucideIcons.checkCircle2, color: AppColors.success, size: 12),
+                    const SizedBox(width: 4),
+                    Text('GPS نشط', style: GoogleFonts.cairo(fontSize: 10, color: AppColors.success, fontWeight: FontWeight.bold)),
+                  ],
+                ),
+              ),
             ],
           ),
-          const SizedBox(height: 12),
+          const Divider(height: 24, color: AppColors.border),
+
+          // API Key Connection Box
+          _buildApiKeyField(),
+          const SizedBox(height: 16),
+
+          // Search Radius Slider (Default 25km, Max 150km)
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('نطاق البحث الجغرافي:', style: GoogleFonts.cairo(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+              Text('${controller.radiusKm.value} كم', style: GoogleFonts.cairo(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.primary)),
+            ],
+          ),
+          SliderTheme(
+            data: SliderTheme.of(context).copyWith(
+              activeTrackColor: AppColors.primary,
+              inactiveTrackColor: AppColors.border,
+              thumbColor: AppColors.primary,
+              overlayColor: AppColors.primaryGlow,
+            ),
+            child: Slider(
+              value: controller.radiusKm.value.toDouble(),
+              min: 5,
+              max: 150,
+              divisions: 29,
+              label: '${controller.radiusKm.value} كم',
+              onChanged: (val) => controller.radiusKm.value = val.round(),
+            ),
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('5 كم', style: GoogleFonts.cairo(fontSize: 10, color: AppColors.textMuted)),
+              Text('25 كم (افتراضي)', style: GoogleFonts.cairo(fontSize: 10, color: AppColors.primary, fontWeight: FontWeight.bold)),
+              Text('50 كم', style: GoogleFonts.cairo(fontSize: 10, color: AppColors.textMuted)),
+              Text('150 كم (أقصى نطاق)', style: GoogleFonts.cairo(fontSize: 10, color: AppColors.textMuted)),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // Category Chips Selection
+          Text('فئات الأنشطة المستهدفة بالبحث:', style: GoogleFonts.cairo(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: BusinessCategoryOption.availableCategories.map((cat) {
+              final isSelected = controller.selectedCategoryIds.contains(cat.id);
+              return FilterChip(
+                label: Text('${cat.iconEmoji} ${cat.titleAr}', style: GoogleFonts.cairo(fontSize: 11, color: isSelected ? Colors.white : AppColors.textPrimary, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
+                selected: isSelected,
+                selectedColor: AppColors.primary,
+                backgroundColor: AppColors.backgroundLight,
+                side: BorderSide(color: isSelected ? AppColors.primary : AppColors.border),
+                onSelected: (_) => controller.toggleCategory(cat.id),
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 16),
+
+          // Discovery Trigger Button
+          SizedBox(
+            width: double.infinity,
+            height: 48,
+            child: ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                elevation: 0,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              onPressed: controller.isDiscovering.value
+                  ? null
+                  : () => controller.startGeoDiscoveryJob(customQuery: _queryCtrl.text.trim()),
+              icon: controller.isDiscovering.value
+                  ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  : const Icon(LucideIcons.radar, color: Colors.white, size: 20),
+              label: Text(
+                controller.isDiscovering.value ? 'جارٍ فحص المناطق واكتشاف الأنشطة...' : 'اكتشاف العملاء القريبين',
+                style: GoogleFonts.cairo(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildApiKeyField() {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.backgroundLight,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  const Icon(LucideIcons.key, size: 16, color: AppColors.primary),
+                  const SizedBox(width: 6),
+                  Text('مفتاح Google Places API', style: GoogleFonts.cairo(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+                ],
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: controller.isApiKeyValid ? AppColors.successLight : AppColors.warningLight,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  controller.isApiKeyValid ? 'متصل' : 'تحقق مطلوبة',
+                  style: GoogleFonts.cairo(fontSize: 10, color: controller.isApiKeyValid ? AppColors.success : AppColors.warning, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
           TextField(
             controller: _apiKeyCtrl,
             obscureText: _obscureKey,
-            style: GoogleFonts.robotoMono(color: Colors.white, fontSize: 13, letterSpacing: 0.5),
+            style: GoogleFonts.robotoMono(fontSize: 12, color: AppColors.textPrimary),
             decoration: InputDecoration(
               hintText: 'AIzaSy...',
-              labelText: 'أدخل المفتاح واضغط ✓ للاتصال',
-              labelStyle: TextStyle(fontFamily: 'BeIN', color: AppColors.textSecondary, fontSize: 12),
-              hintStyle: GoogleFonts.robotoMono(color: Colors.white24, fontSize: 12),
               filled: true,
-              fillColor: AppColors.backgroundDark,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide: const BorderSide(color: AppColors.border),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide: const BorderSide(color: AppColors.border),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide: const BorderSide(color: AppColors.primary),
-              ),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-              prefixIcon: const Icon(LucideIcons.shield, size: 18, color: AppColors.textSecondary),
+              fillColor: Colors.white,
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: AppColors.border)),
+              enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: AppColors.border)),
+              focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: AppColors.primary)),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
               suffixIcon: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   IconButton(
-                    icon: Icon(_obscureKey ? Icons.visibility : Icons.visibility_off, size: 18, color: AppColors.textSecondary),
+                    icon: Icon(_obscureKey ? Icons.visibility : Icons.visibility_off, size: 16, color: AppColors.textMuted),
                     onPressed: () => setState(() => _obscureKey = !_obscureKey),
                   ),
                   IconButton(
-                    icon: isChecking
-                        ? const SizedBox(
-                            width: 16, height: 16,
-                            child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
-                          )
-                        : const Icon(Icons.check_circle_outline, size: 22, color: AppColors.primary),
-                    onPressed: isChecking
-                        ? null
-                        : () => controller.saveAndValidateApiKey(_apiKeyCtrl.text),
+                    icon: const Icon(Icons.check_circle, size: 18, color: AppColors.primary),
+                    onPressed: () => controller.saveAndValidateApiKey(_apiKeyCtrl.text),
                   ),
                 ],
               ),
             ),
-            onSubmitted: (val) => controller.saveAndValidateApiKey(val),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'بعد إدخال المفتاح اضغط ✓ أو Enter للتحقق التلقائي من الاتصال',
-            style: TextStyle(fontFamily: 'BeIN', color: AppColors.textSecondary, fontSize: 10),
           ),
         ],
       ),
     );
   }
 
-  // ── Search Card ───────────────────────────────────────────────────────────
-  Widget _buildSearchCard() {
-    return GlassCard(
-      borderColor: AppColors.border,
+  // ── Discovery Progress Metrics Card ───────────────────────────────────────
+  Widget _buildJobProgressCard() {
+    final double progressRatio = controller.jobTotalCells.value == 0
+        ? 0.0
+        : (controller.jobCurrentCell.value / controller.jobTotalCells.value).clamp(0.0, 1.0);
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.primaryLight,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SectionHeader(
-            title: 'خيارات استخراج واستكشاف العملاء',
-            icon: LucideIcons.compass,
-          ),
-          const SizedBox(height: 8),
-
-          // Query field
-          TextField(
-            controller: _queryCtrl,
-            style: TextStyle(fontFamily: 'BeIN', color: Colors.white, fontSize: 14),
-            decoration: InputDecoration(
-              labelText: 'search_query_hint'.tr,
-              hintText: 'supermarket_hint'.tr,
-              labelStyle: TextStyle(fontFamily: 'BeIN', color: AppColors.textSecondary),
-              hintStyle: TextStyle(fontFamily: 'BeIN', color: Colors.white24, fontSize: 12),
-              prefixIcon: const Icon(LucideIcons.store, color: AppColors.primary),
-              filled: true,
-              fillColor: AppColors.backgroundDark,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide: const BorderSide(color: AppColors.border),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide: const BorderSide(color: AppColors.border),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide: const BorderSide(color: AppColors.primary),
-              ),
-            ),
-          ),
-          const SizedBox(height: 14),
-
-          // Radius slider
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Expanded(
-                child: Text(
-                  '${'radius_meters'.tr}: ${(_radius / 1000).toStringAsFixed(1)} ${'km'.tr}',
-                  style: TextStyle(fontFamily: 'BeIN', fontWeight: FontWeight.bold, fontSize: 12, color: AppColors.textPrimary),
-                ),
+              Row(
+                children: [
+                  const Icon(LucideIcons.cpu, color: AppColors.primary, size: 18),
+                  const SizedBox(width: 8),
+                  Text(
+                    controller.isDiscovering.value ? 'جارٍ تنفيذ مسح المربعات الجغرافية' : 'اكتملت مهمة الاكتشاف الجغرافي الأخيرة',
+                    style: GoogleFonts.cairo(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.primaryDark),
+                  ),
+                ],
               ),
-              Expanded(
-                flex: 2,
-                child: SliderTheme(
-                  data: SliderTheme.of(context).copyWith(
-                    activeTrackColor: AppColors.primary,
-                    inactiveTrackColor: Colors.white12,
-                    thumbColor: AppColors.primary,
-                    overlayColor: AppColors.primary.withOpacity(0.2),
-                    valueIndicatorTextStyle: const TextStyle(color: Colors.white),
-                  ),
-                  child: Slider(
-                    value: _radius,
-                    min: 1000,
-                    max: 10000,
-                    divisions: 9,
-                    onChanged: (v) => setState(() => _radius = v),
-                  ),
-                ),
+              Text(
+                '${(progressRatio * 100).toStringAsFixed(0)}%',
+                style: GoogleFonts.cairo(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.primaryDark),
               ),
             ],
           ),
-          const SizedBox(height: 12),
-
-          // Regions Selection Dropdown Label
-          Text(
-            'regions_selection'.tr,
-            style: TextStyle(fontFamily: 'BeIN', fontWeight: FontWeight.bold, fontSize: 13, color: Colors.white),
-          ),
           const SizedBox(height: 8),
-
-          // Custom Dropdown Trigger
-          GestureDetector(
-            onTap: _showRegionsMultiSelectBottomSheet,
-            child: Container(
-              height: 52,
-              padding: const EdgeInsets.symmetric(horizontal: 14),
-              decoration: BoxDecoration(
-                color: AppColors.backgroundDark,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: AppColors.border),
-              ),
-              child: Row(
-                children: [
-                  const Icon(LucideIcons.mapPin, color: AppColors.primary, size: 18),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      controller.selectedRegions.isEmpty
-                          ? 'اختر المدن المستهدفة بالبحث...'
-                          : 'تم تحديد ${controller.selectedRegions.length} مدينة من مدن المملكة',
-                      style: TextStyle(fontFamily: 'BeIN', 
-                        color: controller.selectedRegions.isEmpty ? Colors.white38 : Colors.white,
-                        fontSize: 13,
-                        fontWeight: controller.selectedRegions.isEmpty ? FontWeight.normal : FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  const Icon(LucideIcons.chevronDown, color: AppColors.textSecondary, size: 16),
-                ],
-              ),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(6),
+            child: LinearProgressIndicator(
+              value: progressRatio,
+              backgroundColor: Colors.white,
+              color: AppColors.primary,
+              minHeight: 8,
             ),
           ),
-          const SizedBox(height: 16),
-
-          // Search button
-          NeonButton(
-            label: controller.isLoading.value ? 'searching'.tr : 'search_button'.tr,
-            icon: LucideIcons.downloadCloud,
-            isLoading: controller.isLoading.value,
-            onPressed: !controller.isApiKeyValid
-                ? null
-                : () => controller.searchPlaces(
-                      query: _queryCtrl.text.trim(),
-                      radius: _radius.toInt(),
-                    ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _metricTile('المربعات المفحوصة', '${controller.jobCurrentCell.value} / ${controller.jobTotalCells.value}'),
+              _metricTile('الأماكن المكتشفة', '${controller.jobPlacesFound.value}'),
+              _metricTile('عملاء جدد', '${controller.jobNewLeadsAdded.value}', color: AppColors.success),
+              _metricTile('مكرر مستبعد', '${controller.jobDuplicatesSkipped.value}', color: AppColors.textMuted),
+            ],
           ),
         ],
       ),
     );
   }
 
-  // ── Stats Section ────────────────────────────────────────────────────────
-  Widget _buildStatsSection() {
-    return Row(
+  Widget _metricTile(String label, String value, {Color? color}) {
+    return Column(
       children: [
-        Expanded(
-          child: _statCardItem(
-            'total_leads'.tr,
-            '${controller.totalLeads}',
-            LucideIcons.store,
-            AppColors.primary,
-          ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: _statCardItem(
-            'with_phone'.tr,
-            '${controller.leadsWithPhone}',
-            LucideIcons.phone,
-            AppColors.success,
-          ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: _statCardItem(
-            'sent_leads'.tr,
-            '${controller.sentCount}',
-            LucideIcons.checkSquare,
-            AppColors.accentPurple,
-          ),
-        ),
+        Text(value, style: GoogleFonts.cairo(fontSize: 14, fontWeight: FontWeight.bold, color: color ?? AppColors.primaryDark)),
+        Text(label, style: GoogleFonts.cairo(fontSize: 10, color: AppColors.textSecondary)),
       ],
     );
   }
 
-  Widget _statCardItem(String label, String value, IconData icon, Color color) {
-    return GlassCard(
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-      borderColor: color.withOpacity(0.2),
-      backgroundColor: color.withOpacity(0.04),
+  // ── Stats Summary Row ────────────────────────────────────────────────────
+  Widget _buildStatsRow() {
+    return Row(
+      children: [
+        Expanded(child: _statBox('إجمالي العملاء', '${controller.totalLeads}', LucideIcons.store, AppColors.secondaryBlue)),
+        const SizedBox(width: 8),
+        Expanded(child: _statBox('تم التواصل', '${controller.contactedCount}', LucideIcons.phoneCall, AppColors.primary)),
+        const SizedBox(width: 8),
+        Expanded(child: _statBox('مهتمون بالخدمة', '${controller.interestedCount}', LucideIcons.sparkles, AppColors.success)),
+      ],
+    );
+  }
+
+  Widget _statBox(String label, String val, IconData icon, Color col) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.border),
+      ),
       child: Column(
         children: [
-          Icon(icon, color: color, size: 20),
-          const SizedBox(height: 6),
-          Text(
-            value,
-            style: GoogleFonts.poppins(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            style: TextStyle(fontFamily: 'BeIN', 
-              fontSize: 10,
-              color: AppColors.textSecondary,
-            ),
-            textAlign: TextAlign.center,
-          ),
+          Icon(icon, size: 18, color: col),
+          const SizedBox(height: 4),
+          Text(val, style: GoogleFonts.cairo(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+          Text(label, style: GoogleFonts.cairo(fontSize: 10, color: AppColors.textMuted), textAlign: TextAlign.center),
         ],
       ),
     );
   }
 
-  // ── Filter and Export Action Bar ─────────────────────────────────────────
-  Widget _buildFilterAndExportBar() {
+  // ── Filter and Search Bar ─────────────────────────────────────────────────
+  Widget _buildFilterAndSearchRow() {
     return Row(
       children: [
         Expanded(
           child: TextField(
             controller: _searchFilterCtrl,
-            style: TextStyle(fontFamily: 'BeIN', color: Colors.white, fontSize: 13),
+            style: GoogleFonts.cairo(fontSize: 12, color: AppColors.textPrimary),
             onChanged: controller.filterLeads,
             decoration: InputDecoration(
-              hintText: 'search_leads_hint'.tr,
-              hintStyle: TextStyle(fontFamily: 'BeIN', color: Colors.white30, fontSize: 12),
-              prefixIcon: const Icon(LucideIcons.search, size: 16, color: AppColors.textSecondary),
+              hintText: 'ابحث بالاسم، النشاط، أو العنوان...',
+              hintStyle: GoogleFonts.cairo(fontSize: 11, color: AppColors.textMuted),
+              prefixIcon: const Icon(LucideIcons.search, size: 16, color: AppColors.textMuted),
               filled: true,
-              fillColor: AppColors.surfaceDark,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide: const BorderSide(color: AppColors.border),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide: const BorderSide(color: AppColors.border),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide: const BorderSide(color: AppColors.primary),
-              ),
+              fillColor: Colors.white,
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: AppColors.border)),
+              enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: AppColors.border)),
+              focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: AppColors.primary)),
               contentPadding: const EdgeInsets.symmetric(vertical: 8),
             ),
           ),
         ),
-        const SizedBox(width: 10),
-        GestureDetector(
-          onTap: controller.totalLeads == 0 ? null : controller.exportToCSV,
-          child: Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: controller.totalLeads == 0 ? Colors.white.withOpacity(0.02) : AppColors.success.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(
-                color: controller.totalLeads == 0 ? Colors.white.withOpacity(0.05) : AppColors.success.withOpacity(0.3),
-              ),
-            ),
-            child: Icon(
-              LucideIcons.fileSpreadsheet,
-              color: controller.totalLeads == 0 ? Colors.white24 : AppColors.success,
+        const SizedBox(width: 8),
+
+        // Map vs List Toggle Button
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: AppColors.border),
+          ),
+          child: IconButton(
+            icon: Icon(
+              controller.isMapView.value ? LucideIcons.list : LucideIcons.map,
+              color: AppColors.primary,
               size: 20,
             ),
+            tooltip: controller.isMapView.value ? 'عرض القائمة' : 'عرض الخريطة التفاعلية',
+            onPressed: () => controller.isMapView.value = !controller.isMapView.value,
           ),
         ),
       ],
     );
   }
 
-  // ── Lead Card ─────────────────────────────────────────────────────────────
-  Widget _leadCard(LeadEntity lead) {
-    final hasPhone = lead.phone != null && lead.phone!.trim().isNotEmpty;
-    final cardBorderColor = lead.isSent
-        ? AppColors.success.withOpacity(0.2)
-        : AppColors.primary.withOpacity(0.15);
+  // ── Interactive Map Representation View ──────────────────────────────────
+  Widget _buildMapViewPlaceholder() {
+    return Container(
+      height: 380,
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Stack(
+        children: [
+          // Background grid styling for map representation
+          Positioned.fill(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: Container(
+                color: const Color(0xFFE5E7EB),
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(LucideIcons.mapPin, size: 48, color: AppColors.primary),
+                      const SizedBox(height: 12),
+                      Text(
+                        'خريطة اكتشاف العملاء الميدانية',
+                        style: GoogleFonts.cairo(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                      ),
+                      Text(
+                        'عرض موقع الفني ونطاق ${controller.radiusKm.value} كم والأماكن المكتشفة',
+                        style: GoogleFonts.cairo(fontSize: 11, color: AppColors.textSecondary),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            bottom: 12,
+            right: 12,
+            left: 12,
+            child: Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.95),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _statusDot('جديد', const Color(0xFF2563EB)),
+                  _statusDot('تم التواصل', AppColors.primary),
+                  _statusDot('مهتم', AppColors.success),
+                  _statusDot('موعد', const Color(0xFF7C3AED)),
+                  _statusDot('مكرر', AppColors.textMuted),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
-    return GlassCard(
-      borderColor: cardBorderColor,
-      backgroundColor: AppColors.surfaceDark,
+  Widget _statusDot(String label, Color col) {
+    return Row(
+      children: [
+        Container(width: 8, height: 8, decoration: BoxDecoration(color: col, shape: BoxShape.circle)),
+        const SizedBox(width: 4),
+        Text(label, style: GoogleFonts.cairo(fontSize: 10, color: AppColors.textPrimary)),
+      ],
+    );
+  }
+
+  // ── Lead Card Widget ──────────────────────────────────────────────────────
+  Widget _buildLeadCard(LeadEntity lead) {
+    final hasPhone = lead.phone != null && lead.phone!.trim().isNotEmpty;
+    final statusColor = _getStatusColor(lead.leadStatus);
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.border),
+        boxShadow: const [
+          BoxShadow(color: Color(0x05000000), blurRadius: 6, offset: Offset(0, 2)),
+        ],
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -960,150 +876,106 @@ class _NeoleapLeadsPageState extends State<NeoleapLeadsPage> {
                   children: [
                     Text(
                       lead.name,
-                      style: TextStyle(fontFamily: 'BeIN', 
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                        color: Colors.white,
-                      ),
+                      style: GoogleFonts.cairo(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.textPrimary),
                     ),
-                    if (lead.address != null) ...[
-                      const SizedBox(height: 6),
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Icon(LucideIcons.mapPin, size: 12, color: AppColors.textSecondary),
-                          const SizedBox(width: 6),
-                          Expanded(
-                            child: Text(
-                              lead.address!,
-                              style: TextStyle(fontFamily: 'BeIN', color: AppColors.textSecondary, fontSize: 11),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                    if (lead.rating != null) ...[
-                      const SizedBox(height: 6),
-                      Row(
-                        children: [
-                          const Icon(Icons.star, size: 14, color: AppColors.warning),
-                          const SizedBox(width: 4),
-                          Text(
-                            '${lead.rating}',
-                            style: GoogleFonts.poppins(
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(color: AppColors.backgroundLight, borderRadius: BorderRadius.circular(6)),
+                          child: Text(lead.category, style: GoogleFonts.cairo(fontSize: 10, color: AppColors.textSecondary, fontWeight: FontWeight.bold)),
+                        ),
+                        const SizedBox(width: 8),
+                        const Icon(LucideIcons.navigation, size: 10, color: AppColors.primary),
+                        const SizedBox(width: 3),
+                        Text(
+                          'تبعد ${lead.distanceKm.toStringAsFixed(1)} كم',
+                          style: GoogleFonts.cairo(fontSize: 10, color: AppColors.primary, fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
                   ],
                 ),
               ),
-              const SizedBox(width: 8),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  StatusBadge(
-                    text: lead.isSent ? 'sent_leads'.tr : 'pending'.tr,
-                    color: lead.isSent ? AppColors.success : AppColors.warning,
+              GestureDetector(
+                onTap: () => _showStatusUpdateSheet(lead),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: statusColor.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: statusColor.withValues(alpha: 0.3)),
                   ),
-                  const SizedBox(height: 8),
-                  Row(
+                  child: Row(
                     children: [
-                      IconButton(
-                        icon: const Icon(LucideIcons.edit2, size: 15, color: AppColors.primary),
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                        onPressed: () => _showPhoneDialog(lead),
-                        tooltip: 'edit_phone'.tr,
-                      ),
-                      const SizedBox(width: 14),
-                      IconButton(
-                        icon: const Icon(LucideIcons.trash2, size: 15, color: AppColors.error),
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                        onPressed: () => _confirmDeleteLead(lead),
-                        tooltip: 'حذف',
+                      Container(width: 6, height: 6, decoration: BoxDecoration(color: statusColor, shape: BoxShape.circle)),
+                      const SizedBox(width: 6),
+                      Text(
+                        lead.leadStatus.labelAr,
+                        style: GoogleFonts.cairo(fontSize: 10, color: statusColor, fontWeight: FontWeight.bold),
                       ),
                     ],
                   ),
-                ],
+                ),
               ),
             ],
           ),
-          const Divider(height: 20, color: Colors.white10),
+          if (lead.formattedAddress != null) ...[
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                const Icon(LucideIcons.mapPin, size: 12, color: AppColors.textMuted),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Text(
+                    lead.formattedAddress!,
+                    style: GoogleFonts.cairo(fontSize: 11, color: AppColors.textSecondary),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ],
+          if (lead.rating != null) ...[
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                const Icon(Icons.star, size: 13, color: AppColors.warning),
+                const SizedBox(width: 4),
+                Text(
+                  '${lead.rating} (${lead.ratingCount ?? 0} مراجعة)',
+                  style: GoogleFonts.cairo(fontSize: 10, color: AppColors.textSecondary, fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+          ],
+          const Divider(height: 16, color: AppColors.border),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Expanded(
-                child: hasPhone
-                    ? Row(
-                        children: [
-                          const Icon(LucideIcons.phone, size: 13, color: AppColors.textSecondary),
-                          const SizedBox(width: 6),
-                          Text(
-                            lead.phone!,
-                            style: GoogleFonts.robotoMono(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white70,
-                            ),
-                          ),
-                        ],
-                      )
-                    : TextButton.icon(
-                        onPressed: () => _showPhoneDialog(lead),
-                        icon: const Icon(LucideIcons.plus, size: 13, color: AppColors.primary),
-                        label: Text(
-                          'add_phone'.tr,
-                          style: TextStyle(fontFamily: 'BeIN', fontSize: 11, color: AppColors.primary),
-                        ),
-                        style: TextButton.styleFrom(
-                          padding: EdgeInsets.zero,
-                          minimumSize: Size.zero,
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        ),
-                      ),
-              ),
-              Wrap(
-                spacing: 8,
+              hasPhone
+                  ? Text(
+                      lead.phone!,
+                      style: GoogleFonts.robotoMono(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                    )
+                  : TextButton.icon(
+                      onPressed: () => _showPhoneDialog(lead),
+                      icon: const Icon(LucideIcons.plus, size: 12, color: AppColors.primary),
+                      label: Text('إضافة رقم الهاتف', style: GoogleFonts.cairo(fontSize: 11, color: AppColors.primary)),
+                      style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: Size.zero),
+                    ),
+              Row(
                 children: [
-                  // Navigate map
-                  _circleIconButton(
-                    icon: LucideIcons.navigation,
-                    color: AppColors.info,
-                    onPressed: () => _openMap(lead.latitude, lead.longitude, lead.name),
-                    tooltip: 'location'.tr,
-                  ),
+                  _actionCircleBtn(LucideIcons.navigation, AppColors.secondaryBlue, () => _openMap(lead.latitude, lead.longitude, lead.name), 'ملاحة'),
                   if (hasPhone) ...[
-                    // Call phone
-                    _circleIconButton(
-                      icon: LucideIcons.phoneCall,
-                      color: AppColors.primary,
-                      onPressed: () => _launchCall(lead.phone!),
-                      tooltip: 'call'.tr,
-                    ),
-                    // WhatsApp
-                    _circleIconButton(
-                      icon: LucideIcons.messageSquare,
-                      color: AppColors.success,
-                      onPressed: () => _launchWhatsApp(lead.phone!, lead.name),
-                      tooltip: 'whats_chat'.tr,
-                    ),
+                    const SizedBox(width: 6),
+                    _actionCircleBtn(LucideIcons.phoneCall, AppColors.primary, () => _launchCall(lead.phone!), 'اتصال'),
+                    const SizedBox(width: 6),
+                    _actionCircleBtn(LucideIcons.messageSquare, AppColors.success, () => _launchWhatsApp(lead.phone!, lead.name), 'واتساب'),
                   ],
-                  if (!lead.isSent)
-                    // Mark contacted
-                    _circleIconButton(
-                      icon: LucideIcons.checkSquare,
-                      color: AppColors.success,
-                      onPressed: () => controller.markLeadAsSent(lead.id),
-                      tooltip: 'mark_as_sent'.tr,
-                    ),
+                  const SizedBox(width: 6),
+                  _actionCircleBtn(LucideIcons.edit2, AppColors.textMuted, () => _showPhoneDialog(lead), 'تعديل'),
                 ],
               ),
             ],
@@ -1113,53 +985,41 @@ class _NeoleapLeadsPageState extends State<NeoleapLeadsPage> {
     );
   }
 
-  Widget _circleIconButton({
-    required IconData icon,
-    required Color color,
-    required VoidCallback onPressed,
-    required String tooltip,
-  }) {
+  Widget _actionCircleBtn(IconData icon, Color col, VoidCallback onTap, String tooltip) {
     return Tooltip(
       message: tooltip,
-      child: GestureDetector(
-        onTap: onPressed,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(20),
         child: Container(
           width: 32,
           height: 32,
           decoration: BoxDecoration(
-            color: color.withOpacity(0.12),
-            shape: BoxShape.circle,
-            border: Border.all(color: color.withOpacity(0.3), width: 1),
+            color: col.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: col.withValues(alpha: 0.2)),
           ),
-          child: Center(
-            child: Icon(icon, color: color, size: 15),
-          ),
+          child: Center(child: Icon(icon, color: col, size: 14)),
         ),
       ),
     );
   }
 
-  // ── Empty State ──────────────────────────────────────────────────────────
+  // ── Empty State Widget ────────────────────────────────────────────────────
   Widget _buildEmptyState() {
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 40),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
               padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.02),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(LucideIcons.store, size: 48, color: Colors.white.withOpacity(0.15)),
+              decoration: const BoxDecoration(color: AppColors.backgroundLight, shape: BoxShape.circle),
+              child: const Icon(LucideIcons.radar, size: 40, color: AppColors.textMuted),
             ),
             const SizedBox(height: 12),
-            Text(
-              'no_leads_found'.tr,
-              style: TextStyle(fontFamily: 'BeIN', color: AppColors.textSecondary, fontSize: 13),
-            ),
+            Text('لم يتم العثور على أنشطة بهذه الفلاتر', style: GoogleFonts.cairo(color: AppColors.textSecondary, fontSize: 13)),
+            Text('اضغط "اكتشاف العملاء القريبين" للبدء في سحب واكتشاف الأنشطة الجغرافية', style: GoogleFonts.cairo(color: AppColors.textMuted, fontSize: 11)),
           ],
         ),
       ),

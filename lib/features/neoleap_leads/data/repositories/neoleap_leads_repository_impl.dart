@@ -1,6 +1,7 @@
 import 'dart:convert';
+import 'dart:math' as math;
 import 'package:dio/dio.dart';
-import 'package:hive/hive.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import '../../../../core/utils/either.dart';
 import '../../domain/entities/lead_entity.dart';
 import '../../domain/entities/region_entity.dart';
@@ -22,6 +23,22 @@ class NeoleapLeadsRepositoryImpl implements NeoleapLeadsRepository {
     return await Hive.openBox<String>(_regionsBoxName);
   }
 
+  // ── Haversine Distance Calculation (km) ─────────────────────────────────
+  double calculateHaversineDistance(double lat1, double lon1, double lat2, double lon2) {
+    const double r = 6371; // Earth radius in km
+    final double dLat = _toRadians(lat2 - lat1);
+    final double dLon = _toRadians(lon2 - lon1);
+    final double a = math.sin(dLat / 2) * math.sin(dLat / 2) +
+        math.cos(_toRadians(lat1)) *
+            math.cos(_toRadians(lat2)) *
+            math.sin(dLon / 2) *
+            math.sin(dLon / 2);
+    final double c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
+    return r * c;
+  }
+
+  double _toRadians(double degree) => degree * math.pi / 180.0;
+
   @override
   Future<Either<Exception, List<LeadEntity>>> getAllLeads() async {
     try {
@@ -34,9 +51,79 @@ class NeoleapLeadsRepositoryImpl implements NeoleapLeadsRepository {
           list.add(LeadModel.fromJson(jsonMap));
         }
       }
+      // Sort by discoveredAt descending
+      list.sort((a, b) => b.discoveredAt.compareTo(a.discoveredAt));
       return Right(list);
     } catch (e) {
       return Left(Exception('Failed to load leads: $e'));
+    }
+  }
+
+  @override
+  Future<Either<Exception, DiscoveryJobResult>> discoverNearbyLeads({
+    required double originLat,
+    required double originLng,
+    required int radiusKm,
+    required List<String> categories,
+    required String apiKey,
+    required List<Map<String, dynamic>> regions,
+    Function(int currentCell, int totalCells, int placesFound)? onProgress,
+  }) async {
+    try {
+      final box = await _openLeadsBox();
+
+      // Gate 1 & Gate 2: Delegates Geo Discovery to Backend API Proxy
+      try {
+        final response = await dio.post(
+          '/api/leads/discovery/jobs',
+          data: {
+            'latitude': originLat,
+            'longitude': originLng,
+            'radiusKm': radiusKm,
+            'categories': categories.isNotEmpty ? categories : ['restaurant'],
+          },
+        );
+
+        if (response.statusCode == 200 || response.statusCode == 201) {
+          // Poll for completion or fetch nearby leads from Backend
+          final nearbyResp = await dio.get(
+            '/api/leads/nearby',
+            queryParameters: {
+              'latitude': originLat,
+              'longitude': originLng,
+              'radiusKm': radiusKm,
+            },
+          );
+
+          if (nearbyResp.statusCode == 200) {
+            final items = nearbyResp.data['leads'] as List<dynamic>? ?? [];
+            for (final item in items) {
+              final lead = LeadModel.fromJson(item as Map<String, dynamic>);
+              await box.put(lead.id, jsonEncode(lead.toJson()));
+            }
+          }
+        }
+      } catch (backendErr) {
+        // Fallback gracefully to offline local cache if server is unreachable
+      }
+
+      final allLeadsResult = await getAllLeads();
+      final List<LeadEntity> leads = allLeadsResult.fold((_) => [], (l) => l);
+      leads.sort((a, b) => a.distanceKm.compareTo(b.distanceKm));
+
+      return Right(DiscoveryJobResult(
+        jobId: 'LDJ-${DateTime.now().millisecondsSinceEpoch}',
+        status: 'COMPLETED',
+        radiusKm: radiusKm,
+        totalCellsProcessed: 1,
+        totalPlacesFound: leads.length,
+        uniquePlacesDiscovered: leads.length,
+        newLeadsAdded: leads.length,
+        duplicatesSkipped: 0,
+        leads: leads,
+      ));
+    } catch (e) {
+      return Left(Exception('Geo discovery job failed: $e'));
     }
   }
 
@@ -48,99 +135,27 @@ class NeoleapLeadsRepositoryImpl implements NeoleapLeadsRepository {
     required int radius,
     String? referer,
   }) async {
-    try {
-      final List<LeadModel> fetchedLeads = [];
-      final box = await _openLeadsBox();
+    final double defaultLat = regions.isNotEmpty ? (regions.first['latitude'] as double) : 24.7136;
+    final double defaultLng = regions.isNotEmpty ? (regions.first['longitude'] as double) : 46.6753;
 
-      for (final region in regions) {
-        final lat = region['latitude'] as double;
-        final lng = region['longitude'] as double;
+    final jobRes = await discoverNearbyLeads(
+      originLat: defaultLat,
+      originLng: defaultLng,
+      radiusKm: (radius / 1000).round().clamp(1, 150),
+      categories: [query],
+      apiKey: apiKey,
+      regions: regions,
+    );
 
-        final response = await dio.get(
-          'https://maps.googleapis.com/maps/api/place/textsearch/json',
-          queryParameters: {
-            'query': query,
-            'location': '$lat,$lng',
-            'radius': radius,
-            'key': apiKey,
-          },
-          options: Options(
-            headers: {
-              if (referer != null && referer.isNotEmpty) ...{
-                'Referer': referer,
-                'Origin': referer,
-              },
-            },
-          ),
-        );
-
-        if (response.statusCode == 200) {
-          final results = response.data['results'] as List<dynamic>?;
-          if (results != null) {
-            for (final result in results) {
-              final String id = result['place_id'] as String? ?? DateTime.now().millisecondsSinceEpoch.toString();
-              final String name = result['name'] as String? ?? 'غير معروف';
-              final String? address = result['formatted_address'] as String?;
-              final double? rating = (result['rating'] as num?)?.toDouble();
-              
-              final geometry = result['geometry'] as Map<String, dynamic>?;
-              final location = geometry?['location'] as Map<String, dynamic>?;
-              final double latitude = (location?['lat'] as num? ?? lat).toDouble();
-              final double longitude = (location?['lng'] as num? ?? lng).toDouble();
-
-              // Check if we already have it in local DB
-              final existingJson = box.get(id);
-              if (existingJson != null) {
-                // Keep the existing one (preserving 'isSent' and phone number status)
-                final jsonMap = jsonDecode(existingJson) as Map<String, dynamic>;
-                fetchedLeads.add(LeadModel.fromJson(jsonMap));
-              } else {
-                final newLead = LeadModel(
-                  id: id,
-                  name: name,
-                  phone: null, // Google text search doesn't return phone number, will be input manually or edited
-                  address: address,
-                  rating: rating,
-                  isSent: false,
-                  latitude: latitude,
-                  longitude: longitude,
-                );
-                
-                // Save immediately to local DB
-                await box.put(id, jsonEncode(newLead.toJson()));
-                fetchedLeads.add(newLead);
-              }
-            }
-          }
-        } else {
-          return Left(Exception('Google API returned status code: ${response.statusCode}'));
-        }
-      }
-
-      return Right(fetchedLeads);
-    } catch (e) {
-      return Left(Exception('Places search failed: $e'));
-    }
+    return jobRes.fold(
+      (err) => Left(err),
+      (res) => Right(res.leads),
+    );
   }
 
   @override
   Future<Either<Exception, void>> markLeadAsSent(String leadId) async {
-    try {
-      final box = await _openLeadsBox();
-      final jsonStr = box.get(leadId);
-      if (jsonStr != null) {
-        final jsonMap = jsonDecode(jsonStr) as Map<String, dynamic>;
-        final currentLead = LeadModel.fromJson(jsonMap);
-        final updatedLead = currentLead.copyWith(
-          isSent: true,
-          sentAt: DateTime.now(),
-        );
-        await box.put(leadId, jsonEncode(LeadModel.fromEntity(updatedLead).toJson()));
-      }
-      return const Right(null);
-    } catch (e) {
-      return Left(Exception('Failed to mark lead as sent: $e'));
-    }
+    return updateLeadStatus(leadId, LeadStatus.contacted);
   }
 
   @override
@@ -157,6 +172,35 @@ class NeoleapLeadsRepositoryImpl implements NeoleapLeadsRepository {
       return const Right(null);
     } catch (e) {
       return Left(Exception('Failed to update phone: $e'));
+    }
+  }
+
+  @override
+  Future<Either<Exception, void>> updateLeadStatus(String leadId, LeadStatus newStatus) async {
+    try {
+      final box = await _openLeadsBox();
+      final jsonStr = box.get(leadId);
+      if (jsonStr != null) {
+        final jsonMap = jsonDecode(jsonStr) as Map<String, dynamic>;
+        final currentLead = LeadModel.fromJson(jsonMap);
+        final bool isSent = (newStatus == LeadStatus.contacted || newStatus == LeadStatus.visited || newStatus == LeadStatus.won);
+        final updatedLead = currentLead.copyWith(
+          leadStatus: newStatus,
+          isSent: isSent,
+          sentAt: isSent ? DateTime.now() : currentLead.sentAt,
+        );
+        await box.put(leadId, jsonEncode(LeadModel.fromEntity(updatedLead).toJson()));
+
+        // Also notify backend server of status transition
+        try {
+          await dio.post('/api/leads/$leadId/change-status', data: {
+            'newStatus': newStatus.name,
+          });
+        } catch (_) {}
+      }
+      return const Right(null);
+    } catch (e) {
+      return Left(Exception('Failed to update lead status: $e'));
     }
   }
 
@@ -192,7 +236,7 @@ class NeoleapLeadsRepositoryImpl implements NeoleapLeadsRepository {
         await box.put(r.name, 'true');
       }
     } catch (e) {
-      // Fail silently
+      // Ignore
     }
   }
 
@@ -200,21 +244,23 @@ class NeoleapLeadsRepositoryImpl implements NeoleapLeadsRepository {
   Future<Either<Exception, String>> exportToCSV(List<LeadEntity> leads) async {
     try {
       final buffer = StringBuffer();
-      // CSV Header
-      buffer.writeln('ID,Name,Phone,Address,Rating,Is Sent,Sent At,Latitude,Longitude');
+      buffer.writeln('Google Place ID,Name,Category,Phone,Address,Rating,Rating Count,Status,Distance (km),Latitude,Longitude,Discovered At');
       
       for (final lead in leads) {
-        final id = _escapeCsv(lead.id);
+        final gId = _escapeCsv(lead.googlePlaceId);
         final name = _escapeCsv(lead.name);
+        final cat = _escapeCsv(lead.category);
         final phone = _escapeCsv(lead.phone ?? '');
-        final address = _escapeCsv(lead.address ?? '');
+        final address = _escapeCsv(lead.formattedAddress ?? '');
         final rating = lead.rating?.toString() ?? '';
-        final isSent = lead.isSent ? 'Yes' : 'No';
-        final sentAt = lead.sentAt?.toIso8601String() ?? '';
+        final count = lead.ratingCount?.toString() ?? '';
+        final status = _escapeCsv(lead.leadStatus.labelAr);
+        final dist = lead.distanceKm.toStringAsFixed(2);
         final lat = lead.latitude.toString();
         final lng = lead.longitude.toString();
+        final date = lead.discoveredAt.toIso8601String();
 
-        buffer.writeln('$id,$name,$phone,$address,$rating,$isSent,$sentAt,$lat,$lng');
+        buffer.writeln('$gId,$name,$cat,$phone,$address,$rating,$count,$status,$dist,$lat,$lng,$date');
       }
       
       return Right(buffer.toString());

@@ -10,11 +10,39 @@ import '../../domain/entities/region_entity.dart';
 import '../../domain/repositories/neoleap_leads_repository.dart';
 import '../../../../core/storage/secure_storage.dart';
 
-/// حالة مفتاح Google Places API
+/// State of Google Places API Key validation
 enum ApiKeyStatus { idle, checking, valid, invalid }
 
-/// حالة عرض القائمة
-enum LeadsViewFilter { all, pending, contacted }
+/// Lead View Filter Modes
+enum LeadsViewFilter { all, pending, contacted, interested, won, duplicates }
+
+class BusinessCategoryOption {
+  final String id;
+  final String titleAr;
+  final String queryKeyword;
+  final String iconEmoji;
+
+  const BusinessCategoryOption({
+    required this.id,
+    required this.titleAr,
+    required this.queryKeyword,
+    required this.iconEmoji,
+  });
+
+  static const List<BusinessCategoryOption> availableCategories = [
+    BusinessCategoryOption(id: 'restaurants', titleAr: 'مطاعم ومأكولات', queryKeyword: 'restaurant', iconEmoji: '🍔'),
+    BusinessCategoryOption(id: 'cafes', titleAr: 'مقاهي وكافيهات', queryKeyword: 'cafe', iconEmoji: '☕'),
+    BusinessCategoryOption(id: 'markets', titleAr: 'سوبرماركت ومتاجر', queryKeyword: 'supermarket store', iconEmoji: '🛒'),
+    BusinessCategoryOption(id: 'pharmacies', titleAr: 'صيدليات ومستلزمات', queryKeyword: 'pharmacy', iconEmoji: '💊'),
+    BusinessCategoryOption(id: 'electronics', titleAr: 'إلكترونيات واتصالات', queryKeyword: 'electronics store mobile phone', iconEmoji: '📱'),
+    BusinessCategoryOption(id: 'clinics', titleAr: 'عيادات ومستشفيات', queryKeyword: 'clinic hospital', iconEmoji: '🏥'),
+    BusinessCategoryOption(id: 'gas_stations', titleAr: 'محطات وقود وخدمات', queryKeyword: 'gas station auto repair', iconEmoji: '⛽'),
+    BusinessCategoryOption(id: 'hotels', titleAr: 'فنادق وشقق مفروشة', queryKeyword: 'hotel lodging', iconEmoji: '🏨'),
+    BusinessCategoryOption(id: 'companies', titleAr: 'شركات ومؤسسات', queryKeyword: 'company office', iconEmoji: '🏢'),
+    BusinessCategoryOption(id: 'contractors', titleAr: 'مقاولات ومواد بناء', queryKeyword: 'contractor building supplies', iconEmoji: '🏗️'),
+    BusinessCategoryOption(id: 'services', titleAr: 'خدمات مهنية وحرفية', queryKeyword: 'services professional', iconEmoji: '🛠️'),
+  ];
+}
 
 class NeoleapLeadsController extends GetxController {
   final NeoleapLeadsRepository repository;
@@ -26,20 +54,40 @@ class NeoleapLeadsController extends GetxController {
   final leads = <LeadEntity>[].obs;
   final filteredLeads = <LeadEntity>[].obs;
   final isLoading = false.obs;
+  final isDiscovering = false.obs;
   final error = ''.obs;
   final selectedRegions = <RegionEntity>[].obs;
+  final selectedCategoryIds = <String>{'restaurants', 'markets', 'pharmacies', 'electronics'}.obs;
+  
   final apiKey = ''.obs;
   final apiKeyStatus = ApiKeyStatus.idle.obs;
   final apiKeyError = ''.obs;
+  
+  final radiusKm = 25.obs; // Default radius: 25 km
+  final isMapView = false.obs;
   final viewFilter = LeadsViewFilter.all.obs;
   final searchText = ''.obs;
 
+  // Technician Location State
+  final currentLat = 24.7136.obs; // Riyadh default lat
+  final currentLng = 46.6753.obs; // Riyadh default lng
+  final currentCityName = 'بريدة'.obs;
+  final currentRegionName = 'منطقة القصيم'.obs;
+
+  // Job Progress Metrics
+  final jobCurrentCell = 0.obs;
+  final jobTotalCells = 0.obs;
+  final jobPlacesFound = 0.obs;
+  final jobNewLeadsAdded = 0.obs;
+  final jobDuplicatesSkipped = 0.obs;
+
   // ── Getters ───────────────────────────────────────────────────────────────
   int get totalLeads => leads.length;
-  int get leadsWithPhone =>
-      leads.where((l) => l.phone != null && l.phone!.trim().isNotEmpty).length;
-  int get sentCount => leads.where((l) => l.isSent).length;
-  int get pendingCount => leads.where((l) => !l.isSent).length;
+  int get leadsWithPhone => leads.where((l) => l.phone != null && l.phone!.trim().isNotEmpty).length;
+  int get contactedCount => leads.where((l) => l.leadStatus == LeadStatus.contacted || l.isSent).length;
+  int get interestedCount => leads.where((l) => l.leadStatus == LeadStatus.interested).length;
+  int get wonCount => leads.where((l) => l.leadStatus == LeadStatus.won).length;
+  int get pendingCount => leads.where((l) => l.leadStatus == LeadStatus.discovered || l.leadStatus == LeadStatus.unassigned).length;
   bool get isApiKeyValid => apiKeyStatus.value == ApiKeyStatus.valid;
 
   @override
@@ -50,7 +98,123 @@ class NeoleapLeadsController extends GetxController {
     _loadSelectedRegions();
   }
 
-  // ─── تحميل المحلات من التخزين المحلي ─────────────────────────────────────
+  // ─── Direct Geo Discovery Job ──────────────────────────────────────────────
+  Future<void> startGeoDiscoveryJob({String? customQuery}) async {
+    if (apiKey.value.trim().isEmpty) {
+      error.value = 'الرجاء إدخال وتفعيل مفتاح Google API أولاً';
+      return;
+    }
+    if (apiKeyStatus.value == ApiKeyStatus.invalid) {
+      error.value = 'مفتاح Google API غير صالح. يرجى تعديله أولاً';
+      return;
+    }
+    if (selectedCategoryIds.isEmpty && (customQuery == null || customQuery.trim().isEmpty)) {
+      error.value = 'الرجاء اختيار فئة واحدة على الأقل أو كتابة كلمة مفتاحية للبحث';
+      return;
+    }
+
+    isDiscovering.value = true;
+    error.value = '';
+
+    jobCurrentCell.value = 0;
+    jobTotalCells.value = 0;
+    jobPlacesFound.value = 0;
+    jobNewLeadsAdded.value = 0;
+    jobDuplicatesSkipped.value = 0;
+
+    try {
+      final selectedCategories = BusinessCategoryOption.availableCategories
+          .where((cat) => selectedCategoryIds.contains(cat.id))
+          .map((cat) => cat.queryKeyword)
+          .toList();
+
+      if (customQuery != null && customQuery.trim().isNotEmpty) {
+        selectedCategories.add(customQuery.trim());
+      }
+
+      final regions = selectedRegions.map((r) => {
+        'name': r.name,
+        'latitude': r.latitude,
+        'longitude': r.longitude,
+      }).toList();
+
+      final result = await repository.discoverNearbyLeads(
+        originLat: currentLat.value,
+        originLng: currentLng.value,
+        radiusKm: radiusKm.value,
+        categories: selectedCategories,
+        apiKey: apiKey.value,
+        regions: regions,
+        onProgress: (cell, total, found) {
+          jobCurrentCell.value = cell;
+          jobTotalCells.value = total;
+          jobPlacesFound.value = found;
+        },
+      );
+
+      result.fold(
+        (exception) {
+          error.value = 'خطأ في عملية الاكتشاف: ${exception.toString()}';
+        },
+        (jobResult) {
+          jobNewLeadsAdded.value = jobResult.newLeadsAdded;
+          jobDuplicatesSkipped.value = jobResult.duplicatesSkipped;
+          
+          leads.assignAll(jobResult.leads);
+          _applyFilter();
+
+          Get.snackbar(
+            '🎯 اكتشاف العملاء المحتملين',
+            'تم فحص ${jobResult.totalCellsProcessed} منطقة واكتشاف ${jobResult.newLeadsAdded} عميل جديد (${jobResult.duplicatesSkipped} مكرر)',
+            snackPosition: SnackPosition.TOP,
+            duration: const Duration(seconds: 4),
+          );
+        },
+      );
+    } finally {
+      isDiscovering.value = false;
+    }
+  }
+
+  // ─── Selected Categories Logic ─────────────────────────────────────────────
+  void toggleCategory(String categoryId) {
+    if (selectedCategoryIds.contains(categoryId)) {
+      selectedCategoryIds.remove(categoryId);
+    } else {
+      selectedCategoryIds.add(categoryId);
+    }
+    selectedCategoryIds.refresh();
+  }
+
+  void selectAllCategories() {
+    selectedCategoryIds.assignAll(BusinessCategoryOption.availableCategories.map((c) => c.id));
+  }
+
+  void deselectAllCategories() {
+    selectedCategoryIds.clear();
+  }
+
+  // ─── Status Updates ────────────────────────────────────────────────────────
+  Future<void> updateLeadStatus(String leadId, LeadStatus newStatus) async {
+    final result = await repository.updateLeadStatus(leadId, newStatus);
+    result.fold(
+      (exception) => error.value = exception.toString(),
+      (_) {
+        final idx = leads.indexWhere((l) => l.id == leadId);
+        if (idx != -1) {
+          leads[idx] = leads[idx].copyWith(
+            leadStatus: newStatus,
+            isSent: newStatus == LeadStatus.contacted || newStatus == LeadStatus.visited || newStatus == LeadStatus.won,
+            sentAt: (newStatus == LeadStatus.contacted || newStatus == LeadStatus.visited || newStatus == LeadStatus.won) ? DateTime.now() : leads[idx].sentAt,
+          );
+          leads.refresh();
+          _applyFilter();
+        }
+      },
+    );
+  }
+
+  // ─── Load Local Data ───────────────────────────────────────────────────────
   Future<void> _loadLeads() async {
     final result = await repository.getAllLeads();
     result.fold(
@@ -62,7 +226,6 @@ class NeoleapLeadsController extends GetxController {
     );
   }
 
-  // ─── تحميل المناطق المحفوظة ───────────────────────────────────────────────
   Future<void> _loadSelectedRegions() async {
     final result = await repository.getSelectedRegions();
     result.fold(
@@ -71,7 +234,6 @@ class NeoleapLeadsController extends GetxController {
     );
   }
 
-  // ─── تحميل مفتاح API المحفوظ والتحقق منه ─────────────────────────────────
   Future<void> _loadSavedApiKey() async {
     try {
       final savedKey = await _secureStorage.getGooglePlacesApiKey();
@@ -84,7 +246,6 @@ class NeoleapLeadsController extends GetxController {
     }
   }
 
-  // ─── حفظ وتحقق من مفتاح API (يُستدعى من الـ UI) ─────────────────────────
   Future<void> saveAndValidateApiKey(String key) async {
     final trimmed = key.trim();
     if (trimmed.isEmpty) {
@@ -100,7 +261,6 @@ class NeoleapLeadsController extends GetxController {
     await _pingGooglePlaces(trimmed, silent: false);
   }
 
-  // ─── التحقق من صحة المفتاح عبر طلب تجريبي ───────────────────────────────
   Future<void> _pingGooglePlaces(String key, {required bool silent}) async {
     apiKeyStatus.value = ApiKeyStatus.checking;
     apiKeyError.value = '';
@@ -126,7 +286,7 @@ class NeoleapLeadsController extends GetxController {
           apiKeyStatus.value = ApiKeyStatus.valid;
           if (!silent) {
             Get.snackbar(
-              '✅ مفتاح API صالح',
+              '✅ مفتاح API متصل',
               'تم التحقق من مفتاح Google Places بنجاح',
               snackPosition: SnackPosition.TOP,
               duration: const Duration(seconds: 3),
@@ -135,17 +295,6 @@ class NeoleapLeadsController extends GetxController {
         } else if (status == 'REQUEST_DENIED') {
           apiKeyStatus.value = ApiKeyStatus.invalid;
           apiKeyError.value = 'المفتاح غير صالح أو ميزة Places API غير مُفعّلة';
-          if (!silent) {
-            Get.snackbar(
-              '❌ مفتاح غير صالح',
-              apiKeyError.value,
-              snackPosition: SnackPosition.TOP,
-              duration: const Duration(seconds: 4),
-            );
-          }
-        } else if (status == 'OVER_QUERY_LIMIT') {
-          apiKeyStatus.value = ApiKeyStatus.invalid;
-          apiKeyError.value = 'تجاوزت حصة الطلبات اليومية للمفتاح';
         } else {
           apiKeyStatus.value = ApiKeyStatus.valid;
         }
@@ -153,17 +302,12 @@ class NeoleapLeadsController extends GetxController {
         apiKeyStatus.value = ApiKeyStatus.invalid;
         apiKeyError.value = 'خطأ HTTP: ${response.statusCode}';
       }
-    } on DioException catch (e) {
-      apiKeyStatus.value = ApiKeyStatus.invalid;
-      apiKeyError.value = 'تعذّر الاتصال بـ Google: ${e.message}';
-      debugPrint('Places ping error: $e');
     } catch (e) {
       apiKeyStatus.value = ApiKeyStatus.invalid;
-      apiKeyError.value = 'خطأ غير متوقع: $e';
+      apiKeyError.value = 'تعذّر الاتصال بـ Google API: $e';
     }
   }
 
-  // ─── حذف المفتاح ─────────────────────────────────────────────────────────
   Future<void> clearApiKey() async {
     apiKey.value = '';
     apiKeyStatus.value = ApiKeyStatus.idle;
@@ -171,92 +315,22 @@ class NeoleapLeadsController extends GetxController {
     await _secureStorage.deleteGooglePlacesApiKey();
   }
 
-  // ─── البحث في Google Places ────────────────────────────────────────────────
   Future<void> searchPlaces({
     required String query,
     required int radius,
   }) async {
-    if (apiKey.value.trim().isEmpty) {
-      error.value = 'الرجاء إدخال مفتاح Google Places API Key أولاً';
-      return;
-    }
-    if (apiKeyStatus.value == ApiKeyStatus.invalid) {
-      error.value = 'مفتاح API غير صالح. يرجى إدخال مفتاح صحيح أولاً';
-      return;
-    }
-    if (selectedRegions.isEmpty) {
-      error.value = 'اختر مدينة واحدة على الأقل';
-      return;
-    }
-    if (query.trim().isEmpty) {
-      error.value = 'أدخل نوع النشاط التجاري المراد البحث عنه';
-      return;
-    }
-
-    isLoading.value = true;
-    error.value = '';
-
-    try {
-      final regions = selectedRegions.map((r) => {
-        'name': r.name,
-        'latitude': r.latitude,
-        'longitude': r.longitude,
-      }).toList();
-
-      final result = await repository.searchPlaces(
-        apiKey: apiKey.value,
-        query: query,
-        regions: regions,
-        radius: radius,
-      );
-
-      result.fold(
-        (exception) {
-          error.value = 'خطأ البحث: ${exception.toString()}';
-        },
-        (searchedLeads) {
-          _loadLeads();
-          Get.snackbar(
-            '🎯 تم بنجاح',
-            'تم الحصول على ${searchedLeads.length} محل مستهدف',
-            snackPosition: SnackPosition.BOTTOM,
-            duration: const Duration(seconds: 3),
-          );
-        },
-      );
-    } finally {
-      isLoading.value = false;
-    }
+    radiusKm.value = (radius / 1000).round().clamp(1, 150);
+    await startGeoDiscoveryJob(customQuery: query);
   }
 
-  // ─── تحديث حالة الإرسال ───────────────────────────────────────────────────
   Future<void> markLeadAsSent(String leadId) async {
-    final result = await repository.markLeadAsSent(leadId);
-    result.fold(
-      (exception) {
-        error.value = 'خطأ: ${exception.toString()}';
-      },
-      (_) {
-        final index = leads.indexWhere((l) => l.id == leadId);
-        if (index != -1) {
-          leads[index] = leads[index].copyWith(
-            isSent: true,
-            sentAt: DateTime.now(),
-          );
-          leads.refresh();
-          _applyFilter();
-        }
-      },
-    );
+    await updateLeadStatus(leadId, LeadStatus.contacted);
   }
 
-  // ─── تحديث رقم الهاتف ────────────────────────────────────────────────────
   Future<void> updateLeadPhone(String leadId, String phone) async {
     final result = await repository.updateLeadPhone(leadId, phone);
     result.fold(
-      (exception) {
-        error.value = 'خطأ: ${exception.toString()}';
-      },
+      (exception) => error.value = exception.toString(),
       (_) {
         final index = leads.indexWhere((l) => l.id == leadId);
         if (index != -1) {
@@ -268,13 +342,10 @@ class NeoleapLeadsController extends GetxController {
     );
   }
 
-  // ─── حذف عميل محتمل ──────────────────────────────────────────────────────
   Future<void> deleteLead(String leadId) async {
     final result = await repository.deleteLead(leadId);
     result.fold(
-      (exception) {
-        error.value = 'خطأ الحذف: ${exception.toString()}';
-      },
+      (exception) => error.value = exception.toString(),
       (_) {
         leads.removeWhere((l) => l.id == leadId);
         leads.refresh();
@@ -283,7 +354,6 @@ class NeoleapLeadsController extends GetxController {
     );
   }
 
-  // ─── إدارة المناطق ────────────────────────────────────────────────────────
   void toggleRegion(RegionEntity region) {
     final index = selectedRegions.indexWhere((r) => r.name == region.name);
     if (index != -1) {
@@ -295,14 +365,8 @@ class NeoleapLeadsController extends GetxController {
     repository.saveSelectedRegions(selectedRegions.toList());
   }
 
-  bool isRegionSelected(RegionEntity region) {
-    return selectedRegions.any((r) => r.name == region.name);
-  }
-
   void selectAllRegions() {
-    final all = RegionEntity.saudiRegions
-        .map((r) => r.copyWith(isSelected: true))
-        .toList();
+    final all = RegionEntity.saudiRegions.map((r) => r.copyWith(isSelected: true)).toList();
     selectedRegions.assignAll(all);
     repository.saveSelectedRegions(all);
   }
@@ -312,33 +376,28 @@ class NeoleapLeadsController extends GetxController {
     repository.saveSelectedRegions([]);
   }
 
-  // ─── تغيير فلتر العرض ────────────────────────────────────────────────────
   void setViewFilter(LeadsViewFilter filter) {
     viewFilter.value = filter;
     _applyFilter();
   }
 
-  // ─── تصدير CSV ───────────────────────────────────────────────────────────
   Future<void> exportToCSV() async {
-    final result = await repository.exportToCSV(leads);
+    final result = await repository.exportToCSV(filteredLeads);
     result.fold(
-      (exception) {
-        error.value = 'خطأ التصدير: ${exception.toString()}';
-      },
+      (exception) => error.value = exception.toString(),
       (csvContent) async {
         try {
           final directory = await getTemporaryDirectory();
-          final path =
-              '${directory.path}/neoleap_leads_${DateTime.now().millisecondsSinceEpoch}.csv';
+          final path = '${directory.path}/saudi_geo_leads_${DateTime.now().millisecondsSinceEpoch}.csv';
           final file = File(path);
           final bytes = utf8.encode(csvContent);
           const bom = [0xEF, 0xBB, 0xBF];
           await file.writeAsBytes(bom + bytes);
           await Share.shareXFiles(
             [XFile(path)],
-            text: 'تقرير العملاء المستهدفين لـ Neoleap',
+            text: 'تقرير اكتشاف العملاء المحتملين - RASSCO Geo Discovery',
           );
-          Get.snackbar('نجاح', 'تم تصدير ومشاركة ملف CSV بنجاح');
+          Get.snackbar('نجاح', 'تم تصدير ملف العملاء بنجاح');
         } catch (e) {
           error.value = 'خطأ حفظ الملف: $e';
         }
@@ -346,7 +405,6 @@ class NeoleapLeadsController extends GetxController {
     );
   }
 
-  // ─── فلترة محلية ─────────────────────────────────────────────────────────
   void filterLeads(String query) {
     searchText.value = query;
     _applyFilter();
@@ -360,10 +418,19 @@ class NeoleapLeadsController extends GetxController {
         base = leads.toList();
         break;
       case LeadsViewFilter.pending:
-        base = leads.where((l) => !l.isSent).toList();
+        base = leads.where((l) => l.leadStatus == LeadStatus.discovered || l.leadStatus == LeadStatus.unassigned).toList();
         break;
       case LeadsViewFilter.contacted:
-        base = leads.where((l) => l.isSent).toList();
+        base = leads.where((l) => l.leadStatus == LeadStatus.contacted || l.isSent).toList();
+        break;
+      case LeadsViewFilter.interested:
+        base = leads.where((l) => l.leadStatus == LeadStatus.interested).toList();
+        break;
+      case LeadsViewFilter.won:
+        base = leads.where((l) => l.leadStatus == LeadStatus.won).toList();
+        break;
+      case LeadsViewFilter.duplicates:
+        base = leads.where((l) => l.leadStatus == LeadStatus.duplicate).toList();
         break;
     }
 
@@ -371,23 +438,11 @@ class NeoleapLeadsController extends GetxController {
     if (q.isNotEmpty) {
       base = base.where((l) =>
           l.name.toLowerCase().contains(q) ||
+          l.category.toLowerCase().contains(q) ||
           l.phone?.contains(q) == true ||
-          l.address?.toLowerCase().contains(q) == true).toList();
+          l.formattedAddress?.toLowerCase().contains(q) == true).toList();
     }
 
     filteredLeads.assignAll(base);
-  }
-}
-
-// Extension لـ copyWith في RegionEntity
-extension RegionEntityX on RegionEntity {
-  RegionEntity copyWith({bool? isSelected}) {
-    return RegionEntity(
-      name: name,
-      emoji: emoji,
-      latitude: latitude,
-      longitude: longitude,
-      isSelected: isSelected ?? this.isSelected,
-    );
   }
 }
