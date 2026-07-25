@@ -603,23 +603,30 @@ class _NeoleapLeadsPageState extends State<NeoleapLeadsPage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  const Icon(LucideIcons.key, size: 18, color: AppColors.primary),
-                  const SizedBox(width: 8),
-                  Text(
-                    'إعدادات مفتاح Google Places API',
-                    style: GoogleFonts.cairo(
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
+              Expanded(
+                child: Row(
+                  children: [
+                    const Icon(LucideIcons.key, size: 18, color: AppColors.primary),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'إعدادات مفتاح Google Places API',
+                        style: GoogleFonts.cairo(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textPrimary,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
+              const SizedBox(width: 6),
               AnimatedContainer(
                 duration: const Duration(milliseconds: 300),
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
                   color: statusBg,
                   borderRadius: BorderRadius.circular(20),
@@ -636,11 +643,11 @@ class _NeoleapLeadsPageState extends State<NeoleapLeadsPage> {
                       )
                     else
                       Icon(statusIcon, size: 14, color: statusColor),
-                    const SizedBox(width: 6),
+                    const SizedBox(width: 4),
                     Text(
                       statusText,
                       style: GoogleFonts.cairo(
-                        fontSize: 11,
+                        fontSize: 10,
                         color: statusColor,
                         fontWeight: FontWeight.bold,
                       ),
@@ -691,6 +698,7 @@ class _NeoleapLeadsPageState extends State<NeoleapLeadsPage> {
                       foregroundColor: Colors.white,
                       elevation: 0,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
                     ),
                     onPressed: isChecking
                         ? null
@@ -701,10 +709,13 @@ class _NeoleapLeadsPageState extends State<NeoleapLeadsPage> {
                             height: 16,
                             child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                           )
-                        : const Icon(LucideIcons.plugZap, size: 18, color: Colors.white),
-                    label: Text(
-                      isChecking ? 'جاري فحص الاتصال...' : 'فحص الاتصال بـ API',
-                      style: GoogleFonts.cairo(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
+                        : const Icon(LucideIcons.plugZap, size: 16, color: Colors.white),
+                    label: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        isChecking ? 'جاري الفحص...' : 'فحص الاتصال بـ API',
+                        style: GoogleFonts.cairo(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
+                      ),
                     ),
                   ),
                 ),
@@ -712,7 +723,7 @@ class _NeoleapLeadsPageState extends State<NeoleapLeadsPage> {
               const SizedBox(width: 8),
               OutlinedButton.icon(
                 style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                   side: const BorderSide(color: AppColors.border),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
@@ -721,9 +732,12 @@ class _NeoleapLeadsPageState extends State<NeoleapLeadsPage> {
                   controller.saveAndValidateApiKey(_apiKeyCtrl.text);
                 },
                 icon: const Icon(LucideIcons.rotateCcw, size: 14, color: AppColors.textSecondary),
-                label: Text(
-                  'الافتراضي',
-                  style: GoogleFonts.cairo(fontSize: 11, color: AppColors.textSecondary, fontWeight: FontWeight.bold),
+                label: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    'الافتراضي',
+                    style: GoogleFonts.cairo(fontSize: 11, color: AppColors.textSecondary, fontWeight: FontWeight.bold),
+                  ),
                 ),
               ),
             ],
@@ -759,19 +773,26 @@ class _NeoleapLeadsPageState extends State<NeoleapLeadsPage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  const Icon(LucideIcons.cpu, color: AppColors.primary, size: 18),
-                  const SizedBox(width: 8),
-                  Text(
-                    controller.isDiscovering.value ? 'جارٍ تنفيذ مسح المربعات الجغرافية' : 'اكتملت مهمة الاكتشاف الجغرافي الأخيرة',
-                    style: GoogleFonts.cairo(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.primaryDark),
-                  ),
-                ],
+              Expanded(
+                child: Row(
+                  children: [
+                    const Icon(LucideIcons.cpu, color: AppColors.primary, size: 18),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        controller.isDiscovering.value ? 'جارٍ تنفيذ مسح المربعات الجغرافية' : 'اكتملت مهمة الاكتشاف الجغرافي الأخيرة',
+                        style: GoogleFonts.cairo(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.primaryDark),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
               ),
+              const SizedBox(width: 6),
               Text(
                 '${(progressRatio * 100).toStringAsFixed(0)}%',
-                style: GoogleFonts.cairo(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.primaryDark),
+                style: GoogleFonts.cairo(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.primaryDark),
               ),
             ],
           ),
@@ -789,10 +810,10 @@ class _NeoleapLeadsPageState extends State<NeoleapLeadsPage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _metricTile('المربعات المفحوصة', '${controller.jobCurrentCell.value} / ${controller.jobTotalCells.value}'),
-              _metricTile('الأماكن المكتشفة', '${controller.jobPlacesFound.value}'),
-              _metricTile('عملاء جدد', '${controller.jobNewLeadsAdded.value}', color: AppColors.success),
-              _metricTile('مكرر مستبعد', '${controller.jobDuplicatesSkipped.value}', color: AppColors.textMuted),
+              Expanded(child: _metricTile('المربعات', '${controller.jobCurrentCell.value}/${controller.jobTotalCells.value}')),
+              Expanded(child: _metricTile('الأماكن', '${controller.jobPlacesFound.value}')),
+              Expanded(child: _metricTile('جدد', '${controller.jobNewLeadsAdded.value}', color: AppColors.success)),
+              Expanded(child: _metricTile('مكرر', '${controller.jobDuplicatesSkipped.value}', color: AppColors.textMuted)),
             ],
           ),
         ],
@@ -1067,27 +1088,36 @@ class _NeoleapLeadsPageState extends State<NeoleapLeadsPage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              hasPhone
-                  ? Text(
-                      lead.phone!,
-                      style: GoogleFonts.robotoMono(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
-                    )
-                  : TextButton.icon(
-                      onPressed: () => _showPhoneDialog(lead),
-                      icon: const Icon(LucideIcons.plus, size: 12, color: AppColors.primary),
-                      label: Text('إضافة رقم الهاتف', style: GoogleFonts.cairo(fontSize: 11, color: AppColors.primary)),
-                      style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: Size.zero),
-                    ),
+              Expanded(
+                child: hasPhone
+                    ? Text(
+                        lead.phone!,
+                        style: GoogleFonts.robotoMono(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      )
+                    : Align(
+                        alignment: Alignment.centerRight,
+                        child: TextButton.icon(
+                          onPressed: () => _showPhoneDialog(lead),
+                          icon: const Icon(LucideIcons.plus, size: 12, color: AppColors.primary),
+                          label: Text('إضافة رقم الهاتف', style: GoogleFonts.cairo(fontSize: 11, color: AppColors.primary)),
+                          style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: Size.zero),
+                        ),
+                      ),
+              ),
+              const SizedBox(width: 4),
               Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   _actionCircleBtn(LucideIcons.navigation, AppColors.secondaryBlue, () => _openMap(lead.latitude, lead.longitude, lead.name), 'ملاحة'),
                   if (hasPhone) ...[
-                    const SizedBox(width: 6),
+                    const SizedBox(width: 4),
                     _actionCircleBtn(LucideIcons.phoneCall, AppColors.primary, () => _launchCall(lead.phone!), 'اتصال'),
-                    const SizedBox(width: 6),
+                    const SizedBox(width: 4),
                     _actionCircleBtn(LucideIcons.messageSquare, AppColors.success, () => _launchWhatsApp(lead.phone!, lead.name), 'واتساب'),
                   ],
-                  const SizedBox(width: 6),
+                  const SizedBox(width: 4),
                   _actionCircleBtn(LucideIcons.edit2, AppColors.textMuted, () => _showPhoneDialog(lead), 'تعديل'),
                 ],
               ),
