@@ -23,6 +23,7 @@ class _NeoleapLeadsPageState extends State<NeoleapLeadsPage> {
   final TextEditingController _searchFilterCtrl = TextEditingController();
 
   bool _obscureKey = true;
+  LeadEntity? _selectedMapLead;
 
   @override
   void initState() {
@@ -1047,80 +1048,256 @@ class _NeoleapLeadsPageState extends State<NeoleapLeadsPage> {
   }
 
   // ── Interactive Map Representation View ──────────────────────────────────
+  // ── Interactive Map View Component ───────────────────────────────────────
   Widget _buildMapViewPlaceholder() {
+    final centerLat = controller.currentLat.value;
+    final centerLng = controller.currentLng.value;
+    final radius = controller.radiusKm.value;
+    final leadsToDisplay = controller.filteredLeads;
+
+    final activeLead = (_selectedMapLead != null && leadsToDisplay.any((l) => l.id == _selectedMapLead!.id))
+        ? _selectedMapLead
+        : (leadsToDisplay.isNotEmpty ? leadsToDisplay.first : null);
+
     return Container(
-      height: 380,
+      height: 420,
       width: double.infinity,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFF0F172A),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.15),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Stack(
         children: [
-          // Background grid styling for map representation
+          // 1. Radar Grid Circles & Grid lines
           Positioned.fill(
             child: ClipRRect(
               borderRadius: BorderRadius.circular(16),
-              child: Container(
-                color: const Color(0xFFE5E7EB),
-                child: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(LucideIcons.mapPin, size: 48, color: AppColors.primary),
-                      const SizedBox(height: 12),
-                      Text(
-                        'خريطة اكتشاف العملاء الميدانية',
-                        style: GoogleFonts.cairo(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+              child: CustomPaint(
+                painter: _RadarMapPainter(radiusKm: radius),
+              ),
+            ),
+          ),
+
+          // 2. Interactive Lead Pins plotted on Map Canvas
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final width = constraints.maxWidth;
+              final height = constraints.maxHeight;
+              final double spanDeg = (radius <= 0 ? 5 : radius) / 80.0;
+
+              return Stack(
+                children: [
+                  // Center Technician Position (Blue Radar Beacon)
+                  Positioned(
+                    left: width / 2 - 16,
+                    top: height / 2 - 16,
+                    child: Tooltip(
+                      message: 'موقع التواجد (موقعي)',
+                      child: Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withValues(alpha: 0.3),
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 2),
+                        ),
+                        child: const Center(
+                          child: Icon(LucideIcons.crosshair, size: 16, color: Colors.white),
+                        ),
                       ),
+                    ),
+                  ),
+
+                  // Pins for discovered leads
+                  for (final lead in leadsToDisplay) ...[
+                    Builder(
+                      builder: (ctx) {
+                        final dLng = lead.longitude - centerLng;
+                        final dLat = centerLat - lead.latitude;
+
+                        final normX = (dLng / spanDeg).clamp(-1.0, 1.0);
+                        final normY = (dLat / spanDeg).clamp(-1.0, 1.0);
+
+                        final leftPos = (width / 2) + (normX * (width / 2.3)) - 16;
+                        final topPos = (height / 2) + (normY * (height / 2.3)) - 16;
+
+                        final isSelected = activeLead?.id == lead.id;
+                        final isContacted = lead.isSent || lead.leadStatus == LeadStatus.contacted || lead.leadStatus == LeadStatus.visited || lead.leadStatus == LeadStatus.won;
+                        final pinColor = isContacted ? AppColors.success : (lead.phone != null ? AppColors.warning : AppColors.primary);
+
+                        return Positioned(
+                          left: leftPos,
+                          top: topPos,
+                          child: GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                _selectedMapLead = lead;
+                              });
+                            },
+                            child: AnimatedScale(
+                              scale: isSelected ? 1.3 : 1.0,
+                              duration: const Duration(milliseconds: 200),
+                              child: Container(
+                                padding: const EdgeInsets.all(6),
+                                decoration: BoxDecoration(
+                                  color: pinColor,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(color: Colors.white, width: isSelected ? 2.5 : 1.5),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: pinColor.withValues(alpha: 0.6),
+                                      blurRadius: isSelected ? 10 : 4,
+                                      spreadRadius: isSelected ? 2 : 0,
+                                    ),
+                                  ],
+                                ),
+                                child: Icon(
+                                  isContacted ? LucideIcons.check : LucideIcons.store,
+                                  size: 14,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ],
+              );
+            },
+          ),
+
+          // 3. Top Action Overlay Bar
+          Positioned(
+            top: 12,
+            left: 12,
+            right: 12,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.7),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: Colors.white24),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(LucideIcons.mapPin, color: AppColors.primary, size: 14),
+                      const SizedBox(width: 6),
                       Text(
-                        'عرض موقع الفني ونطاق ${controller.radiusKm.value} كم والأماكن المكتشفة',
-                        style: GoogleFonts.cairo(fontSize: 11, color: AppColors.textSecondary),
+                        '${leadsToDisplay.length} نشاط جغرافي',
+                        style: GoogleFonts.cairo(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white),
                       ),
                     ],
                   ),
                 ),
-              ),
+                ElevatedButton.icon(
+                  onPressed: () => _openMap(centerLat, centerLng, 'نطاق الأنشطة المكتشفة'),
+                  icon: const Icon(LucideIcons.externalLink, size: 14, color: Colors.white),
+                  label: Text('فتح في Google Maps', style: GoogleFonts.cairo(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                  ),
+                ),
+              ],
             ),
           ),
-          Positioned(
-            bottom: 12,
-            right: 12,
-            left: 12,
-            child: Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.95),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: AppColors.border),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _statusDot('جديد', const Color(0xFF2563EB)),
-                  _statusDot('تم التواصل', AppColors.primary),
-                  _statusDot('مهتم', AppColors.success),
-                  _statusDot('موعد', const Color(0xFF7C3AED)),
-                  _statusDot('مكرر', AppColors.textMuted),
-                ],
+
+          // 4. Bottom Selected Lead Pop-up Card
+          if (activeLead != null)
+            Positioned(
+              bottom: 12,
+              left: 12,
+              right: 12,
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(14),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.2),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryLight,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(LucideIcons.store, color: AppColors.primary, size: 20),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            activeLead.name,
+                            style: GoogleFonts.cairo(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          Row(
+                            children: [
+                              Text(
+                                activeLead.category,
+                                style: GoogleFonts.cairo(fontSize: 10, color: AppColors.textSecondary),
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                '•  ${activeLead.distanceKm.toStringAsFixed(1)} كم',
+                                style: GoogleFonts.cairo(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.primary),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _actionCircleBtn(LucideIcons.navigation, AppColors.secondaryBlue, () => _openMap(activeLead.latitude, activeLead.longitude, activeLead.name), 'ملاحة'),
+                        const SizedBox(width: 4),
+                        _actionCircleBtn(LucideIcons.phoneCall, AppColors.primary, () => _launchCall(activeLead), 'اتصال'),
+                        const SizedBox(width: 4),
+                        _actionCircleBtn(LucideIcons.messageSquare, AppColors.success, () => _launchWhatsApp(activeLead), 'واتساب'),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
         ],
       ),
     );
   }
 
-  Widget _statusDot(String label, Color col) {
-    return Row(
-      children: [
-        Container(width: 8, height: 8, decoration: BoxDecoration(color: col, shape: BoxShape.circle)),
-        const SizedBox(width: 4),
-        Text(label, style: GoogleFonts.cairo(fontSize: 10, color: AppColors.textPrimary)),
-      ],
-    );
-  }
+
+
+
 
   // ── Lead Card Widget ──────────────────────────────────────────────────────
   Widget _buildLeadCard(LeadEntity lead) {
@@ -1433,4 +1610,35 @@ class _NeoleapLeadsPageState extends State<NeoleapLeadsPage> {
       ),
     );
   }
+}
+
+class _RadarMapPainter extends CustomPainter {
+  final int radiusKm;
+  _RadarMapPainter({required this.radiusKm});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final maxRadius = size.width / 2.2;
+
+    final paintCircle = Paint()
+      ..color = const Color(0xFF334155).withValues(alpha: 0.4)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.0;
+
+    canvas.drawCircle(center, maxRadius * 0.33, paintCircle);
+    canvas.drawCircle(center, maxRadius * 0.66, paintCircle);
+    canvas.drawCircle(center, maxRadius, paintCircle);
+
+    final paintAxis = Paint()
+      ..color = const Color(0xFF334155).withValues(alpha: 0.3)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.0;
+
+    canvas.drawLine(Offset(0, size.height / 2), Offset(size.width, size.height / 2), paintAxis);
+    canvas.drawLine(Offset(size.width / 2, 0), Offset(size.width / 2, size.height), paintAxis);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
