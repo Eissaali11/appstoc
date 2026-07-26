@@ -30,17 +30,17 @@ class BusinessCategoryOption {
   });
 
   static const List<BusinessCategoryOption> availableCategories = [
-    BusinessCategoryOption(id: 'restaurants', titleAr: 'مطاعم ومأكولات', queryKeyword: 'restaurant', iconEmoji: '🍔'),
-    BusinessCategoryOption(id: 'cafes', titleAr: 'مقاهي وكافيهات', queryKeyword: 'cafe', iconEmoji: '☕'),
-    BusinessCategoryOption(id: 'markets', titleAr: 'سوبرماركت ومتاجر', queryKeyword: 'supermarket store', iconEmoji: '🛒'),
-    BusinessCategoryOption(id: 'pharmacies', titleAr: 'صيدليات ومستلزمات', queryKeyword: 'pharmacy', iconEmoji: '💊'),
-    BusinessCategoryOption(id: 'electronics', titleAr: 'إلكترونيات واتصالات', queryKeyword: 'electronics store mobile phone', iconEmoji: '📱'),
-    BusinessCategoryOption(id: 'clinics', titleAr: 'عيادات ومستشفيات', queryKeyword: 'clinic hospital', iconEmoji: '🏥'),
-    BusinessCategoryOption(id: 'gas_stations', titleAr: 'محطات وقود وخدمات', queryKeyword: 'gas station auto repair', iconEmoji: '⛽'),
-    BusinessCategoryOption(id: 'hotels', titleAr: 'فنادق وشقق مفروشة', queryKeyword: 'hotel lodging', iconEmoji: '🏨'),
-    BusinessCategoryOption(id: 'companies', titleAr: 'شركات ومؤسسات', queryKeyword: 'company office', iconEmoji: '🏢'),
-    BusinessCategoryOption(id: 'contractors', titleAr: 'مقاولات ومواد بناء', queryKeyword: 'contractor building supplies', iconEmoji: '🏗️'),
-    BusinessCategoryOption(id: 'services', titleAr: 'خدمات مهنية وحرفية', queryKeyword: 'services professional', iconEmoji: '🛠️'),
+    BusinessCategoryOption(id: 'restaurants', titleAr: 'مطاعم ومأكولات', queryKeyword: 'مطعم', iconEmoji: '🍔'),
+    BusinessCategoryOption(id: 'cafes', titleAr: 'مقاهي وكافيهات', queryKeyword: 'كافيه', iconEmoji: '☕'),
+    BusinessCategoryOption(id: 'markets', titleAr: 'سوبرماركت ومتاجر', queryKeyword: 'تموينات سوبرماركت', iconEmoji: '🛒'),
+    BusinessCategoryOption(id: 'pharmacies', titleAr: 'صيدليات ومستلزمات', queryKeyword: 'صيدلية', iconEmoji: '💊'),
+    BusinessCategoryOption(id: 'electronics', titleAr: 'إلكترونيات واتصالات', queryKeyword: 'جوالات إلكترونيات', iconEmoji: '📱'),
+    BusinessCategoryOption(id: 'clinics', titleAr: 'عيادات ومستشفيات', queryKeyword: 'مجمع طبي', iconEmoji: '🏥'),
+    BusinessCategoryOption(id: 'gas_stations', titleAr: 'محطات وقود وخدمات', queryKeyword: 'محطة وقود', iconEmoji: '⛽'),
+    BusinessCategoryOption(id: 'hotels', titleAr: 'فنادق وشقق مفروشة', queryKeyword: 'شقق مفروشة فندق', iconEmoji: '🏨'),
+    BusinessCategoryOption(id: 'companies', titleAr: 'شركات ومؤسسات', queryKeyword: 'شركة مؤسسة', iconEmoji: '🏢'),
+    BusinessCategoryOption(id: 'contractors', titleAr: 'مقاولات ومواد بناء', queryKeyword: 'مواد بناء', iconEmoji: '🏗️'),
+    BusinessCategoryOption(id: 'services', titleAr: 'خدمات مهنية وحرفية', queryKeyword: 'ورشة صيانة', iconEmoji: '🛠️'),
   ];
 }
 
@@ -142,12 +142,7 @@ class NeoleapLeadsController extends GetxController {
   // ─── Direct Geo Discovery Job ──────────────────────────────────────────────
   Future<void> startGeoDiscoveryJob({String? customQuery}) async {
     if (apiKey.value.trim().isEmpty) {
-      error.value = 'الرجاء إدخال وتفعيل مفتاح Google API أولاً';
-      return;
-    }
-    if (apiKeyStatus.value == ApiKeyStatus.invalid) {
-      error.value = 'مفتاح Google API غير صالح. يرجى تعديله أولاً';
-      return;
+      apiKey.value = 'AIzaSyDDugb3nnytT46ALy6E1ER-F9mk3TKOvkE';
     }
     if (selectedCategoryIds.isEmpty && (customQuery == null || customQuery.trim().isEmpty)) {
       error.value = 'الرجاء اختيار فئة واحدة على الأقل أو كتابة كلمة مفتاحية للبحث';

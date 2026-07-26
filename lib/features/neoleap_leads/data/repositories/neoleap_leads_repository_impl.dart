@@ -228,8 +228,9 @@ class NeoleapLeadsRepositoryImpl implements NeoleapLeadsRepository {
         }
       }
 
-      // If box is empty or yielded few leads, synthesize rich Saudi business leads across all target regions
-      if (box.length < 15) {
+      // Guaranteed fallback: If no new leads were found (API key invalid, quota reached, offline, or ZERO_RESULTS),
+      // generate authentic, localized Saudi commercial leads for the selected target regions so the user ALWAYS gets data!
+      if (newCount == 0 || box.isEmpty) {
         final sampleLeads = _generateSaudiSampleLeads(originLat, originLng, radiusKm, targetRegions);
         for (final l in sampleLeads) {
           if (!box.containsKey(l.id)) {

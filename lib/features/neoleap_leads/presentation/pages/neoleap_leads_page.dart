@@ -1390,14 +1390,14 @@ class _NeoleapLeadsPageState extends State<NeoleapLeadsPage> {
       height: 420,
       width: double.infinity,
       decoration: BoxDecoration(
-        color: const Color(0xFF0F172A),
+        color: const Color(0xFFF8FAFC),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
-        boxShadow: [
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.4), width: 1.5),
+        boxShadow: const [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.15),
+            color: Color(0x0A000000),
             blurRadius: 12,
-            offset: const Offset(0, 4),
+            offset: Offset(0, 4),
           ),
         ],
       ),
@@ -1978,17 +1978,26 @@ class _RadarMapPainter extends CustomPainter {
     final center = Offset(size.width / 2, size.height / 2);
     final maxRadius = size.width / 2.2;
 
-    final paintCircle = Paint()
-      ..color = const Color(0xFF334155).withValues(alpha: 0.4)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.0;
+    // Draw Light Corporate Background Fill
+    final bgPaint = Paint()..color = const Color(0xFFF8FAFC);
+    canvas.drawRect(Offset.zero & size, bgPaint);
 
+    final fillCircle = Paint()
+      ..color = AppColors.primary.withValues(alpha: 0.05)
+      ..style = PaintingStyle.fill;
+
+    final paintCircle = Paint()
+      ..color = AppColors.primary.withValues(alpha: 0.3)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.2;
+
+    canvas.drawCircle(center, maxRadius, fillCircle);
     canvas.drawCircle(center, maxRadius * 0.33, paintCircle);
     canvas.drawCircle(center, maxRadius * 0.66, paintCircle);
     canvas.drawCircle(center, maxRadius, paintCircle);
 
     final paintAxis = Paint()
-      ..color = const Color(0xFF334155).withValues(alpha: 0.3)
+      ..color = AppColors.primary.withValues(alpha: 0.2)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.0;
 
