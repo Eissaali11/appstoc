@@ -65,30 +65,11 @@ class _CustodyDeleteConfirmationDialog extends StatefulWidget {
 
 class _CustodyDeleteConfirmationDialogState
     extends State<_CustodyDeleteConfirmationDialog> {
-  final TextEditingController _confirmController = TextEditingController();
   bool _isSubmitting = false;
   String? _errorText;
-  bool _matches = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _confirmController.addListener(() {
-      final matches = _confirmController.text.trim() == widget.serialNumber;
-      if (matches != _matches) {
-        setState(() => _matches = matches);
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _confirmController.dispose();
-    super.dispose();
-  }
 
   Future<void> _handleConfirm() async {
-    if (!_matches || _isSubmitting) return;
+    if (_isSubmitting) return;
 
     setState(() {
       _isSubmitting = true;
@@ -128,11 +109,11 @@ class _CustodyDeleteConfirmationDialogState
               children: [
                 Row(
                   children: [
-                    Icon(Icons.warning_amber_rounded, color: AppColors.error, size: 26),
+                    Icon(Icons.warning_amber_rounded, color: AppColors.error, size: 28),
                     const SizedBox(width: 8),
                     const Expanded(
                       child: Text(
-                        'حذف نهائي من العهدة',
+                        'تأكيد الإزالة من العهدة',
                         style: TextStyle(
                           fontFamily: 'BeIN',
                           fontSize: 18,
@@ -145,13 +126,13 @@ class _CustodyDeleteConfirmationDialogState
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'سيتم حذف الرقم التسلسلي نهائيًا من قاعدة البيانات ومن تفاصيل مخزون الصنف. '
-                  'لا يمكن التراجع عن هذه العملية بعد تأكيدها.',
+                  'هل أنت تأكد من رغبتك في إزالة هذا العنصر من عهدتك النشطة؟',
                   style: TextStyle(
                     fontFamily: 'Cairo',
-                    fontSize: 13,
-                    color: Colors.white.withOpacity(0.85),
-                    height: 1.5,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white.withOpacity(0.9),
+                    height: 1.4,
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -167,40 +148,19 @@ class _CustodyDeleteConfirmationDialogState
                   _detailRow('صاحب العهدة الحالي:', widget.ownerLabel!),
                 if (widget.receivedAtLabel != null && widget.receivedAtLabel!.isNotEmpty)
                   _detailRow('تاريخ الاستلام:', widget.receivedAtLabel!),
-                const SizedBox(height: 16),
-                Text(
-                  'اكتب الرقم التسلسلي كاملاً لتأكيد الحذف:',
-                  style: TextStyle(
-                    fontFamily: 'BeIN',
-                    fontSize: 13,
-                    color: Colors.white.withOpacity(0.8),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                TextField(
-                  controller: _confirmController,
-                  enabled: !_isSubmitting,
-                  style: const TextStyle(fontFamily: 'Cairo', color: Colors.white),
-                  decoration: InputDecoration(
-                    hintText: widget.serialNumber,
-                    hintStyle: const TextStyle(color: Colors.white24),
-                    filled: true,
-                    fillColor: Colors.white.withOpacity(0.06),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Colors.white24),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: AppColors.error, width: 2),
-                    ),
-                  ),
-                ),
                 if (_errorText != null) ...[
-                  const SizedBox(height: 10),
-                  Text(
-                    _errorText!,
-                    style: TextStyle(fontFamily: 'Cairo', fontSize: 13, color: AppColors.error),
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: AppColors.error.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: AppColors.error.withOpacity(0.4)),
+                    ),
+                    child: Text(
+                      _errorText!,
+                      style: TextStyle(fontFamily: 'Cairo', fontSize: 13, color: AppColors.error),
+                    ),
                   ),
                 ],
                 const SizedBox(height: 20),
@@ -222,10 +182,9 @@ class _CustodyDeleteConfirmationDialogState
                     const SizedBox(width: 12),
                     Expanded(
                       child: ElevatedButton(
-                        onPressed: (_matches && !_isSubmitting) ? _handleConfirm : null,
+                        onPressed: _isSubmitting ? null : _handleConfirm,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.error,
-                          disabledBackgroundColor: AppColors.error.withOpacity(0.3),
                           padding: const EdgeInsets.symmetric(vertical: 12),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
@@ -238,7 +197,7 @@ class _CustodyDeleteConfirmationDialogState
                                 child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                               )
                             : const Text(
-                                'تأكيد الحذف النهائي',
+                                'نعم، حذف من عهدتي',
                                 style: TextStyle(color: Colors.white, fontFamily: 'BeIN', fontWeight: FontWeight.bold),
                               ),
                       ),
