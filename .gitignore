@@ -75,3 +75,9 @@ free_disk_space.ps1
 BUILD_ISSUE_CMake.md
 CLEANUP_SPACE.md
 scratch/
+
+# SDUI Local Config & Signing Artifacts
+/config/*.key
+/config/*.pem
+/config/external_sdui_filters_signed.json
+!/config/mobile-sdui-filters.json.example

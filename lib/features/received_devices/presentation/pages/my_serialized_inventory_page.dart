@@ -7,6 +7,11 @@ import '../../../../shared/widgets/rassco_app_bar.dart';
 import '../../../dashboard/presentation/controllers/dashboard_controller.dart';
 import '../../../auth/presentation/controllers/auth_controller.dart';
 
+import '../../../../core/api/api_endpoints.dart';
+import '../../../../core/sdui/models/server_driven_filter_config.dart';
+import '../../../../core/sdui/repositories/sdui_filter_repository.dart';
+import '../../../../core/sdui/widgets/server_driven_filter_bar.dart';
+
 /// MySerializedInventoryPage — v3.0
 /// عرض كل الأرقام التسلسلية الموجودة في عهدة الفني حالياً
 /// مصدر البيانات: GET /api/technicians/:id/serialized-items
@@ -21,7 +26,9 @@ class _MySerializedInventoryPageState extends State<MySerializedInventoryPage>
     with SingleTickerProviderStateMixin {
   final DashboardController _controller = Get.find<DashboardController>();
   final AuthController _authController = Get.find<AuthController>();
+  final SduiFilterRepository _sduiRepository = SduiFilterRepository();
 
+  ServerDrivenFilterConfig _sduiConfig = SduiFilterRepository.fallbackConfig;
   List<Map<String, dynamic>> _allItems = [];
   List<Map<String, dynamic>> _filteredItems = [];
   bool _isLoading = true;
@@ -31,17 +38,24 @@ class _MySerializedInventoryPageState extends State<MySerializedInventoryPage>
 
   final TextEditingController _searchController = TextEditingController();
 
-  // Category filter options
-  static const _categories = [
-    ('all', 'الكل'),
-    ('devices', 'الأجهزة'),
-    ('sim', 'الشرائح'),
-  ];
-
   @override
   void initState() {
     super.initState();
+    _loadSduiConfig();
     _loadSerializedItems();
+  }
+
+  Future<void> _loadSduiConfig() async {
+    final config = await _sduiRepository.getFilterConfig(
+      endpointUrl: ApiEndpoints.sduiCustodyFilters,
+    );
+    if (mounted) {
+      setState(() {
+        _sduiConfig = config;
+        _selectedCategory = config.defaultFilterId;
+      });
+      _applyFilters();
+    }
   }
 
   @override
@@ -319,48 +333,16 @@ class _MySerializedInventoryPageState extends State<MySerializedInventoryPage>
               ),
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 6),
 
-          // Category chips
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: _categories.map((cat) {
-                final isSelected = _selectedCategory == cat.$1;
-                return GestureDetector(
-                  onTap: () {
-                    setState(() => _selectedCategory = cat.$1);
-                    _applyFilters();
-                  },
-                  child: Container(
-                    margin: const EdgeInsets.only(left: 8),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: isSelected
-                          ? AppColors.primary.withOpacity(0.15)
-                          : Colors.white.withOpacity(0.04),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: isSelected
-                            ? AppColors.primary.withOpacity(0.4)
-                            : Colors.white.withOpacity(0.08),
-                      ),
-                    ),
-                    child: Text(
-                      cat.$2,
-                      style: TextStyle(fontFamily: 'BeIN', 
-                        color: isSelected ? AppColors.primary : Colors.white54,
-                        fontSize: 12,
-                        fontWeight: isSelected
-                            ? FontWeight.bold
-                            : FontWeight.normal,
-                      ),
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
+          // Server-Driven Filter Bar
+          ServerDrivenFilterBar(
+            config: _sduiConfig,
+            activeFilterId: _selectedCategory,
+            onFilterSelected: (filterId) {
+              setState(() => _selectedCategory = filterId);
+              _applyFilters();
+            },
           ),
         ],
       ),

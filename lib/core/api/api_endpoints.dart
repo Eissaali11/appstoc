@@ -73,9 +73,10 @@ class ApiEndpoints {
   static String lookup(String serialNumber) => '/api/serialized-items/lookup/$serialNumber';
 
   // TEMPORARY FEATURE — remove or disable after final customer handover.
-  // Permanently delete a DEVICE or SIM from the authenticated technician's own active
-  // custody. itemType must be exactly 'DEVICE' or 'SIM'.
   static String deleteMyCustodyItem(String itemType, String identifier) =>
       '/api/inventory/my-custody/items/$itemType/$identifier';
+
+  // SDUI Dynamic Filters (Phase 0)
+  static const String sduiCustodyFilters = '/api/mobile/v1/screens/custody/filters';
 }
 
