@@ -1,5 +1,20 @@
 import '../entities/dashboard_data.dart';
 
+/// TEMPORARY FEATURE — remove or disable after final customer handover.
+/// Thrown when deleting a device/SIM from the technician's own custody fails,
+/// carrying the backend's machine-readable `code` (e.g. ITEM_NOT_IN_YOUR_CUSTODY,
+/// ITEM_HAS_ACTIVE_RELATIONS) so the UI can react precisely.
+class CustodyDeleteException implements Exception {
+  final String message;
+  final String? code;
+  final int? statusCode;
+
+  CustodyDeleteException(this.message, {this.code, this.statusCode});
+
+  @override
+  String toString() => message;
+}
+
 abstract class DashboardRepository {
   Future<DashboardData> getDashboardData(String userId);
   Future<void> acceptTransfer(String transferId);
@@ -19,5 +34,16 @@ abstract class DashboardRepository {
   Future<List<Map<String, dynamic>>> fetchDeliveredItems(
     String technicianId, {
     String? itemTypeId,
+  });
+
+  /// TEMPORARY FEATURE — remove or disable after final customer handover.
+  /// Permanently deletes [serialNumber] from the authenticated technician's own
+  /// active custody. [itemType] must be exactly 'DEVICE' or 'SIM'. [confirmation]
+  /// must match [serialNumber] exactly (enforced again server-side). Throws
+  /// [CustodyDeleteException] on failure.
+  Future<Map<String, dynamic>> deleteSerialFromMyCustody(
+    String itemType,
+    String serialNumber, {
+    required String confirmation,
   });
 }

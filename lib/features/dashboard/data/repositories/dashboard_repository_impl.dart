@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import '../../domain/entities/dashboard_data.dart';
 import '../../domain/repositories/dashboard_repository.dart';
 import '../../../../core/api/api_client.dart';
@@ -159,6 +160,35 @@ class DashboardRepositoryImpl implements DashboardRepository {
           .toList();
     } catch (e) {
       throw Exception('فشل جلب سجل التسليم: ${e.toString()}');
+    }
+  }
+
+  // TEMPORARY FEATURE — remove or disable after final customer handover.
+  @override
+  Future<Map<String, dynamic>> deleteSerialFromMyCustody(
+    String itemType,
+    String serialNumber, {
+    required String confirmation,
+  }) async {
+    try {
+      final response = await apiClient.delete(
+        ApiEndpoints.deleteMyCustodyItem(itemType, serialNumber),
+        data: {
+          'confirmation': confirmation,
+          'reason': 'temporary_cleanup_before_customer_handover',
+        },
+      );
+      return response.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      final code = data is Map ? data['code'] as String? : null;
+      final message = (data is Map ? data['message'] as String? : null) ??
+          'فشل حذف الرقم التسلسلي من عهدتك';
+      throw CustodyDeleteException(
+        message,
+        code: code,
+        statusCode: e.response?.statusCode,
+      );
     }
   }
 }

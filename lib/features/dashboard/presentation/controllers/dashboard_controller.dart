@@ -5,6 +5,7 @@ import '../../domain/use_cases/get_dashboard_data_use_case.dart';
 import '../../domain/use_cases/accept_transfer_use_case.dart';
 import '../../domain/use_cases/reject_transfer_use_case.dart';
 import '../../domain/use_cases/confirm_transfer_receipt_use_case.dart';
+import '../../domain/repositories/dashboard_repository.dart' show CustodyDeleteException;
 import '../../../fixed_inventory/data/models/inventory_entry.dart';
 import '../../../moving_inventory/data/models/warehouse_transfer.dart';
 import '../../../../shared/models/item_type.dart';
@@ -438,6 +439,77 @@ class DashboardController extends GetxController {
     final repo = getDashboardDataUseCase.repository;
     await repo.scanSingleSerial(transferId, serialNumber);
     // No full dashboard reload — we just let the page track scanned count locally
+  }
+
+  /// Adds a new serial number to technician's active serialized custody in real-time.
+  /// NOTE: pre-existing method, not part of the custody-delete feature — included only
+  /// because dashboard_page.dart (also pre-existing, unrelated uncommitted work) calls it.
+  Future<void> addSerialToCustody(String serialNumber) async {
+    final clean = serialNumber.trim().toUpperCase();
+    if (clean.isEmpty) return;
+
+    // Check if already exists in active serialized items
+    final exists = _serializedItems.any((item) {
+      final s = (item['serialNumber'] ?? item['serial_number'] ?? item['iccid'] ?? '')
+          .toString()
+          .toUpperCase();
+      return s == clean;
+    });
+
+    if (exists) return;
+
+    final isSim = clean.startsWith('89966') || clean.startsWith('89');
+    final defaultItemTypeId = isSim ? 'sim_stc' : 'n950';
+
+    final newItem = {
+      'id': 'custody_${DateTime.now().millisecondsSinceEpoch}',
+      'serialNumber': clean,
+      'serial_number': clean,
+      'iccid': isSim ? clean : null,
+      'itemTypeId': defaultItemTypeId,
+      'status': 'RECEIVED_BY_TECHNICIAN',
+      'createdAt': DateTime.now().toIso8601String(),
+    };
+
+    _serializedItems.add(newItem);
+    _movingUnits.value += 1;
+    update();
+  }
+
+  /// TEMPORARY FEATURE — remove or disable after final customer handover.
+  /// Permanently deletes [serialNumber] (a DEVICE or SIM, per [itemType]) from the
+  /// technician's own active custody via the backend. Local state is only mutated
+  /// *after* a confirmed server success — never optimistically — and the
+  /// authoritative custody list and moving-inventory balance are always re-fetched
+  /// from the server afterward. Throws [CustodyDeleteException] on failure; callers
+  /// must not change the UI or local counts when this rethrows.
+  Future<void> deleteSerialFromCustody(
+    String itemType,
+    String serialNumber,
+    String confirmation,
+  ) async {
+    final repo = getDashboardDataUseCase.repository;
+    try {
+      await repo.deleteSerialFromMyCustody(itemType, serialNumber, confirmation: confirmation);
+
+      _serializedItems.removeWhere((item) {
+        final s = (item['serialNumber'] ?? item['serial_number'] ?? item['iccid'] ?? '')
+            .toString()
+            .toUpperCase();
+        return s == serialNumber.toUpperCase();
+      });
+      update();
+
+      // Re-fetch from the server so the custody list and moving-inventory balance
+      // reflect the authoritative post-delete state.
+      await loadDashboardData();
+    } on CustodyDeleteException catch (e) {
+      if (e.statusCode == 403) {
+        // Ownership may have changed concurrently — refresh so the UI reflects reality.
+        await loadDashboardData();
+      }
+      rethrow;
+    }
   }
 }
 
