@@ -113,7 +113,7 @@ class _CustodyDeleteConfirmationDialogState
                     const SizedBox(width: 8),
                     const Expanded(
                       child: Text(
-                        'تأكيد الإزالة من العهدة',
+                        'حذف نهائي من العهدة',
                         style: TextStyle(
                           fontFamily: 'BeIN',
                           fontSize: 18,
@@ -126,10 +126,10 @@ class _CustodyDeleteConfirmationDialogState
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'هل أنت تأكد من رغبتك في إزالة هذا العنصر من عهدتك النشطة؟',
+                  'تحذير: هذه العملية نهائية وتؤدي لحذف سجل العنصر نهائيًا من قاعدة البيانات. لتأكيد الحذف، يتوجب عليك إعادة مسح نفس الباركود عبر الكاميرا.',
                   style: TextStyle(
                     fontFamily: 'Cairo',
-                    fontSize: 14,
+                    fontSize: 13.5,
                     fontWeight: FontWeight.w600,
                     color: Colors.white.withOpacity(0.9),
                     height: 1.4,
@@ -181,8 +181,19 @@ class _CustodyDeleteConfirmationDialogState
                     ),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: ElevatedButton(
+                      child: ElevatedButton.icon(
                         onPressed: _isSubmitting ? null : _handleConfirm,
+                        icon: const Icon(Icons.qr_code_scanner, size: 18, color: Colors.white),
+                        label: _isSubmitting
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                              )
+                            : const Text(
+                                'مسح الباركود للتأكيد',
+                                style: TextStyle(color: Colors.white, fontFamily: 'BeIN', fontWeight: FontWeight.bold, fontSize: 13),
+                              ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.error,
                           padding: const EdgeInsets.symmetric(vertical: 12),
@@ -190,16 +201,6 @@ class _CustodyDeleteConfirmationDialogState
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                        child: _isSubmitting
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                              )
-                            : const Text(
-                                'نعم، حذف من عهدتي',
-                                style: TextStyle(color: Colors.white, fontFamily: 'BeIN', fontWeight: FontWeight.bold),
-                              ),
                       ),
                     ),
                   ],
