@@ -1651,7 +1651,9 @@ class _DashboardCustodySearchCardState extends State<DashboardCustodySearchCard>
     final receivedAt = detailsMap?['createdAt']?.toString();
     final isSim = itemType == 'SIM';
 
-    final deleted = await showCustodyDeleteConfirmationDialog(
+    bool proceedToScan = false;
+
+    final confirmed = await showCustodyDeleteConfirmationDialog(
       context,
       serialNumber: serialNumber,
       itemTitle: itemTitle,
@@ -1661,26 +1663,73 @@ class _DashboardCustodySearchCardState extends State<DashboardCustodySearchCard>
           ? 'أنت (${authController.user!.username})'
           : 'أنت',
       receivedAtLabel: receivedAt,
-      onConfirmDelete: () => widget.controller.deleteSerialFromCustody(
-        itemType,
-        serialNumber,
-        serialNumber,
+      onConfirmDelete: () async {
+        proceedToScan = true;
+      },
+    );
+
+    if (!confirmed || !proceedToScan) return;
+    if (!mounted) return;
+
+    // Open second camera scan to confirm exact barcode matching
+    final String? scannedValue = await Get.to<String>(
+      () => BarcodeScannerWidget(
+        title: 'إعادة مسح الباركود لتأكيد الحذف النهائي',
+        rawBarcodeMode: true,
       ),
     );
 
-    if (!deleted) return;
-    if (!mounted) return;
+    if (scannedValue == null || scannedValue.trim().isEmpty) {
+      // User cancelled camera scan — send ZERO DELETE requests
+      return;
+    }
 
-    await CustodySoundService.playSuccessBell();
-    Get.snackbar(
-      '✓ تم الحذف',
-      isSim
-          ? 'تم حذف الشريحة من عهدتك وتحديث مخزون الصنف بنجاح'
-          : 'تم حذف الجهاز من عهدتك وتحديث مخزون الصنف بنجاح',
-      snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: AppColors.success,
-      colorText: Colors.white,
-    );
+    final trimmedScanned = scannedValue.trim();
+    final trimmedExpected = serialNumber.trim();
+
+    if (trimmedScanned != trimmedExpected) {
+      // Mismatched second scan — send ZERO DELETE requests!
+      await CustodySoundService.playErrorBuzzer();
+      Get.snackbar(
+        'خطأ المطابقة',
+        'الباركود لا يطابق العنصر المحدد',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: AppColors.error,
+        colorText: Colors.white,
+      );
+      return;
+    }
+
+    try {
+      await widget.controller.deleteSerialFromCustody(
+        itemType,
+        serialNumber,
+        trimmedScanned,
+      );
+
+      if (!mounted) return;
+
+      await CustodySoundService.playSuccessBell();
+      Get.snackbar(
+        '✓ تم الحذف النهائي',
+        isSim
+            ? 'تم حذف الشريحة نهائيًا من عهدتك وتحديث الحسابات بنجاح'
+            : 'تم حذف الجهاز نهائيًا من عهدتك وتحديث الحسابات بنجاح',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: AppColors.success,
+        colorText: Colors.white,
+      );
+    } catch (e) {
+      if (!mounted) return;
+      await CustodySoundService.playErrorBuzzer();
+      Get.snackbar(
+        'فشل الحذف',
+        e.toString().replaceAll('Exception: ', ''),
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: AppColors.error,
+        colorText: Colors.white,
+      );
+    }
   }
 
   Widget _buildModalRow(String label, String value, IconData icon, {Color? textColor}) {

@@ -65,12 +65,10 @@ void main() {
       await Future<void>.delayed(const Duration(milliseconds: 50));
     });
 
-    final confirmButtonFinder = find.byType(ElevatedButton).last;
+    final confirmButtonFinder = find.widgetWithText(ElevatedButton, 'مسح الباركود للتأكيد');
     await tester.tap(confirmButtonFinder);
     await tester.pump();
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
-    await tester.tap(confirmButtonFinder);
-    await tester.tap(confirmButtonFinder);
 
     await tester.pumpAndSettle();
 
@@ -83,7 +81,7 @@ void main() {
       throw Exception('لا يمكنك حذف رقم تسلسلي غير موجود في عهدتك');
     });
 
-    await tester.tap(find.widgetWithText(ElevatedButton, 'نعم، حذف من عهدتي'));
+    await tester.tap(find.widgetWithText(ElevatedButton, 'مسح الباركود للتأكيد'));
     await tester.pumpAndSettle();
 
     expect(find.textContaining('لا يمكنك حذف رقم تسلسلي غير موجود في عهدتك'), findsOneWidget);
@@ -95,7 +93,7 @@ void main() {
       await Future<void>.delayed(const Duration(milliseconds: 50));
     });
 
-    await tester.tap(find.widgetWithText(ElevatedButton, 'نعم، حذف من عهدتي'));
+    await tester.tap(find.widgetWithText(ElevatedButton, 'مسح الباركود للتأكيد'));
     await tester.pump();
 
     final cancelButtonFinder = find.widgetWithText(OutlinedButton, 'إلغاء');
