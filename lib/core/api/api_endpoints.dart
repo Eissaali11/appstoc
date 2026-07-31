@@ -71,5 +71,11 @@ class ApiEndpoints {
   static const String scanIn = '/api/serialized-items/scan-in';
   static const String scanOut = '/api/serialized-items/scan-out';
   static String lookup(String serialNumber) => '/api/serialized-items/lookup/$serialNumber';
+
+  // TEMPORARY FEATURE — remove or disable after final customer handover.
+  // Permanently delete a DEVICE or SIM from the authenticated technician's own active
+  // custody. itemType must be exactly 'DEVICE' or 'SIM'.
+  static String deleteMyCustodyItem(String itemType, String identifier) =>
+      '/api/inventory/my-custody/items/$itemType/$identifier';
 }
 

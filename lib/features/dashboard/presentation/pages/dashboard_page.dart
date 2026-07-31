@@ -9,6 +9,11 @@ import '../../../courier_requests/presentation/controllers/courier_requests_cont
 import '../../../../core/routing/app_pages.dart';
 import '../../../../shared/utils/responsive_helper.dart';
 import '../../../received_devices/presentation/pages/custody_category_items_page.dart';
+import '../../../../shared/services/custody_sound_service.dart';
+import '../../../../shared/scanner/identifier_normalization_service.dart';
+import '../../../../shared/widgets/barcode_scanner_widget.dart';
+import '../../../auth/presentation/controllers/auth_controller.dart';
+import '../widgets/custody_delete_confirmation_dialog.dart';
 
 class DashboardPage extends GetView<DashboardController> {
   const DashboardPage({super.key});
@@ -94,37 +99,36 @@ class DashboardPage extends GetView<DashboardController> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Welcome Header
+                        // 1. Welcome Header
                         _buildWelcomeHeader(context, user),
-                        const SizedBox(height: 20),
+                        const SizedBox(height: 14),
 
-                        // Offline Sync Alert
+                        // 2. Interactive Custody Lookup Search Card
+                        DashboardCustodySearchCard(controller: controller),
+                        const SizedBox(height: 10),
+
+                        // 3. Compact Horizontal Quick Actions (الوصول السريع التفاعلي)
+                        _buildHorizontalCompactQuickActions(),
+                        const SizedBox(height: 8),
+
+                        // 4. Compact Horizontal Order Stats (حالة الطلبات والتنفيذ اليومي)
+                        _buildOrderStatsHorizontalStrip(requestsController),
+                        const SizedBox(height: 10),
+
+                        // 5. Offline Sync Alert
                         _buildOfflineSyncBanner(),
 
-                        // Daily Performance Dashboard
-                        _buildDailyPerformanceTracker(requestsController),
-                        const SizedBox(height: 24),
-
-                        // Daily Stats Section
-                        SectionHeader(
-                          title: 'حالة الطلبات والتنفيذ اليومي',
-                          icon: Icons.assignment_outlined,
-                          color: AppColors.primary,
-                        ),
-                        const SizedBox(height: 8),
-                        _buildOrderStatsGrid(context, requestsController),
-                        const SizedBox(height: 24),
-
-                        // Custody Section
-                        SectionHeader(
+                        // 6. Custody Overview Section (العهدة الحالية - كشف الحساب)
+                        _buildHighlightedSectionHeader(
                           title: 'العهدة الحالية (كشف الحساب)',
                           icon: Icons.inventory_2_outlined,
                           color: AppColors.accentPurple,
                           trailing: TextButton(
                             onPressed: () => Get.toNamed(Routes.serializedCustody),
-                            child: Text(
+                            child: const Text(
                               'عرض التفاصيل',
-                              style: TextStyle(fontFamily: 'BeIN', 
+                              style: TextStyle(
+                                fontFamily: 'BeIN', 
                                 color: AppColors.primary,
                                 fontWeight: FontWeight.bold,
                                 fontSize: 13,
@@ -132,21 +136,14 @@ class DashboardPage extends GetView<DashboardController> {
                             ),
                           ),
                         ),
-                        const SizedBox(height: 8),
                         _buildCustodyOverviewList(),
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 16),
 
-                        // Quick Actions
-                        const SectionHeader(
-                          title: 'الوصول السريع',
-                          icon: Icons.electric_bolt_outlined,
-                          color: AppColors.accentOrange,
-                        ),
-                        const SizedBox(height: 8),
-                        _buildQuickActionsRow(),
-                        const SizedBox(height: 24),
+                        // 7. Daily Performance Tracker (معدل الإنجاز اليومي)
+                        _buildDailyPerformanceTracker(requestsController),
+                        const SizedBox(height: 16),
 
-                        // Last Notification
+                        // 8. Last Notification Banner
                         _buildLastNotificationBanner(),
                         const SizedBox(height: 40),
                       ],
@@ -507,133 +504,7 @@ class DashboardPage extends GetView<DashboardController> {
     );
   }
 
-  Widget _buildOrderStatsGrid(BuildContext context, CourierRequestsController requestsController) {
-    final requests = requestsController.requests;
 
-    final newOrders = requests.where((r) => r.installationStatus == 'ASSIGNED').length;
-    final inProgressOrders = requests.where((r) => 
-      r.installationStatus == 'ACCEPTED' || 
-      r.installationStatus == 'RECEIVING' || 
-      r.installationStatus == 'PARTIALLY_RECEIVED' || 
-      r.installationStatus == 'RECEIVED' || 
-      r.installationStatus == 'ON_ROUTE' || 
-      r.installationStatus == 'ARRIVED' || 
-      r.installationStatus == 'INSTALLING'
-    ).length;
-
-    final pendingVerification = requests.where((r) => r.installationStatus == 'COMPLETED').length;
-    final completedToday = requests.where((r) => r.installationStatus == 'COMPLETED' || r.installationStatus == 'SUCCESS').length;
-
-    final displayNew = newOrders;
-    final displayInProgress = inProgressOrders;
-    final displayPending = pendingVerification;
-    final displayCompleted = completedToday;
-
-    final int crossCount = context.isTabletDevice ? 4 : 2;
-    final double aspectRatio = context.responsive(
-      mobile: 1.20,
-      tablet: 1.4,
-      smallPhone: 1.10,
-    );
-
-    return GridView.count(
-      crossAxisCount: crossCount,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      crossAxisSpacing: 12,
-      mainAxisSpacing: 12,
-      childAspectRatio: aspectRatio,
-      children: [
-        _buildStatTile(
-          context,
-          title: 'طلبات جديدة',
-          value: displayNew.toString(),
-          icon: Icons.new_releases_outlined,
-          color: AppColors.accentOrange,
-          onTap: () => Get.toNamed(Routes.courierRequests),
-        ),
-        _buildStatTile(
-          context,
-          title: 'طلبات تحت التنفيذ',
-          value: displayInProgress.toString(),
-          icon: Icons.play_circle_outline,
-          color: AppColors.primary,
-          onTap: () => Get.toNamed(Routes.courierRequests),
-        ),
-        _buildStatTile(
-          context,
-          title: 'بانتظار التحقق',
-          value: displayPending.toString(),
-          icon: Icons.hourglass_empty_outlined,
-          color: AppColors.accentPurple,
-          onTap: () => Get.toNamed(Routes.courierRequests),
-        ),
-        _buildStatTile(
-          context,
-          title: 'المهام المكتملة اليوم',
-          value: displayCompleted.toString(),
-          icon: Icons.check_circle_outline_rounded,
-          color: AppColors.success,
-          onTap: () => Get.toNamed(Routes.courierRequests),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStatTile(
-    BuildContext context, {
-    required String title,
-    required String value,
-    required IconData icon,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return GlassCard(
-      padding: const EdgeInsets.all(12),
-      borderColor: color.withValues(alpha: 0.15),
-      onTap: onTap,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(icon, color: color, size: 18),
-              ),
-              const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white24, size: 12),
-            ],
-          ),
-          const Spacer(),
-          Text(
-            value,
-            style: GoogleFonts.robotoMono(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            title,
-            style: TextStyle(fontFamily: 'BeIN', 
-              fontSize: 11,
-              color: AppColors.textSecondary,
-              fontWeight: FontWeight.bold,
-              height: 1.2,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildCustodyOverviewList() {
     final filtered = controller.filteredItems;
@@ -734,6 +605,56 @@ class DashboardPage extends GetView<DashboardController> {
     );
   }
 
+  Widget _buildHighlightedSectionHeader({
+    required String title,
+    required IconData icon,
+    required Color color,
+    Widget? trailing,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(top: 8, bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: color.withOpacity(0.28), width: 1.2),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.06),
+            blurRadius: 12,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(7),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.18),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, color: color, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              title,
+              style: const TextStyle(
+                fontFamily: 'BeIN',
+                fontSize: 15.5,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+                letterSpacing: 0.2,
+              ),
+            ),
+          ),
+          if (trailing != null) trailing,
+        ],
+      ),
+    );
+  }
+
   Widget _buildCustodyListTile({
     required String title,
     required int count,
@@ -746,17 +667,17 @@ class DashboardPage extends GetView<DashboardController> {
     final double fraction = (count / totalLimit).clamp(0.0, 1.0);
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(12),
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 14),
+        padding: const EdgeInsets.symmetric(vertical: 12),
         child: Row(
           children: [
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.1),
+                color: color.withOpacity(0.12),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: color.withValues(alpha: 0.2), width: 1),
+                border: Border.all(color: color.withOpacity(0.25), width: 1),
               ),
               child: Icon(icon, color: color, size: 22),
             ),
@@ -770,8 +691,9 @@ class DashboardPage extends GetView<DashboardController> {
                     children: [
                       Text(
                         title,
-                        style: TextStyle(fontFamily: 'BeIN', 
-                          fontSize: 13.5,
+                        style: const TextStyle(
+                          fontFamily: 'BeIN', 
+                          fontSize: 14,
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
                         ),
@@ -781,15 +703,17 @@ class DashboardPage extends GetView<DashboardController> {
                         children: [
                           Text(
                             '$count',
-                            style: TextStyle(fontFamily: 'BeIN', 
+                            style: TextStyle(
+                              fontFamily: 'BeIN', 
                               color: color,
                               fontWeight: FontWeight.bold,
-                              fontSize: 14,
+                              fontSize: 15,
                             ),
                           ),
                           Text(
                             '/$totalLimit',
-                            style: TextStyle(fontFamily: 'BeIN', 
+                            style: TextStyle(
+                              fontFamily: 'BeIN', 
                               color: AppColors.textSecondary,
                               fontSize: 11,
                             ),
@@ -798,32 +722,67 @@ class DashboardPage extends GetView<DashboardController> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 8),
                   Row(
                     children: [
+                      // Node circle indicator next to progress line extension
+                      Container(
+                        width: 9,
+                        height: 9,
+                        margin: const EdgeInsets.only(left: 8),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: color,
+                          boxShadow: [
+                            BoxShadow(
+                              color: color.withOpacity(0.7),
+                              blurRadius: 6,
+                              spreadRadius: 1,
+                            ),
+                          ],
+                        ),
+                      ),
                       Expanded(
                         child: GlowingProgressBar(
                           value: fraction,
                           color: color,
-                          height: 6,
+                          height: 7,
                         ),
                       ),
                       const SizedBox(width: 10),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                         decoration: BoxDecoration(
                           color: isSerialized 
-                              ? AppColors.primary.withValues(alpha: 0.1) 
-                              : AppColors.textSecondary.withValues(alpha: 0.08),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          isSerialized ? 'رقم تسلسلي' : 'غير تسلسلي',
-                          style: TextStyle(fontFamily: 'BeIN', 
-                            fontSize: 9,
-                            color: isSerialized ? AppColors.primary : AppColors.textSecondary,
-                            fontWeight: FontWeight.bold,
+                              ? AppColors.primary.withOpacity(0.12) 
+                              : AppColors.textSecondary.withOpacity(0.08),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: isSerialized ? AppColors.primary.withOpacity(0.3) : Colors.white10,
                           ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 5,
+                              height: 5,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: isSerialized ? AppColors.primary : AppColors.textSecondary,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              isSerialized ? 'رقم تسلسلي' : 'غير تسلسلي',
+                              style: TextStyle(
+                                fontFamily: 'BeIN', 
+                                fontSize: 9.5,
+                                color: isSerialized ? AppColors.primary : AppColors.textSecondary,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
@@ -839,55 +798,232 @@ class DashboardPage extends GetView<DashboardController> {
     );
   }
 
-  Widget _buildQuickActionsRow() {
-    return Column(
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: NeonButton(
-                label: 'قائمة الطلبات',
-                icon: Icons.list_alt,
-                gradient: AppColors.gradientPrimary,
-                onPressed: () => Get.toNamed(Routes.courierRequests),
+  Widget _buildHorizontalCompactQuickActions() {
+    final actions = [
+      _QuickActionItem(
+        label: 'قائمة الطلبات',
+        icon: Icons.list_alt_rounded,
+        color: AppColors.primary,
+        onTap: () => Get.toNamed(Routes.courierRequests),
+      ),
+      _QuickActionItem(
+        label: 'كشف العهدة',
+        icon: Icons.account_balance_wallet_outlined,
+        color: AppColors.accentPurple,
+        onTap: () => Get.toNamed(Routes.serializedCustody),
+      ),
+      _QuickActionItem(
+        label: 'استلام شحنة',
+        icon: Icons.qr_code_scanner_rounded,
+        color: AppColors.success,
+        onTap: () => Get.toNamed(Routes.shipmentScan),
+      ),
+      _QuickActionItem(
+        label: 'أرقامي التسلسلية',
+        icon: Icons.qr_code_2_rounded,
+        color: const Color(0xFF3F51B5),
+        onTap: () => Get.toNamed(Routes.mySerializedInventory),
+      ),
+      _QuickActionItem(
+        label: 'المستودع والنقل',
+        icon: Icons.swap_horiz_rounded,
+        color: AppColors.accentOrange,
+        onTap: () => Get.toNamed(Routes.movingInventory),
+      ),
+    ];
+
+    return SizedBox(
+      height: 44,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        itemCount: actions.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        itemBuilder: (context, index) {
+          final item = actions[index];
+          return InkWell(
+            onTap: item.onTap,
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: item.color.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: item.color.withOpacity(0.35),
+                  width: 1.1,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: item.color.withOpacity(0.08),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(5),
+                    decoration: BoxDecoration(
+                      color: item.color.withOpacity(0.2),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(item.icon, color: item.color, size: 16),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    item.label,
+                    style: const TextStyle(
+                      fontFamily: 'BeIN',
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: NeonButton(
-                label: 'كشف العهدة',
-                icon: Icons.account_balance_wallet_outlined,
-                gradient: AppColors.gradientPurple,
-                onPressed: () => Get.toNamed(Routes.serializedCustody),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: NeonButton(
-                label: 'استلام شحنة',
-                icon: Icons.qr_code_scanner,
-                gradient: AppColors.gradientSuccess,
-                onPressed: () => Get.toNamed(Routes.shipmentScan),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: NeonButton(
-                label: 'أرقامي التسلسلية',
-                icon: Icons.qr_code_sharp,
-                gradient: const [Color(0xFF3F51B5), Color(0xFF2196F3)],
-                onPressed: () => Get.toNamed(Routes.mySerializedInventory),
-              ),
-            ),
-          ],
-        ),
-      ],
+          );
+        },
+      ),
     );
   }
+
+  Widget _buildOrderStatsHorizontalStrip(CourierRequestsController requestsController) {
+    return Obx(() {
+      final requests = requestsController.requests;
+
+      final newOrders = requests.where((r) => r.installationStatus == 'ASSIGNED').length;
+      final inProgressOrders = requests.where((r) => 
+        r.installationStatus == 'ACCEPTED' || 
+        r.installationStatus == 'RECEIVING' || 
+        r.installationStatus == 'PARTIALLY_RECEIVED' || 
+        r.installationStatus == 'RECEIVED' || 
+        r.installationStatus == 'ON_ROUTE' || 
+        r.installationStatus == 'ARRIVED' || 
+        r.installationStatus == 'INSTALLING'
+      ).length;
+
+      final pendingVerification = requests.where((r) => r.installationStatus == 'COMPLETED').length;
+      final completedToday = requests.where((r) => r.installationStatus == 'COMPLETED' || r.installationStatus == 'SUCCESS').length;
+
+      final stats = [
+        _OrderStatusItem(
+          title: 'طلبات جديدة',
+          count: newOrders,
+          icon: Icons.new_releases_outlined,
+          color: AppColors.accentOrange,
+          onTap: () => Get.toNamed(Routes.courierRequests),
+        ),
+        _OrderStatusItem(
+          title: 'تحت التنفيذ',
+          count: inProgressOrders,
+          icon: Icons.play_circle_outline,
+          color: AppColors.primary,
+          onTap: () => Get.toNamed(Routes.courierRequests),
+        ),
+        _OrderStatusItem(
+          title: 'بانتظار التحقق',
+          count: pendingVerification,
+          icon: Icons.hourglass_empty_outlined,
+          color: AppColors.accentPurple,
+          onTap: () => Get.toNamed(Routes.courierRequests),
+        ),
+        _OrderStatusItem(
+          title: 'المهام المكتملة اليوم',
+          count: completedToday,
+          icon: Icons.check_circle_outline_rounded,
+          color: AppColors.success,
+          onTap: () => Get.toNamed(Routes.courierRequests),
+        ),
+      ];
+
+      return SizedBox(
+        height: 44,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          physics: const BouncingScrollPhysics(),
+          itemCount: stats.length,
+          separatorBuilder: (_, __) => const SizedBox(width: 8),
+          itemBuilder: (context, index) {
+            final item = stats[index];
+            return InkWell(
+              onTap: item.onTap,
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: item.color.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: item.color.withOpacity(0.35),
+                    width: 1.1,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: item.color.withOpacity(0.08),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: item.color.withOpacity(0.2),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(item.icon, color: item.color, size: 15),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      item.title,
+                      style: const TextStyle(
+                        fontFamily: 'BeIN',
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    // High-contrast Count Badge Bubble
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: item.color,
+                        borderRadius: BorderRadius.circular(10),
+                        boxShadow: [
+                          BoxShadow(
+                            color: item.color.withOpacity(0.5),
+                            blurRadius: 6,
+                          ),
+                        ],
+                      ),
+                      child: Text(
+                        '${item.count}',
+                        style: GoogleFonts.robotoMono(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
+      );
+    });
+  }
+
+
 
   Widget _buildLastNotificationBanner() {
     return GlassCard(
@@ -1082,4 +1218,686 @@ class _WelcomeIconButton extends StatelessWidget {
       ),
     );
   }
+}
+
+class DashboardCustodySearchCard extends StatefulWidget {
+  final DashboardController controller;
+  const DashboardCustodySearchCard({super.key, required this.controller});
+
+  @override
+  State<DashboardCustodySearchCard> createState() => _DashboardCustodySearchCardState();
+}
+
+class _DashboardCustodySearchCardState extends State<DashboardCustodySearchCard> {
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _openCameraScanner() {
+    Get.bottomSheet(
+      Container(
+        height: Get.height * 0.85,
+        decoration: const BoxDecoration(
+          color: AppColors.backgroundDark,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          children: [
+            Container(
+              margin: const EdgeInsets.only(top: 12, bottom: 8),
+              width: 44,
+              height: 5,
+              decoration: BoxDecoration(
+                color: Colors.white30,
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            Expanded(
+              child: BarcodeScannerWidget(
+                title: 'امسح باركود الجهاز أو الشريحة',
+                isMultiScan: false,
+                allowUnionOfItemTypes: true,
+                onBarcodeDetected: (barcode) {
+                  Get.back();
+                  _searchController.text = barcode;
+                  _performLookup(barcode);
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+      isScrollControlled: true,
+    );
+  }
+
+  void _performLookup(String rawInput) async {
+    final clean = IdentifierNormalizationService.normalize(rawInput);
+    if (clean.isEmpty) return;
+
+    final controller = widget.controller;
+
+    // 1. Search Active Custody
+    final activeSerialized = controller.serializedItems;
+    final foundActive = activeSerialized.firstWhereOrNull((item) {
+      final s = (item['serialNumber'] ?? item['serial_number'] ?? item['iccid'] ?? '')
+          .toString()
+          .toUpperCase();
+      return s == clean || s.endsWith(clean) || clean.endsWith(s);
+    });
+
+    // 2. Search Delivered Items
+    final deliveredItems = controller.deliveredItems;
+    final foundDelivered = deliveredItems.firstWhereOrNull((item) {
+      final s = (item['serialNumber'] ?? item['serial_number'] ?? item['iccid'] ?? '')
+          .toString()
+          .toUpperCase();
+      return s == clean || s.endsWith(clean) || clean.endsWith(s);
+    });
+
+    // 3. Search Pending Transfers
+    final pendingTransfers = controller.pendingTransfers;
+    final foundPending = pendingTransfers.firstWhereOrNull((t) {
+      return t.id.toUpperCase() == clean ||
+          (t.requestId != null && t.requestId!.toUpperCase() == clean);
+    });
+
+    if (foundActive != null) {
+      // 🟢 1. في عهدة الفني (نشط)
+      await CustodySoundService.playSuccessBell();
+      if (!mounted) return;
+      _showLookupResultModal(
+        statusType: _CustodyStatusType.inCustody,
+        serialNumber: clean,
+        itemTitle: _resolveItemTypeName(foundActive['itemTypeId']?.toString()),
+        statusLabel: 'في عهدة الفني (متحرك / نشط)',
+        detailsMap: foundActive,
+      );
+    } else if (foundDelivered != null) {
+      // 🔵 2. مُسلّم للعميل
+      await CustodySoundService.playSuccessBell();
+      if (!mounted) return;
+      _showLookupResultModal(
+        statusType: _CustodyStatusType.delivered,
+        serialNumber: clean,
+        itemTitle: _resolveItemTypeName(foundDelivered['itemTypeId']?.toString()),
+        statusLabel: 'تم تسليمه سابقاً للعميل',
+        detailsMap: foundDelivered,
+      );
+    } else if (foundPending != null) {
+      // 🟡 3. غير مُسلّم (في قائمة النقل / المعلق)
+      await CustodySoundService.playWarningBell();
+      if (!mounted) return;
+      _showLookupResultModal(
+        statusType: _CustodyStatusType.pending,
+        serialNumber: clean,
+        itemTitle: 'شحنة / عهدة قيد النقل والانتظار',
+        statusLabel: 'غير مُسلّم (في انتظار تأكيد الاستلام)',
+      );
+    } else {
+      // 🔴 4. غير موجود في عهدة الفني
+      await CustodySoundService.playWarningBell();
+      if (!mounted) return;
+      _showLookupResultModal(
+        statusType: _CustodyStatusType.notFound,
+        serialNumber: clean,
+        itemTitle: 'رقم تسلسلي غير مدرج بالحساب',
+        statusLabel: 'غير موجود في عهدتك الحالية',
+        allowAddToCustody: true,
+      );
+    }
+  }
+
+  String _resolveItemTypeName(String? itemTypeId) {
+    if (itemTypeId == null) return 'جهاز / شريحة عهدة';
+    final type = widget.controller.itemTypesMap[itemTypeId];
+    if (type != null) {
+      return type.nameAr.isNotEmpty ? type.nameAr : type.nameEn;
+    }
+    return 'جهاز / شريحة عهدة';
+  }
+
+  // TEMPORARY FEATURE — remove or disable after final customer handover.
+  // Maps an item's category to the backend's itemType URL segment (DEVICE|SIM).
+  // Defaults to DEVICE for any non-SIM category, since only devices and SIMs are
+  // ever serialized/shown in this custody lookup.
+  String _resolveCustodyDeleteItemType(String? itemTypeId) {
+    final category = itemTypeId != null
+        ? widget.controller.itemTypesMap[itemTypeId]?.category
+        : null;
+    return category == 'sim' ? 'SIM' : 'DEVICE';
+  }
+
+  void _showLookupResultModal({
+    required _CustodyStatusType statusType,
+    required String serialNumber,
+    required String itemTitle,
+    required String statusLabel,
+    Map<String, dynamic>? detailsMap,
+    bool allowAddToCustody = false,
+  }) {
+    Color cardColor;
+    IconData icon;
+    String mainTitle;
+
+    switch (statusType) {
+      case _CustodyStatusType.inCustody:
+        cardColor = AppColors.success; // 🟢
+        icon = Icons.check_circle_rounded;
+        mainTitle = 'في عهدة الفني (نشط)';
+        break;
+      case _CustodyStatusType.delivered:
+        cardColor = Colors.lightBlueAccent; // 🔵
+        icon = Icons.assignment_turned_in_rounded;
+        mainTitle = 'مُسلّم للعميل';
+        break;
+      case _CustodyStatusType.pending:
+        cardColor = AppColors.warning; // 🟡
+        icon = Icons.hourglass_top_rounded;
+        mainTitle = 'غير مُسلّم (قيد الانتظار)';
+        break;
+      case _CustodyStatusType.notFound:
+        cardColor = AppColors.error; // 🔴
+        icon = Icons.highlight_off_rounded;
+        mainTitle = 'غير موجود في عهدتك';
+        break;
+    }
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) {
+        return Container(
+          margin: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: AppColors.backgroundDark,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: cardColor.withOpacity(0.5), width: 1.5),
+            boxShadow: [
+              BoxShadow(
+                color: cardColor.withOpacity(0.2),
+                blurRadius: 20,
+                spreadRadius: 2,
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 44,
+                height: 5,
+                decoration: BoxDecoration(
+                  color: Colors.white24,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: cardColor.withOpacity(0.15),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: cardColor, width: 2),
+                ),
+                child: Icon(icon, color: cardColor, size: 44),
+              ),
+              const SizedBox(height: 14),
+              Text(
+                mainTitle,
+                style: TextStyle(
+                  fontFamily: 'BeIN',
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: cardColor,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  serialNumber,
+                  style: const TextStyle(
+                    fontFamily: 'Cairo',
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                    letterSpacing: 1.1,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Divider(color: Colors.white.withOpacity(0.1)),
+              const SizedBox(height: 10),
+              _buildModalRow('اسم الصنف:', itemTitle, Icons.inventory_2_outlined),
+              const SizedBox(height: 10),
+              _buildModalRow('الحالة الحالية:', statusLabel, Icons.verified_outlined, textColor: cardColor),
+              const SizedBox(height: 24),
+              
+              if (allowAddToCustody) ...[
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () async {
+                      Navigator.pop(ctx);
+                      await widget.controller.addSerialToCustody(serialNumber);
+                      await CustodySoundService.playSuccessBell();
+                      Get.snackbar(
+                        '✓ تم الحفظ في عهدتك',
+                        'تم إضافة الرقم $serialNumber بنجاح إلى عهدتك النشطة وتحديث الحساب',
+                        snackPosition: SnackPosition.BOTTOM,
+                        backgroundColor: AppColors.success,
+                        colorText: Colors.white,
+                      );
+                    },
+                    icon: const Icon(Icons.add_task_rounded, color: Colors.white),
+                    label: const Text(
+                      'إضافة وتأكيد إلى عهدتي الآن',
+                      style: TextStyle(
+                        fontFamily: 'BeIN',
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.success,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+              ],
+
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () => Navigator.pop(ctx),
+                  icon: const Icon(Icons.close, color: Colors.white70),
+                  label: const Text(
+                    'إغلاق',
+                    style: TextStyle(
+                      fontFamily: 'BeIN',
+                      fontSize: 15,
+                      color: Colors.white70,
+                    ),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    side: const BorderSide(color: Colors.white24),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                ),
+              ),
+
+              // TEMPORARY FEATURE — remove or disable after final customer handover.
+              if (_isTechnicianUser()) ...[
+                Builder(builder: (_) {
+                  final custodyItemType = _resolveCustodyDeleteItemType(
+                    detailsMap?['itemTypeId']?.toString(),
+                  );
+                  final isSim = custodyItemType == 'SIM';
+                  final enabled = statusType == _CustodyStatusType.inCustody;
+                  return Column(
+                    children: [
+                      const SizedBox(height: 22),
+                      Divider(color: Colors.white.withOpacity(0.08)),
+                      const SizedBox(height: 14),
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: enabled
+                              ? () => _handleDeleteFromCustody(
+                                    ctx: ctx,
+                                    itemType: custodyItemType,
+                                    serialNumber: serialNumber,
+                                    itemTitle: itemTitle,
+                                    statusLabel: statusLabel,
+                                    detailsMap: detailsMap,
+                                  )
+                              : null,
+                          icon: Icon(
+                            Icons.delete_forever_rounded,
+                            color: enabled ? AppColors.error : Colors.white24,
+                          ),
+                          label: Text(
+                            isSim
+                                ? 'حذف الشريحة من عهدتي نهائيًا'
+                                : 'حذف الجهاز من عهدتي نهائيًا',
+                            style: TextStyle(
+                              fontFamily: 'BeIN',
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: enabled ? AppColors.error : Colors.white24,
+                            ),
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            side: BorderSide(
+                              color: enabled
+                                  ? AppColors.error.withOpacity(0.6)
+                                  : Colors.white12,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        enabled
+                            ? 'تحذير: عملية نهائية لا يمكن التراجع عنها'
+                            : 'لا يمكنك حذف جهاز غير موجود في عهدتك',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontFamily: 'BeIN',
+                          fontSize: 11.5,
+                          color: enabled
+                              ? AppColors.error.withOpacity(0.85)
+                              : Colors.white38,
+                        ),
+                      ),
+                    ],
+                  );
+                }),
+              ],
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  // TEMPORARY FEATURE — remove or disable after final customer handover.
+  bool _isTechnicianUser() {
+    try {
+      return Get.find<AuthController>().user?.role == 'technician';
+    } catch (_) {
+      return false;
+    }
+  }
+
+  // TEMPORARY FEATURE — remove or disable after final customer handover.
+  Future<void> _handleDeleteFromCustody({
+    required BuildContext ctx,
+    required String itemType,
+    required String serialNumber,
+    required String itemTitle,
+    required String statusLabel,
+    Map<String, dynamic>? detailsMap,
+  }) async {
+    // Close the lookup result sheet first; the confirmation dialog is shown
+    // on the page's own (still-mounted) context.
+    Navigator.pop(ctx);
+
+    final authController = Get.find<AuthController>();
+    final receivedAt = detailsMap?['createdAt']?.toString();
+    final isSim = itemType == 'SIM';
+
+    final deleted = await showCustodyDeleteConfirmationDialog(
+      context,
+      serialNumber: serialNumber,
+      itemTitle: itemTitle,
+      itemCategoryLabel: isSim ? 'شريحة' : 'جهاز',
+      statusLabel: statusLabel,
+      ownerLabel: authController.user?.username != null
+          ? 'أنت (${authController.user!.username})'
+          : 'أنت',
+      receivedAtLabel: receivedAt,
+      onConfirmDelete: () => widget.controller.deleteSerialFromCustody(
+        itemType,
+        serialNumber,
+        serialNumber,
+      ),
+    );
+
+    if (!deleted) return;
+    if (!mounted) return;
+
+    await CustodySoundService.playSuccessBell();
+    Get.snackbar(
+      '✓ تم الحذف',
+      isSim
+          ? 'تم حذف الشريحة من عهدتك وتحديث مخزون الصنف بنجاح'
+          : 'تم حذف الجهاز من عهدتك وتحديث مخزون الصنف بنجاح',
+      snackPosition: SnackPosition.BOTTOM,
+      backgroundColor: AppColors.success,
+      colorText: Colors.white,
+    );
+  }
+
+  Widget _buildModalRow(String label, String value, IconData icon, {Color? textColor}) {
+    return Row(
+      children: [
+        Icon(icon, size: 20, color: Colors.white70),
+        const SizedBox(width: 8),
+        Text(
+          label,
+          style: const TextStyle(
+            fontFamily: 'BeIN',
+            fontSize: 14,
+            color: Colors.white60,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            value,
+            textAlign: TextAlign.end,
+            style: TextStyle(
+              fontFamily: 'BeIN',
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: textColor ?? Colors.white,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GlassCard(
+      padding: const EdgeInsets.all(16),
+      borderRadius: 20,
+      borderColor: AppColors.primary.withOpacity(0.35),
+      shadows: [
+        BoxShadow(
+          color: AppColors.primary.withOpacity(0.12),
+          blurRadius: 20,
+          offset: const Offset(0, 4),
+        ),
+      ],
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Row(
+                children: [
+                  Icon(Icons.manage_search_rounded, color: AppColors.primary, size: 24),
+                  SizedBox(width: 8),
+                  Text(
+                    'مستكشف الفحص والعهد الفوري',
+                    style: TextStyle(
+                      fontFamily: 'BeIN',
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.center_focus_strong_rounded, color: AppColors.primary, size: 12),
+                    SizedBox(width: 4),
+                    Text(
+                      'يدوي + مسح',
+                      style: TextStyle(
+                        fontFamily: 'BeIN',
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _searchController,
+                  onSubmitted: (val) => _performLookup(val),
+                  style: const TextStyle(
+                    fontFamily: 'Cairo',
+                    color: Colors.white,
+                    fontSize: 15,
+                  ),
+                  decoration: InputDecoration(
+                    hintText: 'أدخل الرقم التسلسلي / الـ ICCID...',
+                    hintStyle: const TextStyle(color: Colors.white38, fontSize: 13),
+                    prefixIcon: const Icon(Icons.search, color: Colors.white60, size: 20),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    filled: true,
+                    fillColor: Colors.white.withOpacity(0.06),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: BorderSide.none,
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              InkWell(
+                onTap: () {
+                  final text = _searchController.text.trim();
+                  if (text.isNotEmpty) {
+                    _performLookup(text);
+                  } else {
+                    _openCameraScanner();
+                  }
+                },
+                borderRadius: BorderRadius.circular(14),
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [AppColors.primary, Color(0xFF00E5FF)],
+                    ),
+                    borderRadius: BorderRadius.circular(14),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.primary.withOpacity(0.4),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.qr_code_scanner_rounded,
+                    color: Colors.white,
+                    size: 26,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          const Row(
+            children: [
+              Icon(Icons.lightbulb_outline_rounded, color: Colors.white38, size: 14),
+              SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  'أدخل الرقم يدوياً أو اضغط أيقونة الماسح للفحص بالكاميرا مع التنبيه الصوتي',
+                  style: TextStyle(
+                    fontFamily: 'BeIN',
+                    fontSize: 11,
+                    color: Colors.white54,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+enum _CustodyStatusType {
+  inCustody,  // 🟢 في عهدة الفني
+  delivered,  // 🔵 مسلم
+  pending,    // 🟡 غير مسلم (قيد الانتظار)
+  notFound,   // 🔴 غير موجود
+}
+
+class _QuickActionItem {
+  final String label;
+  final IconData icon;
+  final Color color;
+  final VoidCallback onTap;
+
+  _QuickActionItem({
+    required this.label,
+    required this.icon,
+    required this.color,
+    required this.onTap,
+  });
+}
+
+class _OrderStatusItem {
+  final String title;
+  final int count;
+  final IconData icon;
+  final Color color;
+  final VoidCallback onTap;
+
+  _OrderStatusItem({
+    required this.title,
+    required this.count,
+    required this.icon,
+    required this.color,
+    required this.onTap,
+  });
 }
