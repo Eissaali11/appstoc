@@ -181,9 +181,9 @@ void main() {
       expect(BarcodeRuleRegistry.resolve(hintName: 'ليبارا')!.fullLength, 19);
       expect(BarcodeRuleRegistry.resolve(itemTypeId: 'lebara_sim')!.fullLength, 19);
       expect(BarcodeRuleRegistry.resolve(itemTypeId: 'i9100')!.regex.pattern,
-          r'^SAW[0-9]{8}$');
+          r'^SAW[0-9]{8,11}$');
       expect(BarcodeRuleRegistry.resolve(itemTypeId: 'i9000s')!.regex.pattern,
-          r'^SAS[0-9]{8}$');
+          r'^SAS[0-9]{8,11}$');
     });
 
     test('enterprise rules win over loose API alphanumeric regex', () {
@@ -201,7 +201,7 @@ void main() {
         serialRegex: r'^SAW[A-Z0-9]{8}$', // loose — must NOT be used
       );
       final rule = BarcodeRuleRegistry.fromItemType(loose)!;
-      expect(rule.regex.pattern, r'^SAW[0-9]{8}$');
+      expect(rule.regex.pattern, r'^SAW[0-9]{8,11}$');
       expect(rule.matches('SAW12345678'), isTrue);
       expect(rule.matches('SAW12AB5678'), isFalse);
     });
@@ -593,7 +593,7 @@ void main() {
       );
     });
 
-    test('SAW / SAS with 7 or 9 digits explicitly rejected', () {
+    test('SAW / SAS with <8 or >11 digits explicitly rejected', () {
       // 7 digits (too short: SAW + 7 = 10 chars)
       expect(
         BarcodeValidationEngine.validate('SAW1234567', context: ctxFor(i9100))
@@ -605,14 +605,14 @@ void main() {
             .isValid,
         isFalse,
       );
-      // 9 digits (too long: SAW + 9 = 12 chars)
+      // 12 digits (too long: SAW + 12 = 15 chars)
       expect(
-        BarcodeValidationEngine.validate('SAW123456789', context: ctxFor(i9100))
+        BarcodeValidationEngine.validate('SAW123456789012', context: ctxFor(i9100))
             .isValid,
         isFalse,
       );
       expect(
-        BarcodeValidationEngine.validate('SAS123456789', context: ctxFor(i9000s))
+        BarcodeValidationEngine.validate('SAS123456789012', context: ctxFor(i9000s))
             .isValid,
         isFalse,
       );
@@ -668,6 +668,20 @@ void main() {
       serialLength: 10,
       serialRegex: r'^[0-9]{10}$',
     );
+
+    test('REAL_PHOTO_1_I9000S - validates SAS30810004647 14-char serial from photo', () {
+      final ctx = ctxFor(i9000s);
+      final res = BarcodeValidationEngine.validate('SAS30810004647', context: ctx);
+      expect(res.isValid, isTrue);
+      expect(res.normalized, 'SAS30810004647');
+    });
+
+    test('REAL_PHOTO_2_A960 - extracts 1180234360 from embedded A960 barcode label', () {
+      final ctx = ctxFor(a960);
+      final res = BarcodeValidationEngine.validate('A960-2AW-RL6-C0EE S/N:1180234360', context: ctx);
+      expect(res.isValid, isTrue);
+      expect(res.normalized, '1180234360');
+    });
 
     test('A960_CUSTODY_RECEIPT - validates 10-digit A960 serial', () {
       final ctx = ctxFor(a960);
@@ -774,7 +788,7 @@ void main() {
       final shortRes = BarcodeValidationEngine.validate('SAW12345', context: ctx);
       expect(shortRes.isValid, isFalse);
 
-      final longRes = BarcodeValidationEngine.validate('SAW1234567890', context: ctx);
+      final longRes = BarcodeValidationEngine.validate('SAW1234567890123', context: ctx);
       expect(longRes.isValid, isFalse);
     });
 

@@ -20,13 +20,26 @@ class IdentifierNormalizationService {
         .trim()
         .toUpperCase();
 
-    // Strip common label prefixes like S/N: or SN:
-    if (s.startsWith('S/N:')) {
-      s = s.substring(4).trim();
-    } else if (s.startsWith('SN:')) {
-      s = s.substring(3).trim();
-    } else if (s.startsWith('S/N')) {
-      s = s.substring(3).trim();
+    // Extract serial number if embedded after S/N: or SN: or S/N
+    // E.g., "A960-2AW-RL6-C0EE S/N:1180234360" → "1180234360"
+    // "SN: SAS30810004647" → "SAS30810004647"
+    final snMatch =
+        RegExp(r'(?:S\/N|SN)[:\s]*([A-Z0-9]+)', caseSensitive: false)
+            .firstMatch(s);
+    if (snMatch != null && snMatch.group(1) != null) {
+      final extracted = snMatch.group(1)!.trim();
+      if (extracted.isNotEmpty) {
+        s = extracted;
+      }
+    } else {
+      // Strip common label prefixes like S/N: or SN: if at start
+      if (s.startsWith('S/N:')) {
+        s = s.substring(4).trim();
+      } else if (s.startsWith('SN:')) {
+        s = s.substring(3).trim();
+      } else if (s.startsWith('S/N')) {
+        s = s.substring(3).trim();
+      }
     }
 
     // Numeric identity (ICCID/Serials): strip grouping spaces/dashes only.

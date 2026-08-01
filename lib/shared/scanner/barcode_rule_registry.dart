@@ -6,6 +6,7 @@ class BarcodeRule {
   final String label;
   final List<String> prefixes;
   final int fullLength;
+  final int minLength;
   final RegExp regex;
   final bool requiresContext;
 
@@ -14,13 +15,18 @@ class BarcodeRule {
     required this.label,
     required this.prefixes,
     required this.fullLength,
+    int? minLength,
     required this.regex,
     this.requiresContext = false,
-  });
+  }) : minLength = minLength ?? fullLength;
 
   bool matches(String normalized) {
-    if (normalized.length != fullLength) return false;
-    if (prefixes.isNotEmpty && !prefixes.any(normalized.startsWith)) return false;
+    if (normalized.length < minLength || normalized.length > fullLength) {
+      return false;
+    }
+    if (prefixes.isNotEmpty && !prefixes.any(normalized.startsWith)) {
+      return false;
+    }
     return regex.hasMatch(normalized);
   }
 }
@@ -43,15 +49,17 @@ class BarcodeRuleRegistry {
       id: 'i9100',
       label: 'Urovo i9100',
       prefixes: const ['SAW', 'SAS'],
-      fullLength: 11,
-      regex: RegExp(r'^SAW[0-9]{8}$', caseSensitive: false),
+      minLength: 11,
+      fullLength: 14,
+      regex: RegExp(r'^SAW[0-9]{8,11}$', caseSensitive: false),
     ),
     BarcodeRule(
       id: 'i9000s',
       label: 'Urovo i9000S',
       prefixes: const ['SAS', 'SAW'],
-      fullLength: 11,
-      regex: RegExp(r'^SAS[0-9]{8}$', caseSensitive: false),
+      minLength: 11,
+      fullLength: 14,
+      regex: RegExp(r'^SAS[0-9]{8,11}$', caseSensitive: false),
     ),
     BarcodeRule(
       id: 'a960',
@@ -139,6 +147,7 @@ class BarcodeRuleRegistry {
             ? itemType.nameEn
             : (itemType.nameAr.isNotEmpty ? itemType.nameAr : enterprise.label),
         prefixes: enterprise.prefixes,
+        minLength: enterprise.minLength,
         fullLength: enterprise.fullLength,
         regex: enterprise.regex,
         requiresContext: enterprise.requiresContext,
