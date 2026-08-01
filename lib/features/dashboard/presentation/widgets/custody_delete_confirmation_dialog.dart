@@ -9,6 +9,126 @@ import '../../../../core/theme/app_colors.dart';
 /// never closes on its own until the server has responded.
 ///
 /// Returns `true` only if [onConfirmDelete] completed successfully.
+/// Professional success dialog for custody operations.
+Future<void> showCustodySuccessDialog(
+  BuildContext context, {
+  required String title,
+  required String message,
+}) async {
+  await showDialog(
+    context: context,
+    builder: (ctx) => Dialog(
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      child: Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: AppColors.backgroundDark,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: AppColors.success.withOpacity(0.5),
+            width: 1.5,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.success.withOpacity(0.2),
+              blurRadius: 30,
+              spreadRadius: 4,
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppColors.success.withOpacity(0.15),
+                shape: BoxShape.circle,
+                border: Border.all(color: AppColors.success, width: 2),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.success.withOpacity(0.3),
+                    blurRadius: 15,
+                  ),
+                ],
+              ),
+              child: const Icon(
+                Icons.check_circle_rounded,
+                color: AppColors.success,
+                size: 52,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontFamily: 'BeIN',
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontFamily: 'BeIN',
+                fontSize: 14.5,
+                color: Colors.white.withOpacity(0.85),
+                height: 1.4,
+              ),
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [AppColors.primary, Color(0xFF00E5FF)],
+                  ),
+                  borderRadius: BorderRadius.circular(14),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primary.withOpacity(0.4),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: ElevatedButton(
+                  onPressed: () => Navigator.of(ctx).pop(),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.transparent,
+                    shadowColor: Colors.transparent,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  child: const Text(
+                    'رائع، تم',
+                    style: TextStyle(
+                      fontFamily: 'BeIN',
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+/// Second, explicit confirmation step before permanently deleting a serial
+/// number from the technician's own custody.
 Future<bool> showCustodyDeleteConfirmationDialog(
   BuildContext context, {
   required String serialNumber,
@@ -101,6 +221,13 @@ class _CustodyDeleteConfirmationDialogState
             color: AppColors.backgroundDark,
             borderRadius: BorderRadius.circular(20),
             border: Border.all(color: AppColors.error.withOpacity(0.5), width: 1.5),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.error.withOpacity(0.2),
+                blurRadius: 20,
+                spreadRadius: 2,
+              ),
+            ],
           ),
           child: SingleChildScrollView(
             child: Column(
@@ -128,7 +255,7 @@ class _CustodyDeleteConfirmationDialogState
                 Text(
                   'هل أنت تأكد من رغبتك في إزالة هذا العنصر من عهدتك النشطة؟',
                   style: TextStyle(
-                    fontFamily: 'Cairo',
+                    fontFamily: 'BeIN',
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
                     color: Colors.white.withOpacity(0.9),
@@ -138,7 +265,7 @@ class _CustodyDeleteConfirmationDialogState
                 const SizedBox(height: 16),
                 Divider(color: Colors.white.withOpacity(0.1)),
                 const SizedBox(height: 8),
-                _detailRow('الرقم التسلسلي:', widget.serialNumber),
+                _detailRow('الرقم التسلسلي:', widget.serialNumber, isCode: true),
                 _detailRow('اسم المنتج / الصنف:', widget.itemTitle),
                 _detailRow('نوع العنصر:', widget.itemCategoryLabel),
                 _detailRow('الحالة الحالية:', widget.statusLabel),
@@ -159,7 +286,7 @@ class _CustodyDeleteConfirmationDialogState
                     ),
                     child: Text(
                       _errorText!,
-                      style: TextStyle(fontFamily: 'Cairo', fontSize: 13, color: AppColors.error),
+                      style: TextStyle(fontFamily: 'BeIN', fontSize: 13, color: AppColors.error),
                     ),
                   ),
                 ],
@@ -176,7 +303,7 @@ class _CustodyDeleteConfirmationDialogState
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                        child: const Text('إلغاء', style: TextStyle(color: Colors.white70, fontFamily: 'BeIN')),
+                        child: const Text('إلغاء', style: TextStyle(color: Colors.white70, fontFamily: 'BeIN', fontWeight: FontWeight.bold)),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -212,7 +339,7 @@ class _CustodyDeleteConfirmationDialogState
     );
   }
 
-  Widget _detailRow(String label, String value) {
+  Widget _detailRow(String label, String value, {bool isCode = false}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
@@ -227,7 +354,12 @@ class _CustodyDeleteConfirmationDialogState
             child: Text(
               value,
               textAlign: TextAlign.end,
-              style: const TextStyle(fontFamily: 'Cairo', fontSize: 12.5, color: Colors.white, fontWeight: FontWeight.w600),
+              style: TextStyle(
+                fontFamily: isCode ? 'Cairo' : 'BeIN',
+                fontSize: 12.5,
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
         ],

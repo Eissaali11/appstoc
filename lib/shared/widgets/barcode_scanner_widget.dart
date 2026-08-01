@@ -133,11 +133,7 @@ class _BarcodeScannerWidgetState extends State<BarcodeScannerWidget> {
       isMultiScan: widget.isMultiScan,
       allowedItemTypes: useUnion ? types : null,
       categoryHint: widget.categoryHint ?? selected?.category,
-      // Fail closed unless we have a type, a union of types, or explicit category fallback.
-      allowFallbackRegistry: selected == null &&
-          !useUnion &&
-          widget.categoryHint != null &&
-          (types == null || types.isEmpty),
+      allowFallbackRegistry: selected == null,
     );
     _selector.resetStability();
   }
@@ -330,13 +326,6 @@ class _BarcodeScannerWidgetState extends State<BarcodeScannerWidget> {
     });
   }
 
-  Rect _computeScanWindow(Size size) {
-    final scanAreaWidth = size.width * 0.8;
-    final left = (size.width - scanAreaWidth) / 2;
-    final top = (size.height - _scanAreaHeight) / 2;
-    return Rect.fromLTWH(left, top, scanAreaWidth, _scanAreaHeight);
-  }
-
   @override
   Widget build(BuildContext context) {
     if (widget.isMultiScan) {
@@ -351,14 +340,12 @@ class _BarcodeScannerWidgetState extends State<BarcodeScannerWidget> {
       child: LayoutBuilder(
         builder: (context, constraints) {
           final size = Size(constraints.maxWidth, constraints.maxHeight);
-          final window = _computeScanWindow(size);
           return Stack(
             fit: StackFit.expand,
             children: [
               MobileScanner(
                 controller: _camera.controller,
                 onDetect: _onDetect,
-                scanWindow: window,
                 errorBuilder: _buildErrorWidget,
               ),
               _buildScannerOverlay(context, size),

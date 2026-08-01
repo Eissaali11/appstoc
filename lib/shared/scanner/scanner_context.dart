@@ -26,6 +26,8 @@ class ScannerContext {
   /// Optional category filter for open fallback: `devices` | `sim`.
   final String? categoryHint;
 
+  final bool allowFallback;
+
   const ScannerContext({
     required this.sessionId,
     this.itemTypeId,
@@ -38,6 +40,7 @@ class ScannerContext {
     this.trustedRules = const [],
     this.isMultiScan = false,
     this.allowFallbackRegistry = false,
+    this.allowFallback = false,
     this.categoryHint,
   });
 
@@ -45,22 +48,35 @@ class ScannerContext {
   bool get hasTrustedRules =>
       trustedRules.isNotEmpty ||
       trustedRule != null ||
-      allowFallbackRegistry;
+      allowFallbackRegistry ||
+      allowFallback;
 
   /// Rules used by the candidate selector (never empty when [hasTrustedRules]).
   List<BarcodeRule> get effectiveRules {
-    if (trustedRules.isNotEmpty) return trustedRules;
-    if (trustedRule != null) return [trustedRule!];
-    if (!allowFallbackRegistry) return const [];
-    final all = BarcodeRuleRegistry.fallbackRules;
-    final hint = categoryHint?.toLowerCase();
-    if (hint == 'devices' || hint == 'device' || hint == 'pos') {
-      return all.where((r) => !r.id.startsWith('sim') && !r.requiresContext).toList();
+    final rules = <BarcodeRule>[];
+    if (trustedRules.isNotEmpty) {
+      rules.addAll(trustedRules);
+    } else if (trustedRule != null) {
+      rules.add(trustedRule!);
     }
-    if (hint == 'sim' || hint == 'sim_card') {
-      return all.where((r) => r.id.startsWith('sim') && !r.requiresContext).toList();
+    if (allowFallbackRegistry || allowFallback) {
+      final all = BarcodeRuleRegistry.fallbackRules;
+      final hint = categoryHint?.toLowerCase();
+      Iterable<BarcodeRule> fallbacks;
+      if (hint == 'devices' || hint == 'device' || hint == 'pos') {
+        fallbacks = all.where((r) => !r.id.startsWith('sim'));
+      } else if (hint == 'sim' || hint == 'sim_card') {
+        fallbacks = all.where((r) => r.id.startsWith('sim'));
+      } else {
+        fallbacks = all;
+      }
+      for (final f in fallbacks) {
+        if (!rules.any((r) => r.id == f.id)) {
+          rules.add(f);
+        }
+      }
     }
-    return all.where((r) => !r.requiresContext).toList();
+    return rules;
   }
 
   factory ScannerContext.create({
@@ -105,12 +121,8 @@ class ScannerContext {
       }
     }
 
-    // Explicit type that cannot be resolved → fail closed (empty rules).
-    // Allowed types list that resolved → use those rules.
-    // Otherwise only open if caller opted into fallback.
-    final allowFallback = !hasExplicitType &&
-        allowedRules.isEmpty &&
-        allowFallbackRegistry;
+    final allowFallback = allowFallbackRegistry ||
+        (!hasExplicitType && allowedRules.isEmpty);
 
     return ScannerContext(
       sessionId: sessionId,

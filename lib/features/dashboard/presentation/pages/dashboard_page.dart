@@ -1491,13 +1491,13 @@ class _DashboardCustodySearchCardState extends State<DashboardCustodySearchCard>
                     onPressed: () async {
                       Navigator.pop(ctx);
                       await widget.controller.addSerialToCustody(serialNumber);
+                      _searchController.clear();
                       await CustodySoundService.playSuccessBell();
-                      Get.snackbar(
-                        '✓ تم الحفظ في عهدتك',
-                        'تم إضافة الرقم $serialNumber بنجاح إلى عهدتك النشطة وتحديث الحساب',
-                        snackPosition: SnackPosition.BOTTOM,
-                        backgroundColor: AppColors.success,
-                        colorText: Colors.white,
+                      if (!mounted) return;
+                      await showCustodySuccessDialog(
+                        context,
+                        title: 'تمت الإضافة بنجاح',
+                        message: 'تم إضافة الرقم $serialNumber بنجاح إلى عهدتك النشطة وتحديث الحساب.',
                       );
                     },
                     icon: const Icon(Icons.add_task_rounded, color: Colors.white),
@@ -1558,10 +1558,10 @@ class _DashboardCustodySearchCardState extends State<DashboardCustodySearchCard>
                       const SizedBox(height: 22),
                       Divider(color: Colors.white.withOpacity(0.08)),
                       const SizedBox(height: 14),
-                      SizedBox(
-                        width: double.infinity,
-                        child: OutlinedButton.icon(
-                          onPressed: enabled
+                      Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: enabled
                               ? () => _handleDeleteFromCustody(
                                     ctx: ctx,
                                     itemType: custodyItemType,
@@ -1571,35 +1571,64 @@ class _DashboardCustodySearchCardState extends State<DashboardCustodySearchCard>
                                     detailsMap: detailsMap,
                                   )
                               : null,
-                          icon: Icon(
-                            Icons.delete_forever_rounded,
-                            color: enabled ? AppColors.error : Colors.white24,
-                          ),
-                          label: Text(
-                            isSim
-                                ? 'حذف الشريحة من عهدتي نهائيًا'
-                                : 'حذف الجهاز من عهدتي نهائيًا',
-                            style: TextStyle(
-                              fontFamily: 'BeIN',
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              color: enabled ? AppColors.error : Colors.white24,
+                          borderRadius: BorderRadius.circular(16),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                            decoration: BoxDecoration(
+                              gradient: enabled
+                                  ? LinearGradient(
+                                      colors: [
+                                        AppColors.error.withOpacity(0.25),
+                                        AppColors.error.withOpacity(0.12),
+                                      ],
+                                    )
+                                  : null,
+                              color: enabled ? null : Colors.white.withOpacity(0.04),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: enabled
+                                    ? AppColors.error.withOpacity(0.7)
+                                    : Colors.white12,
+                                width: 1.5,
+                              ),
+                              boxShadow: enabled
+                                  ? [
+                                      BoxShadow(
+                                        color: AppColors.error.withOpacity(0.25),
+                                        blurRadius: 16,
+                                        offset: const Offset(0, 4),
+                                      ),
+                                    ]
+                                  : null,
                             ),
-                          ),
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            side: BorderSide(
-                              color: enabled
-                                  ? AppColors.error.withOpacity(0.6)
-                                  : Colors.white12,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.delete_forever_rounded,
+                                  color: enabled ? AppColors.error : Colors.white24,
+                                  size: 22,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  isSim
+                                      ? 'حذف الشريحة من عهدتي نهائيًا'
+                                      : 'حذف الجهاز من عهدتي نهائيًا',
+                                  style: TextStyle(
+                                    fontFamily: 'BeIN',
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.bold,
+                                    color: enabled ? AppColors.error : Colors.white24,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ),
                       ),
-                      const SizedBox(height: 6),
+                      const SizedBox(height: 8),
                       Text(
                         enabled
                             ? 'تحذير: عملية نهائية لا يمكن التراجع عنها'
@@ -1670,15 +1699,14 @@ class _DashboardCustodySearchCardState extends State<DashboardCustodySearchCard>
     if (!deleted) return;
     if (!mounted) return;
 
+    _searchController.clear();
     await CustodySoundService.playSuccessBell();
-    Get.snackbar(
-      '✓ تم الحذف',
-      isSim
-          ? 'تم حذف الشريحة من عهدتك وتحديث مخزون الصنف بنجاح'
-          : 'تم حذف الجهاز من عهدتك وتحديث مخزون الصنف بنجاح',
-      snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: AppColors.success,
-      colorText: Colors.white,
+    await showCustodySuccessDialog(
+      context,
+      title: 'تم الحذف بنجاح',
+      message: isSim
+          ? 'تم حذف الشريحة من عهدتك وتحديث بيانات المخزون بنجاح.'
+          : 'تم حذف الجهاز من عهدتك وتحديث بيانات المخزون بنجاح.',
     );
   }
 
