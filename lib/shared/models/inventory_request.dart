@@ -3,7 +3,7 @@ import '../../features/fixed_inventory/data/models/inventory_entry.dart';
 
 part 'inventory_request.g.dart';
 
-@JsonSerializable()
+@JsonSerializable(createToJson: false)
 class InventoryRequest {
   final String id;
   final String technicianId;

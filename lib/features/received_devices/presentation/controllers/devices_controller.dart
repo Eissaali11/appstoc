@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/routing/app_pages.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/storage/offline_queue_manager.dart';

@@ -592,6 +592,31 @@ void main() {
         isFalse,
       );
     });
+
+    test('SAW / SAS with 7 or 9 digits explicitly rejected', () {
+      // 7 digits (too short: SAW + 7 = 10 chars)
+      expect(
+        BarcodeValidationEngine.validate('SAW1234567', context: ctxFor(i9100))
+            .isValid,
+        isFalse,
+      );
+      expect(
+        BarcodeValidationEngine.validate('SAS1234567', context: ctxFor(i9000s))
+            .isValid,
+        isFalse,
+      );
+      // 9 digits (too long: SAW + 9 = 12 chars)
+      expect(
+        BarcodeValidationEngine.validate('SAW123456789', context: ctxFor(i9100))
+            .isValid,
+        isFalse,
+      );
+      expect(
+        BarcodeValidationEngine.validate('SAS123456789', context: ctxFor(i9000s))
+            .isValid,
+        isFalse,
+      );
+    });
   });
 
   group('Session lock before await', () {

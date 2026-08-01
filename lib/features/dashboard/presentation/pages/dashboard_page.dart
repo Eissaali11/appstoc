@@ -7,7 +7,6 @@ import '../../../../shared/widgets/app_drawer.dart';
 import '../../../../shared/widgets/design_system.dart';
 import '../../../courier_requests/presentation/controllers/courier_requests_controller.dart';
 import '../../../../core/routing/app_pages.dart';
-import '../../../../shared/utils/responsive_helper.dart';
 import '../../../received_devices/presentation/pages/custody_category_items_page.dart';
 import '../../../../shared/services/custody_sound_service.dart';
 import '../../../../shared/scanner/identifier_normalization_service.dart';

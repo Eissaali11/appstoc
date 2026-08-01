@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:json_annotation/json_annotation.dart';
 
-part 'received_device.g.dart';
-
-@JsonSerializable()
 class ReceivedDevice {
   final String? id;
   final String? technicianId;
