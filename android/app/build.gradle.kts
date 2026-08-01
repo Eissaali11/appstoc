@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("kotlin-android")
@@ -5,6 +7,14 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
     id("com.google.gms.google-services")
 }
+
+// ---------------------------------------------------------------------------
+// Release signing — credentials loaded from an external properties file that
+// is NEVER committed to Git.  The build fails with a clear message if absent.
+// ---------------------------------------------------------------------------
+val releaseKeystorePropsFile = file(
+    System.getProperty("user.home") + "/.android/release-keystore.properties"
+)
 
 android {
     namespace = "com.example.nuolipapp"
@@ -21,6 +31,32 @@ android {
         jvmTarget = JavaVersion.VERSION_17.toString()
     }
 
+    signingConfigs {
+        create("release") {
+            if (!releaseKeystorePropsFile.exists()) {
+                throw GradleException(
+                    "RELEASE BUILD FAILED: keystore properties file not found:\n" +
+                    "  ${releaseKeystorePropsFile.absolutePath}\n\n" +
+                    "Create it with:\n" +
+                    "  storeFile=<absolute path to release.keystore>\n" +
+                    "  storePassword=<password>\n" +
+                    "  keyAlias=<alias>\n" +
+                    "  keyPassword=<password>\n\n" +
+                    "DO NOT commit this file to Git."
+                )
+            }
+            val props = Properties().also { it.load(releaseKeystorePropsFile.inputStream()) }
+            storeFile     = file(props.getProperty("storeFile")
+                ?: throw GradleException("storeFile missing in release-keystore.properties"))
+            storePassword = props.getProperty("storePassword")
+                ?: throw GradleException("storePassword missing in release-keystore.properties")
+            keyAlias      = props.getProperty("keyAlias")
+                ?: throw GradleException("keyAlias missing in release-keystore.properties")
+            keyPassword   = props.getProperty("keyPassword")
+                ?: throw GradleException("keyPassword missing in release-keystore.properties")
+        }
+    }
+
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "com.example.nuolipapp"
@@ -34,9 +70,8 @@ android {
 
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            // Production signing via external properties file (never debug.keystore).
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 }
