@@ -42,16 +42,16 @@ class BarcodeRuleRegistry {
     BarcodeRule(
       id: 'i9100',
       label: 'Urovo i9100',
-      prefixes: const ['SAW'],
+      prefixes: const ['SAW', 'SAS'],
       fullLength: 11,
-      regex: RegExp(r'^SAW[0-9]{8}$'),
+      regex: RegExp(r'^SAW[0-9]{8}$', caseSensitive: false),
     ),
     BarcodeRule(
       id: 'i9000s',
       label: 'Urovo i9000S',
-      prefixes: const ['SAS'],
+      prefixes: const ['SAS', 'SAW'],
       fullLength: 11,
-      regex: RegExp(r'^SAS[0-9]{8}$'),
+      regex: RegExp(r'^SAS[0-9]{8}$', caseSensitive: false),
     ),
     BarcodeRule(
       id: 'a960',
@@ -121,7 +121,7 @@ class BarcodeRuleRegistry {
 
   /// Build a rule from API/cache ItemType when config is trustworthy.
   ///
-  /// Known enterprise types (N950 / i9100 / i9000S / SIMs) ALWAYS use the
+  /// Known enterprise types (N950 / i9100 / i9000S / A960 / SIMs) ALWAYS use the
   /// trusted table — same digit-only quality as N950 — even when API sends a
   /// looser regex. Custom/unknown types use API fields; incomplete API rows
   /// fail closed (null) rather than inventing a loose rule.
@@ -158,8 +158,7 @@ class BarcodeRuleRegistry {
         regexRaw.contains('13,14') &&
         prefixes.any((p) => p.startsWith('89966'));
 
-    if (prefixes.isEmpty ||
-        length == null ||
+    if (length == null ||
         length <= 0 ||
         regexRaw == null ||
         regexRaw.isEmpty ||

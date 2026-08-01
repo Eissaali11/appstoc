@@ -138,6 +138,12 @@ class _BarcodeScannerWidgetState extends State<BarcodeScannerWidget> {
     _selector.resetStability();
   }
 
+  String _maskValue(String val) {
+    final s = val.trim();
+    if (s.length <= 4) return '***';
+    return '${s.substring(0, 2)}***${s.substring(s.length - 2)}';
+  }
+
   void _onDetect(BarcodeCapture capture) {
     // Session lock / closed → ignore every subsequent frame (no double beep).
     if (!_session.isOpen || _session.isLocked) return;
@@ -164,6 +170,52 @@ class _BarcodeScannerWidgetState extends State<BarcodeScannerWidget> {
     for (final barcode in capture.barcodes) {
       final raw = barcode.rawValue;
       if (raw == null || raw.isEmpty) continue;
+
+      final normalized = IdentifierNormalizationService.normalize(raw);
+      final rawMasked = _maskValue(raw);
+      final normalizedMasked = _maskValue(normalized);
+      final formatName = barcode.format.name;
+
+      final effectiveRules = _context.effectiveRules;
+      String? rejectionReason;
+      BarcodeRule? matchedRule;
+
+      if (!_context.hasTrustedRules || effectiveRules.isEmpty) {
+        rejectionReason = 'no_trusted_rules';
+      } else {
+        for (final rule in effectiveRules) {
+          if (rule.matches(normalized)) {
+            matchedRule = rule;
+            break;
+          }
+        }
+        if (matchedRule == null) {
+          rejectionReason = 'unrecognized_device_type';
+        }
+      }
+
+      debugPrint('''
+[SCANNER_DIAGNOSTIC]
+  scannerContext: ${_context.sessionId} (typeId: ${_context.itemTypeId}, categoryHint: ${_context.categoryHint})
+  barcodeFormat: $formatName
+  rawValueLength: ${raw.length}
+  rawValueMasked: $rawMasked
+  normalizedValueMasked: $normalizedMasked
+  candidateSelectorResult: ${matchedRule != null ? "MATCH" : "REJECTED"}
+  validationRule: ${matchedRule?.id ?? "NONE"}
+  rejectionReason: ${rejectionReason ?? "ACCEPTED"}
+''');
+
+      if (rejectionReason != null) {
+        if (mounted) {
+          setState(() {
+            _guidance =
+                'تمت قراءة الباركود، لكن لم يتم التعرف على نوع الجهاز\n($formatName | الطول: ${normalized.length})';
+          });
+        }
+        continue;
+      }
+
       observations.add(
         BarcodeObservation(
           raw: raw,
@@ -187,7 +239,6 @@ class _BarcodeScannerWidgetState extends State<BarcodeScannerWidget> {
 
     if (result.status != CandidateStatus.singleMatch ||
         result.selected == null) {
-      // Non-matching (GTIN/PN/wrong type): silent ignore.
       return;
     }
 

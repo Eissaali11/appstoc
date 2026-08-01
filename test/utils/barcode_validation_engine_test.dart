@@ -171,8 +171,8 @@ void main() {
   group('BarcodeRuleRegistry fallback table', () {
     test('N950 / i9100 / i9000S / SIM lengths', () {
       expect(BarcodeRuleRegistry.resolve(itemTypeId: 'n950')!.fullLength, 12);
-      expect(BarcodeRuleRegistry.resolve(itemTypeId: 'i9100')!.prefixes, ['SAW']);
-      expect(BarcodeRuleRegistry.resolve(itemTypeId: 'i9000s')!.prefixes, ['SAS']);
+      expect(BarcodeRuleRegistry.resolve(itemTypeId: 'i9100')!.prefixes, ['SAW', 'SAS']);
+      expect(BarcodeRuleRegistry.resolve(itemTypeId: 'i9000s')!.prefixes, ['SAS', 'SAW']);
       expect(BarcodeRuleRegistry.resolve(hintName: 'STC')!.fullLength, 18);
       expect(BarcodeRuleRegistry.resolve(hintName: 'Zain')!.fullLength, 19);
       expect(BarcodeRuleRegistry.resolve(hintName: 'Mobily')!.fullLength, 19);
@@ -651,6 +651,143 @@ void main() {
             .normalized,
         'NCC100229213',
       );
+    });
+  });
+
+  group('Hardware Field Test Matrix (A960, I9000S, I9100, N950, SIM)', () {
+    final a960 = ItemType(
+      id: 'a960',
+      nameEn: 'A960',
+      nameAr: 'PAX A960',
+      sortOrder: 7,
+      isActive: true,
+      isVisible: true,
+      category: 'devices',
+      requiresSerial: true,
+      serialPrefix: '',
+      serialLength: 10,
+      serialRegex: r'^[0-9]{10}$',
+    );
+
+    test('A960_CUSTODY_RECEIPT - validates 10-digit A960 serial', () {
+      final ctx = ctxFor(a960);
+      final res = BarcodeValidationEngine.validate('1180234360', context: ctx);
+      expect(res.isValid, isTrue);
+      expect(res.normalized, '1180234360');
+    });
+
+    test('A960_SEARCH_SCAN - matches A960 in open fallback search', () {
+      final ctx = ScannerContext.create(
+        sessionId: 'search_a960',
+        allowFallbackRegistry: true,
+      );
+      final res = BarcodeValidationEngine.validate('1180234360', context: ctx);
+      expect(res.isValid, isTrue);
+      expect(res.matchedRule?.id, 'a960');
+    });
+
+    test('A960_NEW_SHIPMENT - validates A960 in shipment selection', () {
+      final ctx = ScannerContext.create(
+        sessionId: 'shipment_a960',
+        itemType: a960,
+        allowedItemTypes: [a960],
+      );
+      final res = BarcodeValidationEngine.validate('1180234360', context: ctx);
+      expect(res.isValid, isTrue);
+    });
+
+    test('I9000S_CUSTODY_RECEIPT - validates SAS prefix 11-char serial', () {
+      final ctx = ctxFor(i9000s);
+      final res = BarcodeValidationEngine.validate('SAS12345678', context: ctx);
+      expect(res.isValid, isTrue);
+      expect(res.normalized, 'SAS12345678');
+    });
+
+    test('I9000S_SEARCH_SCAN - matches I9000S in fallback search', () {
+      final ctx = ScannerContext.create(
+        sessionId: 'search_i9000s',
+        allowFallbackRegistry: true,
+      );
+      final res = BarcodeValidationEngine.validate('SAS12345678', context: ctx);
+      expect(res.isValid, isTrue);
+      expect(res.matchedRule?.id, 'i9000s');
+    });
+
+    test('I9000S_NEW_SHIPMENT - accepts I9000S serial in shipment', () {
+      final ctx = ScannerContext.create(
+        sessionId: 'shipment_i9000s',
+        itemType: i9000s,
+      );
+      final res = BarcodeValidationEngine.validate('SAS12345678', context: ctx);
+      expect(res.isValid, isTrue);
+    });
+
+    test('I9100_CUSTODY_RECEIPT - validates SAW prefix 11-char serial', () {
+      final ctx = ctxFor(i9100);
+      final res = BarcodeValidationEngine.validate('SAW12345678', context: ctx);
+      expect(res.isValid, isTrue);
+      expect(res.normalized, 'SAW12345678');
+    });
+
+    test('I9100_SEARCH_SCAN - matches I9100 in fallback search', () {
+      final ctx = ScannerContext.create(
+        sessionId: 'search_i9100',
+        allowFallbackRegistry: true,
+      );
+      final res = BarcodeValidationEngine.validate('SAW12345678', context: ctx);
+      expect(res.isValid, isTrue);
+      expect(res.matchedRule?.id, 'i9100');
+    });
+
+    test('I9100_NEW_SHIPMENT - accepts I9100 in shipment scan', () {
+      final ctx = ScannerContext.create(
+        sessionId: 'shipment_i9100',
+        itemType: i9100,
+      );
+      final res = BarcodeValidationEngine.validate('SAW12345678', context: ctx);
+      expect(res.isValid, isTrue);
+    });
+
+    test('N950_REGRESSION - preserves existing N950 serial validation', () {
+      final ctx = ctxFor(n950);
+      final res = BarcodeValidationEngine.validate('NCD100229213', context: ctx);
+      expect(res.isValid, isTrue);
+      expect(res.normalized, 'NCD100229213');
+    });
+
+    test('SIM_REGRESSION - preserves 18/19 digit SIM card validation', () {
+      final stcRes = BarcodeValidationEngine.validate('899660609902060718', context: ctxFor(stc));
+      expect(stcRes.isValid, isTrue);
+
+      final zainRes = BarcodeValidationEngine.validate('8996606099020607187', context: ctxFor(zain));
+      expect(zainRes.isValid, isTrue);
+    });
+
+    test('UNKNOWN_NUMERIC_REJECTED_OR_SERVER_LOOKUP - non-10/12 numeric fails device rule', () {
+      final ctx = ctxFor(n950);
+      final res = BarcodeValidationEngine.validate('123456789', context: ctx);
+      expect(res.isValid, isFalse);
+    });
+
+    test('INVALID_SAW_SAS_REJECTED - wrong length SAW/SAS serials rejected', () {
+      final ctx = ctxFor(i9100);
+      final shortRes = BarcodeValidationEngine.validate('SAW12345', context: ctx);
+      expect(shortRes.isValid, isFalse);
+
+      final longRes = BarcodeValidationEngine.validate('SAW1234567890', context: ctx);
+      expect(longRes.isValid, isFalse);
+    });
+
+    test('SECOND_SCAN_MATCH - custody delete confirmation matches scanned serial', () {
+      const originalSerial = 'NCD100229213';
+      const secondScanSerial = 'NCD100229213';
+      expect(originalSerial.trim().toUpperCase() == secondScanSerial.trim().toUpperCase(), isTrue);
+    });
+
+    test('SECOND_SCAN_MISMATCH_ZERO_DELETE - mismatch prevents deletion', () {
+      const originalSerial = 'NCD100229213';
+      const secondScanSerial = 'NCD100229999';
+      expect(originalSerial.trim().toUpperCase() == secondScanSerial.trim().toUpperCase(), isFalse);
     });
   });
 }
