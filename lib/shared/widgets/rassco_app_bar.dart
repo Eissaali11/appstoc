@@ -58,7 +58,7 @@ class RasscoBrandTitle extends StatelessWidget {
         text,
         style: style ??
             const TextStyle(
-              fontFamily: 'Cairo',
+              fontFamily: 'BeIN',
               fontWeight: FontWeight.bold,
               color: Colors.white,
               fontSize: 17,
@@ -132,7 +132,7 @@ class RasscoAppBar extends StatelessWidget implements PreferredSizeWidget {
       actions: actions,
       leading: leading,
       bottom: bottom,
-      backgroundColor: backgroundColor ?? AppColors.primary,
+      backgroundColor: backgroundColor ?? AppColors.backgroundDark,
       foregroundColor: foregroundColor ?? Colors.white,
       elevation: elevation,
       centerTitle: centerTitle,

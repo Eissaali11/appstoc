@@ -36,14 +36,14 @@ class AppTheme {
         size: 24,
       ),
       appBarTheme: const AppBarTheme(
-        backgroundColor: AppColors.primary,
+        backgroundColor: AppColors.backgroundDark,
         foregroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
         iconTheme: IconThemeData(color: Colors.white),
         actionsIconTheme: IconThemeData(color: Colors.white),
         titleTextStyle: TextStyle(
-          fontFamily: fontFamily,
+          fontFamily: 'BeIN',
           fontSize: 18,
           fontWeight: FontWeight.w700,
           color: Colors.white,
