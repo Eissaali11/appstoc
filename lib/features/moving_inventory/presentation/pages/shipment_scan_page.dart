@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:dio/dio.dart';
 import 'package:get/get.dart';
-import 'package:collection/collection.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/models/item_type.dart';
 import '../../../../shared/widgets/design_system.dart';

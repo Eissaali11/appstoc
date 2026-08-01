@@ -41,17 +41,3 @@ InventoryRequest _$InventoryRequestFromJson(Map<String, dynamic> json) =>
       adminNotes: json['adminNotes'] as String?,
       warehouseId: json['warehouseId'] as String?,
     );
-
-Map<String, dynamic> _$InventoryRequestToJson(InventoryRequest instance) =>
-    <String, dynamic>{
-      'id': instance.id,
-      'technicianId': instance.technicianId,
-      'entries': instance.entries,
-      'notes': instance.notes,
-      'status': instance.status,
-      'createdAt': instance.createdAt.toIso8601String(),
-      'respondedAt': instance.respondedAt?.toIso8601String(),
-      'respondedBy': instance.respondedBy,
-      'adminNotes': instance.adminNotes,
-      'warehouseId': instance.warehouseId,
-    };

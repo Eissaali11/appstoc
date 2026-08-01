@@ -260,14 +260,6 @@ class _InventorySectionDetailsPageState extends State<InventorySectionDetailsPag
       );
     }
 
-    final int fixedBoxes = args['fixedBoxes'] ?? 0;
-    final int fixedUnits = args['fixedUnits'] ?? 0;
-    final int movingBoxes = args['movingBoxes'] ?? 0;
-    final int movingUnits = args['movingUnits'] ?? 0;
-
-    final totalBoxes = fixedBoxes + movingBoxes;
-    final totalUnits = fixedUnits + movingUnits;
-    final totalAvailable = totalBoxes + totalUnits;
 
     // Derive counters from the same list used by filters (fixes top vs chip mismatch)
     final int activeCount = _loadingCustody

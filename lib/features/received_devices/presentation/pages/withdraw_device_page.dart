@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/widgets/app_drawer.dart';
 import '../../../../shared/widgets/barcode_scanner_widget.dart';
 import '../../../../shared/widgets/rassco_app_bar.dart';
 import '../../../../shared/utils/barcode_validator.dart';
 import '../../../../shared/scanner/scanner_item_types.dart';
-import '../../../../core/storage/offline_queue_manager.dart';
 import '../../../auth/presentation/controllers/auth_controller.dart';
 import '../controllers/devices_controller.dart';
 import '../../data/models/withdrawn_device.dart';

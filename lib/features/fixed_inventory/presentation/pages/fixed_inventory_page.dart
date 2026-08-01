@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../controllers/fixed_inventory_controller.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/models/item_type.dart';
@@ -256,67 +255,7 @@ class FixedInventoryPage extends GetView<FixedInventoryController> {
     );
   }
 
-  Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: AppColors.surfaceDark,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.inventory_2_outlined,
-              size: 64,
-              color: AppColors.textSecondary,
-            ),
-          ),
-          const SizedBox(height: 24),
-          Text(
-            'لا يوجد مخزون ثابت',
-            style: TextStyle(fontFamily: 'BeIN', 
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'لم يتم العثور على أي عناصر في المخزون الثابت',
-            style: TextStyle(fontFamily: 'BeIN', 
-              fontSize: 14,
-              color: AppColors.textSecondary,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 32),
-          ElevatedButton.icon(
-            onPressed: () => controller.refresh(),
-            icon: const Icon(Icons.refresh),
-            label: Text(
-              'تحديث',
-              style: TextStyle(fontFamily: 'BeIN', 
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(
-                horizontal: 32,
-                vertical: 16,
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+
 }
 
 class _InventoryItemCard extends StatelessWidget {
