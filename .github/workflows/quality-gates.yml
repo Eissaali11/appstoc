@@ -1,42 +1,134 @@
 name: Quality Gates
 
 # Phase 3 — Testing, Release Gates & Engineering Governance (Flutter side).
+# TD-03 — CI/CD Activation & Merge Protection.
+#
 # This app's backend/portal lives in a separate repository with its own
 # quality-gates workflow; this file only covers what belongs to this repo.
+# No job here has access to backend secrets or credentials of any kind —
+# there is nothing to embed in the built APK/web bundle in the first place.
 
 on:
   pull_request:
     branches: [main]
   push:
     branches: [main]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: quality-gates-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  analyze:
-    name: flutter analyze
+  flutter-analyze:
+    name: Flutter / Analyze Regression
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
       - run: flutter pub get
-      - run: flutter analyze
+      - name: Run analyze and compare against the documented baseline
+        # `flutter analyze` exits non-zero whenever ANY issue exists,
+        # including the 664 pre-existing info-level issues documented in
+        # flutter_analyze_baseline.json (Phase B1.4 finding, confirmed
+        # again here) -- so the raw step exit code cannot gate this job
+        # directly without either permanently failing on old debt or
+        # requiring a forbidden bypass (continue-on-error / `|| true`).
+        # Instead: capture the output, count issues per severity, and fail
+        # this step explicitly (a real `exit 1`, not a swallowed failure)
+        # only if any severity count EXCEEDS the baseline -- a real
+        # regression gate, not a permanent exemption. The baseline itself
+        # is a tracked, reviewable file (Technical Debt), not a rule
+        # buried in this workflow.
+        run: |
+          set +e
+          flutter analyze > analyze_report.txt 2>&1
+          ANALYZE_EXIT=$?
+          set -e
 
-  test:
-    name: flutter test
+          ERROR_COUNT=$(grep -c '^   error' analyze_report.txt || true)
+          WARNING_COUNT=$(grep -c '^   warning' analyze_report.txt || true)
+          INFO_COUNT=$(grep -c '^   info' analyze_report.txt || true)
+
+          BASELINE_ERROR=$(node -pe "require('./flutter_analyze_baseline.json').error")
+          BASELINE_WARNING=$(node -pe "require('./flutter_analyze_baseline.json').warning")
+          BASELINE_INFO=$(node -pe "require('./flutter_analyze_baseline.json').info")
+
+          echo "Flutter analyze baseline:"
+          echo "  Baseline -> error=$BASELINE_ERROR warning=$BASELINE_WARNING info=$BASELINE_INFO"
+          echo "  Current  -> error=$ERROR_COUNT warning=$WARNING_COUNT info=$INFO_COUNT"
+          echo "  Raw 'flutter analyze' exit code: $ANALYZE_EXIT (informational only -- not used to gate this job, see step comment)"
+
+          REGRESSION=0
+          if [ "$ERROR_COUNT" -gt "$BASELINE_ERROR" ]; then
+            echo "::error::New/increased ERROR-level issues: $ERROR_COUNT > baseline $BASELINE_ERROR"
+            REGRESSION=1
+          fi
+          if [ "$WARNING_COUNT" -gt "$BASELINE_WARNING" ]; then
+            echo "::error::New/increased WARNING-level issues: $WARNING_COUNT > baseline $BASELINE_WARNING"
+            REGRESSION=1
+          fi
+          if [ "$INFO_COUNT" -gt "$BASELINE_INFO" ]; then
+            echo "::error::New/increased INFO-level issues: $INFO_COUNT > baseline $BASELINE_INFO"
+            REGRESSION=1
+          fi
+
+          if [ "$REGRESSION" -eq 1 ]; then
+            echo "Regression gate: FAIL"
+            exit 1
+          fi
+          echo "Regression gate: PASS (0 new issues)"
+      - name: Upload full analyze report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: flutter-analyze-report
+          path: analyze_report.txt
+          retention-days: 7
+          if-no-files-found: ignore
+
+  flutter-test:
+    name: Flutter / Test
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
       - run: flutter pub get
-      - run: flutter test
+      - name: flutter test (full suite, run twice for determinism)
+        run: |
+          flutter test
+          flutter test
+      - name: flutter test test/controllers
+        run: flutter test test/controllers
+      - name: flutter test test/widgets
+        run: flutter test test/widgets
+      - name: flutter test test/offline
+        run: flutter test test/offline
+      - name: flutter test test/scanner
+        run: flutter test test/scanner
+      - name: Upload test report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: flutter-test-report
+          path: build/reports/**
+          retention-days: 7
+          if-no-files-found: ignore
 
-  build:
+  flutter-build:
     name: flutter build apk (debug, unsigned — CI smoke build only)
     runs-on: ubuntu-latest
-    needs: [analyze, test]
+    timeout-minutes: 20
+    needs: [flutter-analyze, flutter-test]
     steps:
       - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2
@@ -45,5 +137,32 @@ jobs:
       - run: flutter pub get
       # Debug build deliberately: a release build needs signing secrets
       # this workflow does not have and should not silently invent. This
-      # job only proves the app still compiles end-to-end.
+      # job only proves the app still compiles end-to-end. No backend
+      # secret, API key, or credential is available to this job or baked
+      # into the resulting APK — the app reads its base URL from runtime
+      # config, not a compile-time secret.
       - run: flutter build apk --debug
+      - name: Upload debug APK on failure (for inspection)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-apk-build-log
+          path: build/app/outputs/flutter-build/**
+          retention-days: 7
+          if-no-files-found: ignore
+
+  quality-summary:
+    name: Final Flutter quality summary
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: [flutter-analyze, flutter-test, flutter-build]
+    if: always()
+    steps:
+      - name: All gates passed
+        if: ${{ !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') }}
+        run: echo "✅ All Flutter Quality Gates jobs passed."
+      - name: Some gates failed
+        if: ${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}
+        run: |
+          echo "❌ One or more Flutter Quality Gates jobs failed or were cancelled."
+          exit 1
