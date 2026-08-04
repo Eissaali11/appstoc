@@ -1,0 +1,49 @@
+name: Quality Gates
+
+# Phase 3 — Testing, Release Gates & Engineering Governance (Flutter side).
+# This app's backend/portal lives in a separate repository with its own
+# quality-gates workflow; this file only covers what belongs to this repo.
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  analyze:
+    name: flutter analyze
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - run: flutter pub get
+      - run: flutter analyze
+
+  test:
+    name: flutter test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - run: flutter pub get
+      - run: flutter test
+
+  build:
+    name: flutter build apk (debug, unsigned — CI smoke build only)
+    runs-on: ubuntu-latest
+    needs: [analyze, test]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - run: flutter pub get
+      # Debug build deliberately: a release build needs signing secrets
+      # this workflow does not have and should not silently invent. This
+      # job only proves the app still compiles end-to-end.
+      - run: flutter build apk --debug
