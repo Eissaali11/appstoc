@@ -6,6 +6,18 @@ import '../../../../core/api/api_client.dart';
 import '../../../auth/presentation/controllers/auth_controller.dart';
 
 class DeviceHandoverController extends GetxController {
+  // Phase B1.4 — minimal testability seam (no behavior change): resolves the
+  // exact same way as the previous inline Get.find<T>() calls when no
+  // argument is passed, so production wiring via the GetX binding is
+  // unaffected. Tests can now pass fakes directly instead of needing
+  // Get.put() overrides for every transitive dependency.
+  final ApiClient _apiClient;
+  final AuthController _authController;
+
+  DeviceHandoverController({ApiClient? apiClient, AuthController? authController})
+      : _apiClient = apiClient ?? Get.find<ApiClient>(),
+        _authController = authController ?? Get.find<AuthController>();
+
   final _isLoading = false.obs;
   final _myCustodyDevices = <ReceivedDevice>[].obs;
   final _selectedDevices = <ReceivedDevice>{}.obs;
@@ -79,7 +91,7 @@ class DeviceHandoverController extends GetxController {
   Future<void> loadData() async {
     try {
       _isLoading.value = true;
-      final ApiClient apiClient = Get.find<ApiClient>();
+      final ApiClient apiClient = _apiClient;
 
       // 1. Fetch technician's moving custody
       try {
@@ -172,8 +184,8 @@ class DeviceHandoverController extends GetxController {
         _longitude.value = null;
       }
 
-      final ApiClient apiClient = Get.find<ApiClient>();
-      final AuthController authController = Get.find<AuthController>();
+      final ApiClient apiClient = _apiClient;
+      final AuthController authController = _authController;
       final currentUser = authController.user;
 
       for (final device in _selectedDevices) {
