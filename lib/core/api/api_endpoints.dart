@@ -71,6 +71,10 @@ class ApiEndpoints {
   static const String scanIn = '/api/serialized-items/scan-in';
   static const String scanOut = '/api/serialized-items/scan-out';
   static String lookup(String serialNumber) => '/api/serialized-items/lookup/$serialNumber';
+  static const String mySerializedCustody = '/api/my-serialized-custody';
+  static String technicianSerializedCustody(String technicianId) =>
+      '/api/technicians/$technicianId/serialized-custody';
+  static const String batchScanIn = '/api/serialized-items/batch-scan-in';
 
   // TEMPORARY FEATURE — remove or disable after final customer handover.
   static String deleteMyCustodyItem(String itemType, String identifier) =>

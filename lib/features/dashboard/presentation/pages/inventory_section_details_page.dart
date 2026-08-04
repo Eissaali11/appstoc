@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:dio/dio.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/models/item_type.dart';
 import '../../../../shared/utils/icon_mapper.dart';
@@ -11,6 +10,8 @@ import '../../../../shared/utils/responsive_helper.dart';
 import '../../../../shared/widgets/rassco_app_bar.dart';
 import '../controllers/dashboard_controller.dart';
 import '../../domain/repositories/dashboard_repository.dart';
+import '../../../fixed_inventory/domain/repositories/fixed_inventory_repository.dart';
+import '../../../fixed_inventory/data/models/inventory_entry.dart';
 
 class InventorySectionDetailsPage extends StatefulWidget {
   const InventorySectionDetailsPage({super.key});
@@ -483,20 +484,16 @@ class _InventorySectionDetailsPageState extends State<InventorySectionDetailsPag
 
                   isUpdating.value = true;
                   try {
-                    final dio = Get.find<Dio>();
+                    final fixedInventoryRepository = Get.find<FixedInventoryRepository>();
                     final userId = dashboardController.user?.id;
 
                     if (userId == null) {
                       throw Exception('المستخدم غير مسجل دخول');
                     }
 
-                    await dio.post(
-                      '/api/technicians/$userId/fixed-inventory-entries',
-                      data: {
-                        'itemTypeId': itemType.id,
-                        'boxes': 0,
-                        'units': qty,
-                      },
+                    await fixedInventoryRepository.updateFixedInventory(
+                      userId,
+                      [InventoryEntry(itemTypeId: itemType.id, boxes: 0, units: qty)],
                     );
 
                     Navigator.of(context).pop();
