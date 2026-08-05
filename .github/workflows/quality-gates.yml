@@ -29,9 +29,15 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+      # Pin the Flutter SDK used by the project. Floating `channel: stable`
+      # currently resolves to a version incompatible with lucide_icons
+      # 0.257.0 (IconData became a final class); this exact version is the
+      # one the project's own pubspec.yaml environment.sdk constraint
+      # targets and the one all local tests/analyze pass against.
       - uses: subosito/flutter-action@v2
         with:
-          channel: stable
+          channel: beta
+          flutter-version: "3.39.0-0.2.pre"
       - run: flutter pub get
       - name: Run analyze and compare against the documented baseline
         # `flutter analyze` exits non-zero whenever ANY issue exists,
@@ -101,7 +107,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2
         with:
-          channel: stable
+          channel: beta
+          flutter-version: "3.39.0-0.2.pre"
       - run: flutter pub get
       - name: flutter test (full suite, run twice for determinism)
         run: |
@@ -133,7 +140,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2
         with:
-          channel: stable
+          channel: beta
+          flutter-version: "3.39.0-0.2.pre"
       - run: flutter pub get
       # Debug build deliberately: a release build needs signing secrets
       # this workflow does not have and should not silently invent. This
