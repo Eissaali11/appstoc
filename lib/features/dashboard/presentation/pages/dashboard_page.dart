@@ -1578,10 +1578,10 @@ class _DashboardCustodySearchCardState extends State<DashboardCustodySearchCard>
                             padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
                             decoration: BoxDecoration(
                               gradient: enabled
-                                  ? LinearGradient(
+                                  ? const LinearGradient(
                                       colors: [
-                                        AppColors.error.withOpacity(0.25),
-                                        AppColors.error.withOpacity(0.12),
+                                        Color(0xFFEF4444),
+                                        Color(0xFFB91C1C),
                                       ],
                                     )
                                   : null,
@@ -1589,14 +1589,14 @@ class _DashboardCustodySearchCardState extends State<DashboardCustodySearchCard>
                               borderRadius: BorderRadius.circular(16),
                               border: Border.all(
                                 color: enabled
-                                    ? AppColors.error.withOpacity(0.7)
+                                    ? const Color(0xFFEF4444)
                                     : Colors.white12,
                                 width: 1.5,
                               ),
                               boxShadow: enabled
                                   ? [
                                       BoxShadow(
-                                        color: AppColors.error.withOpacity(0.25),
+                                        color: AppColors.error.withOpacity(0.4),
                                         blurRadius: 16,
                                         offset: const Offset(0, 4),
                                       ),
@@ -1608,19 +1608,24 @@ class _DashboardCustodySearchCardState extends State<DashboardCustodySearchCard>
                               children: [
                                 Icon(
                                   Icons.delete_forever_rounded,
-                                  color: enabled ? AppColors.error : Colors.white24,
+                                  color: enabled ? Colors.white : Colors.white24,
                                   size: 22,
                                 ),
                                 const SizedBox(width: 8),
-                                Text(
-                                  isSim
-                                      ? 'حذف الشريحة من عهدتي نهائيًا'
-                                      : 'حذف الجهاز من عهدتي نهائيًا',
-                                  style: TextStyle(
-                                    fontFamily: 'BeIN',
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.bold,
-                                    color: enabled ? AppColors.error : Colors.white24,
+                                Flexible(
+                                  child: FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    child: Text(
+                                      isSim
+                                          ? 'حذف الشريحة من عهدتي نهائيًا'
+                                          : 'حذف الجهاز من عهدتي نهائيًا',
+                                      style: TextStyle(
+                                        fontFamily: 'BeIN',
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.bold,
+                                        color: enabled ? Colors.white : Colors.white24,
+                                      ),
+                                    ),
                                   ),
                                 ),
                               ],

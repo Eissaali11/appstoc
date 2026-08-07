@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:dio/dio.dart';
 import 'package:get/get.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/models/item_type.dart';
@@ -13,6 +12,7 @@ import '../../../../shared/utils/barcode_validator.dart';
 
 import '../../../moving_inventory/data/models/serialized_item.dart';
 import '../../../dashboard/presentation/controllers/dashboard_controller.dart';
+import '../../domain/repositories/moving_inventory_repository.dart';
 import '../controllers/moving_inventory_controller.dart';
 
 
@@ -64,7 +64,8 @@ class _ShipmentScanPageState extends State<ShipmentScanPage>
   final _custodySearchController = TextEditingController();
   String _custodySearchQuery = '';
 
-  final Dio _dio = Get.find<Dio>();
+  final MovingInventoryRepository _movingInventoryRepository =
+      Get.find<MovingInventoryRepository>();
 
   @override
   void initState() {
@@ -99,19 +100,11 @@ class _ShipmentScanPageState extends State<ShipmentScanPage>
 
   Future<void> _loadItemTypes() async {
     try {
-      final response = await _dio.get('/api/item-types/active');
-      final rawData = response.data is List 
-          ? response.data 
-          : (response.data is Map ? (response.data['data'] ?? response.data['items']) : null);
-
-      if (rawData is List) {
-        setState(() {
-          _itemTypes = rawData
-              .map((e) => ItemType.fromJson(e as Map<String, dynamic>))
-              .toList();
-          _updateSelectedItemType();
-        });
-      }
+      final types = await _movingInventoryRepository.getItemTypes();
+      setState(() {
+        _itemTypes = types;
+        _updateSelectedItemType();
+      });
     } catch (e, stack) {
       debugPrint('Error loading item types: $e');
       debugPrint(stack.toString());
@@ -185,43 +178,10 @@ class _ShipmentScanPageState extends State<ShipmentScanPage>
   Future<void> _loadCustody() async {
     setState(() { _isCustodyLoading = true; _custodyError = null; });
     try {
-      final response = await _dio.get('/api/my-serialized-custody');
-      final rawList = response.data is List 
-          ? response.data 
-          : (response.data is Map ? (response.data['data'] ?? response.data['items'] ?? response.data['custody']) : null);
-
-      if (rawList is List) {
-        setState(() {
-          _custodyItems = rawList
-              .map((e) => SerializedItem.fromJson(e as Map<String, dynamic>))
-              .toList();
-        });
-      }
+      final items = await _movingInventoryRepository.getMyCustody();
+      setState(() { _custodyItems = items; });
     } catch (e) {
-      // Try alternate endpoint
-      try {
-        final token = _dio.options.headers['Authorization'];
-        if (token != null) {
-          final meResp = await _dio.get('/api/auth/me');
-          final userId = meResp.data?['id'] as String? ?? meResp.data?['user']?['id'] as String?;
-          if (userId != null) {
-            final resp2 = await _dio.get('/api/technicians/$userId/serialized-custody');
-            final rawList2 = resp2.data is List 
-                ? resp2.data 
-                : (resp2.data is Map ? (resp2.data['data'] ?? resp2.data['items']) : null);
-
-            if (rawList2 is List) {
-              setState(() {
-                _custodyItems = rawList2
-                    .map((e) => SerializedItem.fromJson(e as Map<String, dynamic>))
-                    .toList();
-              });
-            }
-          }
-        }
-      } catch (e2) {
-        setState(() { _custodyError = e2.toString().replaceAll('Exception: ', ''); });
-      }
+      setState(() { _custodyError = e.toString().replaceAll('Exception: ', ''); });
     } finally {
       setState(() { _isCustodyLoading = false; });
     }
@@ -322,25 +282,22 @@ class _ShipmentScanPageState extends State<ShipmentScanPage>
     setState(() { _isScanLoading = true; _scanError = null; _scanSuccess = null; });
 
     try {
-      final body = <String, dynamic>{
-        'items': _scannedBatchItems.map((item) => {
-          'serialNumber': item.serialNumber,
-          'itemTypeId': item.itemTypeId,
-          if (item.isSim && item.carrierName != null && item.carrierName!.isNotEmpty)
-            'carrierName': item.carrierName,
-        }).toList(),
-      };
+      final items = _scannedBatchItems.map((item) => {
+        'serialNumber': item.serialNumber,
+        'itemTypeId': item.itemTypeId,
+        if (item.isSim && item.carrierName != null && item.carrierName!.isNotEmpty)
+          'carrierName': item.carrierName,
+      }).toList();
 
-      final resp = await _dio.post('/api/serialized-items/batch-scan-in', data: body);
+      final respData = await _movingInventoryRepository.batchScanIn(items);
 
       HapticFeedback.mediumImpact();
-      final respData = resp.data;
-      final addedCount = (respData is Map && respData['addedCount'] != null)
+      final addedCount = respData['addedCount'] != null
           ? respData['addedCount'] as int
-          : ((respData is Map && respData['data'] is List)
+          : (respData['data'] is List
               ? (respData['data'] as List).length
               : _scannedBatchItems.length);
-      final rejectedCount = (respData is Map && respData['rejectedCount'] != null)
+      final rejectedCount = respData['rejectedCount'] != null
           ? respData['rejectedCount'] as int
           : 0;
 
@@ -356,9 +313,6 @@ class _ShipmentScanPageState extends State<ShipmentScanPage>
       if (Get.isRegistered<MovingInventoryController>()) {
         Get.find<MovingInventoryController>().refresh();
       }
-    } on DioException catch (e) {
-      final msg = e.response?.data?['message'] as String?;
-      setState(() { _scanError = msg ?? 'فشل تسجيل الأجهزة والشرائح دفعة واحدة'; });
     } catch (e) {
       setState(() { _scanError = e.toString().replaceAll('Exception: ', ''); });
     } finally {

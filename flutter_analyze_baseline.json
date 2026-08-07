@@ -1,0 +1,7 @@
+{
+  "error": 0,
+  "warning": 0,
+  "info": 664,
+  "recorded": "2026-08-04",
+  "note": "Pre-existing technical debt baseline (Phase B1.4/B1.6). This is a transparent, temporary allowance for known issues that predate the test-platform work in B1.1-B1.6 -- not a permanent exemption. The CI regression gate (flutter-analyze-regression job in .github/workflows/quality-gates.yml) fails if any severity count exceeds these numbers; it does not fail on the pre-existing count itself. Reduce this baseline over time as issues are fixed -- never raise it to accommodate new issues."
+}

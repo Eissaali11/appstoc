@@ -6,6 +6,7 @@ class BarcodeRule {
   final String label;
   final List<String> prefixes;
   final int fullLength;
+  final int minLength;
   final RegExp regex;
   final bool requiresContext;
 
@@ -14,13 +15,18 @@ class BarcodeRule {
     required this.label,
     required this.prefixes,
     required this.fullLength,
+    int? minLength,
     required this.regex,
     this.requiresContext = false,
-  });
+  }) : minLength = minLength ?? fullLength;
 
   bool matches(String normalized) {
-    if (normalized.length != fullLength) return false;
-    if (prefixes.isNotEmpty && !prefixes.any(normalized.startsWith)) return false;
+    if (normalized.length < minLength || normalized.length > fullLength) {
+      return false;
+    }
+    if (prefixes.isNotEmpty && !prefixes.any(normalized.startsWith)) {
+      return false;
+    }
     return regex.hasMatch(normalized);
   }
 }
@@ -42,16 +48,18 @@ class BarcodeRuleRegistry {
     BarcodeRule(
       id: 'i9100',
       label: 'Urovo i9100',
-      prefixes: const ['SAW'],
-      fullLength: 11,
-      regex: RegExp(r'^SAW[0-9]{8}$'),
+      prefixes: const ['SAW', 'SAS'],
+      minLength: 11,
+      fullLength: 14,
+      regex: RegExp(r'^SAW[0-9]{8,11}$', caseSensitive: false),
     ),
     BarcodeRule(
       id: 'i9000s',
       label: 'Urovo i9000S',
-      prefixes: const ['SAS'],
-      fullLength: 11,
-      regex: RegExp(r'^SAS[0-9]{8}$'),
+      prefixes: const ['SAS', 'SAW'],
+      minLength: 11,
+      fullLength: 14,
+      regex: RegExp(r'^SAS[0-9]{8,11}$', caseSensitive: false),
     ),
     BarcodeRule(
       id: 'a960',
@@ -121,7 +129,7 @@ class BarcodeRuleRegistry {
 
   /// Build a rule from API/cache ItemType when config is trustworthy.
   ///
-  /// Known enterprise types (N950 / i9100 / i9000S / SIMs) ALWAYS use the
+  /// Known enterprise types (N950 / i9100 / i9000S / A960 / SIMs) ALWAYS use the
   /// trusted table — same digit-only quality as N950 — even when API sends a
   /// looser regex. Custom/unknown types use API fields; incomplete API rows
   /// fail closed (null) rather than inventing a loose rule.
@@ -139,6 +147,7 @@ class BarcodeRuleRegistry {
             ? itemType.nameEn
             : (itemType.nameAr.isNotEmpty ? itemType.nameAr : enterprise.label),
         prefixes: enterprise.prefixes,
+        minLength: enterprise.minLength,
         fullLength: enterprise.fullLength,
         regex: enterprise.regex,
         requiresContext: enterprise.requiresContext,
@@ -158,8 +167,7 @@ class BarcodeRuleRegistry {
         regexRaw.contains('13,14') &&
         prefixes.any((p) => p.startsWith('89966'));
 
-    if (prefixes.isEmpty ||
-        length == null ||
+    if (length == null ||
         length <= 0 ||
         regexRaw == null ||
         regexRaw.isEmpty ||

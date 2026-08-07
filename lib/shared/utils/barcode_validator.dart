@@ -116,10 +116,10 @@ class BarcodeValidator {
 
     final ruleId = rule.id.toLowerCase();
     if (ruleId.contains('i9100')) {
-      return 'الرقم يجب أن يبدأ بـ SAW ويتكون من 14 خانة.';
+      return 'الرقم يجب أن يبدأ بـ SAW أو SAS ويتكون من 11 إلى 14 خانة.';
     }
     if (ruleId.contains('i9000')) {
-      return 'الرقم يجب أن يبدأ بـ SAS ويتكون من 14 خانة.';
+      return 'الرقم يجب أن يبدأ بـ SAS أو SAW ويتكون من 11 إلى 14 خانة.';
     }
     if (ruleId.contains('a960')) {
       return 'الرقم التسلسلي يجب أن يتكون من 10 أرقام.';

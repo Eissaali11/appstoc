@@ -1,14 +1,6 @@
-// TEMPORARY FEATURE — remove or disable after final customer handover.
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 
-/// Second, explicit confirmation step before permanently deleting a serial
-/// number from the technician's own custody. Requires the technician to type
-/// the exact serial number before the delete button activates, disables all
-/// buttons and shows a loading indicator while the request is in flight, and
-/// never closes on its own until the server has responded.
-///
-/// Returns `true` only if [onConfirmDelete] completed successfully.
 /// Professional success dialog for custody operations.
 Future<void> showCustodySuccessDialog(
   BuildContext context, {
@@ -17,6 +9,7 @@ Future<void> showCustodySuccessDialog(
 }) async {
   await showDialog(
     context: context,
+    barrierDismissible: true,
     builder: (ctx) => Dialog(
       backgroundColor: Colors.transparent,
       elevation: 0,
@@ -31,7 +24,7 @@ Future<void> showCustodySuccessDialog(
           ),
           boxShadow: [
             BoxShadow(
-              color: AppColors.success.withOpacity(0.2),
+              color: AppColors.success.withOpacity(0.25),
               blurRadius: 30,
               spreadRadius: 4,
             ),
@@ -48,15 +41,15 @@ Future<void> showCustodySuccessDialog(
                 border: Border.all(color: AppColors.success, width: 2),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.success.withOpacity(0.3),
-                    blurRadius: 15,
+                    color: AppColors.success.withOpacity(0.4),
+                    blurRadius: 20,
                   ),
                 ],
               ),
               child: const Icon(
                 Icons.check_circle_rounded,
                 color: AppColors.success,
-                size: 52,
+                size: 56,
               ),
             ),
             const SizedBox(height: 20),
@@ -84,6 +77,7 @@ Future<void> showCustodySuccessDialog(
             const SizedBox(height: 24),
             SizedBox(
               width: double.infinity,
+              height: 48,
               child: Container(
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
@@ -98,23 +92,24 @@ Future<void> showCustodySuccessDialog(
                     ),
                   ],
                 ),
-                child: ElevatedButton(
+                child: ElevatedButton.icon(
                   onPressed: () => Navigator.of(ctx).pop(),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.transparent,
-                    shadowColor: Colors.transparent,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                  ),
-                  child: const Text(
+                  icon: const Icon(Icons.done_all_rounded, color: Colors.white, size: 20),
+                  label: const Text(
                     'رائع، تم',
                     style: TextStyle(
                       fontFamily: 'BeIN',
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.transparent,
+                    shadowColor: Colors.transparent,
+                    padding: EdgeInsets.zero,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
                     ),
                   ),
                 ),
@@ -215,16 +210,17 @@ class _CustodyDeleteConfirmationDialogState
       canPop: !_isSubmitting,
       child: Dialog(
         backgroundColor: Colors.transparent,
+        elevation: 0,
         child: Container(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(22),
           decoration: BoxDecoration(
             color: AppColors.backgroundDark,
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(24),
             border: Border.all(color: AppColors.error.withOpacity(0.5), width: 1.5),
             boxShadow: [
               BoxShadow(
-                color: AppColors.error.withOpacity(0.2),
-                blurRadius: 20,
+                color: AppColors.error.withOpacity(0.25),
+                blurRadius: 24,
                 spreadRadius: 2,
               ),
             ],
@@ -232,49 +228,72 @@ class _CustodyDeleteConfirmationDialogState
           child: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Row(
-                  children: [
-                    Icon(Icons.warning_amber_rounded, color: AppColors.error, size: 28),
-                    const SizedBox(width: 8),
-                    const Expanded(
-                      child: Text(
-                        'تأكيد الإزالة من العهدة',
-                        style: TextStyle(
-                          fontFamily: 'BeIN',
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: AppColors.error.withOpacity(0.15),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: AppColors.error, width: 2),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.error.withOpacity(0.35),
+                        blurRadius: 16,
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.delete_forever_rounded,
+                    color: AppColors.error,
+                    size: 44,
+                  ),
                 ),
-                const SizedBox(height: 12),
-                Text(
-                  'هل أنت تأكد من رغبتك في إزالة هذا العنصر من عهدتك النشطة؟',
+                const SizedBox(height: 16),
+                const Text(
+                  'تأكيد الإزالة من العهدة',
+                  textAlign: TextAlign.center,
                   style: TextStyle(
                     fontFamily: 'BeIN',
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white.withOpacity(0.9),
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'هل أنت تأكد من رغبتك في إزالة هذا العنصر من عهدتك النشطة؟',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontFamily: 'BeIN',
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white.withOpacity(0.8),
                     height: 1.4,
                   ),
                 ),
                 const SizedBox(height: 16),
-                Divider(color: Colors.white.withOpacity(0.1)),
-                const SizedBox(height: 8),
-                _detailRow('الرقم التسلسلي:', widget.serialNumber, isCode: true),
-                _detailRow('اسم المنتج / الصنف:', widget.itemTitle),
-                _detailRow('نوع العنصر:', widget.itemCategoryLabel),
-                _detailRow('الحالة الحالية:', widget.statusLabel),
-                if (widget.warehouseLabel != null && widget.warehouseLabel!.isNotEmpty)
-                  _detailRow('المستودع:', widget.warehouseLabel!),
-                if (widget.ownerLabel != null && widget.ownerLabel!.isNotEmpty)
-                  _detailRow('صاحب العهدة الحالي:', widget.ownerLabel!),
-                if (widget.receivedAtLabel != null && widget.receivedAtLabel!.isNotEmpty)
-                  _detailRow('تاريخ الاستلام:', widget.receivedAtLabel!),
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.04),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.white.withOpacity(0.08)),
+                  ),
+                  child: Column(
+                    children: [
+                      _detailRow('الرقم التسلسلي:', widget.serialNumber, isCode: true),
+                      _detailRow('اسم المنتج / الصنف:', widget.itemTitle),
+                      _detailRow('نوع العنصر:', widget.itemCategoryLabel),
+                      _detailRow('الحالة الحالية:', widget.statusLabel),
+                      if (widget.warehouseLabel != null && widget.warehouseLabel!.isNotEmpty)
+                        _detailRow('المستودع:', widget.warehouseLabel!),
+                      if (widget.ownerLabel != null && widget.ownerLabel!.isNotEmpty)
+                        _detailRow('صاحب العهدة الحالي:', widget.ownerLabel!),
+                      if (widget.receivedAtLabel != null && widget.receivedAtLabel!.isNotEmpty)
+                        _detailRow('تاريخ الاستلام:', widget.receivedAtLabel!),
+                    ],
+                  ),
+                ),
                 if (_errorText != null) ...[
                   const SizedBox(height: 12),
                   Container(
@@ -286,7 +305,8 @@ class _CustodyDeleteConfirmationDialogState
                     ),
                     child: Text(
                       _errorText!,
-                      style: TextStyle(fontFamily: 'BeIN', fontSize: 13, color: AppColors.error),
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(fontFamily: 'BeIN', fontSize: 13, color: AppColors.error),
                     ),
                   ),
                 ],
@@ -294,39 +314,83 @@ class _CustodyDeleteConfirmationDialogState
                 Row(
                   children: [
                     Expanded(
-                      child: OutlinedButton(
-                        onPressed: _isSubmitting ? null : () => Navigator.of(context).pop(false),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          side: const BorderSide(color: Colors.white24),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                      child: SizedBox(
+                        height: 48,
+                        child: OutlinedButton(
+                          onPressed: _isSubmitting ? null : () => Navigator.of(context).pop(false),
+                          style: OutlinedButton.styleFrom(
+                            padding: EdgeInsets.zero,
+                            side: const BorderSide(color: Colors.white24),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                          ),
+                          child: const Text(
+                            'إلغاء',
+                            style: TextStyle(
+                              color: Colors.white70,
+                              fontFamily: 'BeIN',
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
-                        child: const Text('إلغاء', style: TextStyle(color: Colors.white70, fontFamily: 'BeIN', fontWeight: FontWeight.bold)),
                       ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: ElevatedButton(
-                        onPressed: _isSubmitting ? null : _handleConfirm,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.error,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                      child: SizedBox(
+                        height: 48,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            gradient: _isSubmitting
+                                ? null
+                                : const LinearGradient(
+                                    colors: [Color(0xFFEF4444), Color(0xFFDC2626)],
+                                  ),
+                            color: _isSubmitting ? AppColors.error.withOpacity(0.5) : null,
+                            borderRadius: BorderRadius.circular(14),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.error.withOpacity(0.35),
+                                blurRadius: 12,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: ElevatedButton.icon(
+                            onPressed: _isSubmitting ? null : _handleConfirm,
+                            icon: _isSubmitting
+                                ? const SizedBox.shrink()
+                                : const Icon(Icons.delete_forever_rounded, color: Colors.white, size: 20),
+                            label: _isSubmitting
+                                ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                  )
+                                : const FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    child: Text(
+                                      'نعم، حذف من عهدتي',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontFamily: 'BeIN',
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.transparent,
+                              shadowColor: Colors.transparent,
+                              padding: const EdgeInsets.symmetric(horizontal: 8),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                            ),
                           ),
                         ),
-                        child: _isSubmitting
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                              )
-                            : const Text(
-                                'نعم، حذف من عهدتي',
-                                style: TextStyle(color: Colors.white, fontFamily: 'BeIN', fontWeight: FontWeight.bold),
-                              ),
                       ),
                     ),
                   ],

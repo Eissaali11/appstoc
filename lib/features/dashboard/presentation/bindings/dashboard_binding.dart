@@ -20,6 +20,8 @@ import '../controllers/dashboard_controller.dart';
 import '../../../courier_requests/data/repositories/courier_requests_repository.dart';
 import '../../../courier_requests/data/repositories/courier_requests_repository_impl.dart';
 import '../../../courier_requests/presentation/controllers/courier_requests_controller.dart';
+import '../../../fixed_inventory/domain/repositories/fixed_inventory_repository.dart';
+import '../../../fixed_inventory/data/repositories/fixed_inventory_repository_impl.dart';
 
 class DashboardBinding extends Bindings {
   @override
@@ -86,6 +88,12 @@ class DashboardBinding extends Bindings {
     if (!Get.isRegistered<CourierRequestsRepository>()) {
       Get.lazyPut<CourierRequestsRepository>(
         () => CourierRequestsRepositoryImpl(Get.find<ApiClient>()),
+      );
+    }
+
+    if (!Get.isRegistered<FixedInventoryRepository>()) {
+      Get.lazyPut<FixedInventoryRepository>(
+        () => FixedInventoryRepositoryImpl(Get.find<ApiClient>()),
       );
     }
 
