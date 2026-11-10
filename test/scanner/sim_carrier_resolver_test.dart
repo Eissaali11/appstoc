@@ -170,28 +170,28 @@ void main() {
   });
 
   group('SimCarrierResolver — selected type present (section-scoped)', () {
-    // CHANGED BEHAVIOR: "Zain SIM New" cannot validate ANYTHING right now
-    // (see the data-gap note above) — selecting it no longer short-circuits
-    // to an automatic match even for a genuine Zain ICCID. It correctly
-    // falls through to the general candidate pool, which is itself
-    // ambiguous between stcSim/mobilySim for the same live-regex-overlap
-    // reason. This is the most user-visible consequence of this PR: a
-    // technician in the "Zain" section scanning a real Zain SIM today gets
-    // an STC-vs-Mobily disambiguation prompt instead of silent acceptance,
-    // until the catalog row is fixed (see proposal).
+    // CORRECTED BEHAVIOR (supersedes an earlier fall-through design): an
+    // explicit prior selection is authoritative and is NEVER re-evaluated
+    // against other candidates. "Zain SIM New" cannot validate ANYTHING
+    // right now (see the data-gap note above), so selecting it and
+    // scanning a real Zain ICCID yields a specific "selected type rejected"
+    // result — NOT a fall-through to an STC-vs-Mobily prompt, which would
+    // have offered the technician types they had explicitly NOT chosen.
     test('19-digit ICCID + selectedType = Zain SIM New → Zain SIM New has no '
-        'validation rule of its own in production, so it fails to '
-        'short-circuit and falls through to the general ambiguous '
-        'stcSim/mobilySim pool instead of silently resolving to Zain', () {
+        'validation rule of its own in production, so the result is a '
+        'specific selectedTypeRejected carrying Zain itself — never a '
+        'fall-through to stcSim/mobilySim', () {
       final result = SimCarrierResolver.resolve(
         normalizedCode: realZainIccid,
         candidates: visibleSimCandidates(),
         selectedType: newVisibleZainSim(),
       );
       expect(result.isResolved, isFalse);
-      expect(result.isAmbiguous, isTrue);
-      final ids = result.ambiguousCandidates.map((t) => t.id).toSet();
-      expect(ids, {'stcSim', 'mobilySim'});
+      expect(result.isAmbiguous, isFalse);
+      expect(result.isSelectedTypeRejected, isTrue);
+      expect(result.rejectedSelectedType!.id,
+          '97956dd0-81f3-4720-a096-f18d5a979137');
+      expect(result.ambiguousCandidates, isEmpty);
     });
 
     test('19-digit ICCID + selectedType = mobilySim → resolves directly to '
@@ -207,24 +207,64 @@ void main() {
       expect(result.resolved!.id, 'mobilySim');
     });
 
-    // CHANGED BEHAVIOR, same cause as above: selectedType (Zain SIM New)
-    // still can't validate anything, so this also now falls through to the
-    // general pool — which, for an 18-digit code, is ALSO now ambiguous
-    // between stcSim and mobilySim (their live regex is identical), not a
-    // clean fallback to stcSim alone.
+    // CORRECTED BEHAVIOR, same principle: even when the scanned code
+    // plainly belongs to a DIFFERENT type than the one selected (an
+    // STC-shaped code scanned while "Zain SIM New" is selected), the
+    // selection is never second-guessed or silently swapped — it is
+    // rejected specifically, and the technician decides what to do (rescan,
+    // or change the dropdown themselves).
     test('18-digit STC-shaped ICCID + selectedType = Zain SIM New (wrong '
-        'section) → selected type fails validation (no rule of its own), '
-        'falls through to the general pool, which is itself ambiguous '
-        'between stcSim/mobilySim', () {
+        'section) → rejected against Zain itself; stcSim/mobilySim are '
+        'never offered or substituted', () {
       final result = SimCarrierResolver.resolve(
         normalizedCode: realStcIccid,
         candidates: visibleSimCandidates(),
         selectedType: newVisibleZainSim(),
       );
       expect(result.isResolved, isFalse);
-      expect(result.isAmbiguous, isTrue);
-      final ids = result.ambiguousCandidates.map((t) => t.id).toSet();
-      expect(ids, {'stcSim', 'mobilySim'});
+      expect(result.isAmbiguous, isFalse);
+      expect(result.isSelectedTypeRejected, isTrue);
+      expect(result.rejectedSelectedType!.id,
+          '97956dd0-81f3-4720-a096-f18d5a979137');
+    });
+
+    test('selected type that DOES validate wins outright even when other '
+        'candidates would also match — and a selected type that does NOT '
+        'validate is rejected even when exactly ONE other candidate would '
+        'have matched cleanly (no silent swap to the lone match)', () {
+      // mobilySim selected + its own regex matches → resolved to it.
+      final ok = SimCarrierResolver.resolve(
+        normalizedCode: realZainIccid,
+        candidates: visibleSimCandidates(),
+        selectedType: mobilySim(),
+      );
+      expect(ok.isResolved, isTrue);
+      expect(ok.resolved!.id, 'mobilySim');
+
+      // Selected type has a rule that the code does NOT satisfy, while a
+      // different candidate would match cleanly on its own — must still be
+      // rejected, never silently replaced by the lone clean match.
+      final selectedNarrow = ItemType(
+        id: 'narrowSim',
+        nameEn: 'Narrow SIM',
+        nameAr: 'شريحة ضيقة',
+        sortOrder: 50,
+        isActive: true,
+        isVisible: true,
+        category: 'sim',
+        requiresSerial: true,
+        serialPrefix: '89966',
+        serialRegex: r'^8996699[0-9]{12}$', // realZainIccid does not match
+      );
+      final onlyOneOtherMatches = [mobilySim()]; // would match on its own
+      final rejected = SimCarrierResolver.resolve(
+        normalizedCode: realZainIccid,
+        candidates: onlyOneOtherMatches,
+        selectedType: selectedNarrow,
+      );
+      expect(rejected.isResolved, isFalse);
+      expect(rejected.isSelectedTypeRejected, isTrue);
+      expect(rejected.rejectedSelectedType!.id, 'narrowSim');
     });
   });
 

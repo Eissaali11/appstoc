@@ -168,28 +168,14 @@ class _ShipmentScanPageState extends State<ShipmentScanPage>
     } else {
       _selectedItemTypeId = null;
       _isSim = _selectedCategory == 'sim';
-      _carrierName = _isSim ? 'STC' : null;
+      // No silent carrier default: unknown stays unknown (omitted from the
+      // request) instead of being mislabeled "STC".
+      _carrierName = null;
     }
   }
 
-  String? _resolveCarrierName(ItemType type, String? defaultCarrier) {
-    if (type.category != 'sim') return null;
-    final nameEn = type.nameEn.toLowerCase();
-    final nameAr = type.nameAr.toLowerCase();
-    if (nameEn.contains('stc') || nameAr.contains('stc') || nameEn.contains('اتصالات') || nameAr.contains('اتصالات')) {
-      return 'STC';
-    }
-    if (nameEn.contains('mobily') || nameAr.contains('موبايلي')) {
-      return 'Mobily';
-    }
-    if (nameEn.contains('zain') || nameAr.contains('زين')) {
-      return 'Zain';
-    }
-    if (nameEn.contains('lebara') || nameAr.contains('ليبارا') || nameEn.contains('repara') || nameAr.contains('ريباره') || nameAr.contains('ريبارا')) {
-      return 'Lebara';
-    }
-    return defaultCarrier ?? 'STC';
-  }
+  String? _resolveCarrierName(ItemType type, String? defaultCarrier) =>
+      carrierLabelForItemType(type, defaultCarrier);
 
   // ITEM-TYPE CLASSIFICATION FIX: the "section context" [SimCarrierResolver]
   // should trust outright is a genuine, deliberate item-type pick (dropdown,
@@ -247,25 +233,46 @@ class _ShipmentScanPageState extends State<ShipmentScanPage>
   }
 
   /// ITEM-TYPE CLASSIFICATION FIX: the single resolution path shared by both
-  /// manual entry and camera scan. Never guesses — tries the trusted
-  /// selected type first (wins outright, no prompt), otherwise checks ALL
-  /// candidates in the category: 0 matches → null (caller shows "unknown"),
-  /// 1 match → returned directly (unambiguous, safe to auto-accept), 2+
-  /// matches → the user is asked explicitly via
-  /// [_showItemTypeDisambiguationDialog] rather than silently taking
-  /// whichever candidate happened to be first in the list.
-  Future<ItemType?> _resolveTargetType(String normalizedCode) async {
+  /// manual entry and camera scan. Never guesses — and never overrides an
+  /// already-explicit choice:
+  /// - a genuine prior dropdown selection is validated ONLY against its own
+  ///   rule (wins outright on success, specifically rejected on failure —
+  ///   see [ScanTypeResolution.selectedTypeRejected]'s doc — NEVER
+  ///   re-evaluated against other candidates);
+  /// - with no prior selection, all candidates in the category are checked:
+  ///   0 matches → none, 1 match → returned directly (unambiguous, safe to
+  ///   auto-accept), 2+ matches → the user is asked explicitly via
+  ///   [_showItemTypeDisambiguationDialog] rather than silently taking
+  ///   whichever candidate happened to be first in the list.
+  ///
+  /// Returns `(type, errorMessageIfNull)` — the message is specific when a
+  /// prior selection was the cause, and the generic "unrecognized" text
+  /// otherwise, so the caller never has to guess which happened.
+  Future<(ItemType?, String?)> _resolveTargetType(
+      String normalizedCode) async {
     final resolution = SimCarrierResolver.resolve(
       normalizedCode: normalizedCode,
       candidates: _typesForSelectedCategory(),
       selectedType: _effectiveSelectedTypeForResolution(),
     );
 
-    if (resolution.isResolved) return resolution.resolved;
+    if (resolution.isResolved) return (resolution.resolved, null);
     if (resolution.isAmbiguous) {
-      return _showItemTypeDisambiguationDialog(resolution.ambiguousCandidates);
+      final picked =
+          await _showItemTypeDisambiguationDialog(resolution.ambiguousCandidates);
+      return (picked, picked == null ? 'لم يتم اختيار نوع الصنف' : null);
     }
-    return null; // no match at all — caller surfaces "unrecognized" error
+    if (resolution.isSelectedTypeRejected) {
+      final selected = resolution.rejectedSelectedType!;
+      return (
+        null,
+        'الرقم الممسوح لا يطابق قاعدة التحقق الخاصة بالنوع المحدد '
+            '"${selected.nameAr}". تأكد من الرقم، أو إن كانت قاعدة التحقق '
+            'لهذا النوع غير مكتملة في النظام، تواصل مع الإدارة — لن يتم '
+            'تخمين نوع آخر بدلاً من اختيارك.'
+      );
+    }
+    return (null, 'رمز غير معروف — لا يطابق أي صنف مسجل');
   }
 
   /// ITEM-TYPE CLASSIFICATION FIX: processes a multi-scan batch one code at
@@ -284,9 +291,9 @@ class _ShipmentScanPageState extends State<ShipmentScanPage>
       if (code.trim().isEmpty) continue;
       final normalized = BarcodeValidator.normalizeRawBarcode(code);
 
-      final targetType = await _resolveTargetType(normalized);
+      final (targetType, resolveError) = await _resolveTargetType(normalized);
       if (targetType == null) {
-        firstError ??= 'رمز غير معروف — لا يطابق أي صنف مسجل';
+        firstError ??= resolveError ?? 'رمز غير معروف — لا يطابق أي صنف مسجل';
         continue;
       }
       if (!mounted) return;
@@ -413,15 +420,16 @@ class _ShipmentScanPageState extends State<ShipmentScanPage>
     // belong to more than one catalog type, the technician is asked to
     // choose explicitly instead of silently trusting the default.
     final normalized = BarcodeValidator.normalizeRawBarcode(raw);
-    final selectedType = await _resolveTargetType(normalized);
+    final (resolvedType, resolveError) = await _resolveTargetType(normalized);
     if (!mounted) return;
-    if (selectedType == null) {
+    if (resolvedType == null) {
       setState(() {
-        _scanError = 'رمز غير معروف — لا يطابق أي صنف مسجل';
+        _scanError = resolveError ?? 'رمز غير معروف — لا يطابق أي صنف مسجل';
         _scanSuccess = null;
       });
       return;
     }
+    final selectedType = resolvedType;
 
     // Keep full uppercase form with letter prefix (e.g. NCC303042220)
     final serial = BarcodeValidator.toDisplaySerial(normalized, selectedType);
