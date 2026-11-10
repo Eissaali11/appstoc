@@ -91,25 +91,64 @@ void main() {
   setUp(() => BarcodeRuleRegistry.clearCache());
 
   group('SimCarrierResolver — no selected type', () {
-    test('18-digit STC → resolves to stcSim automatically (single match)', () {
+    // CHANGED BEHAVIOR (intentional, per explicit product decision): this
+    // app no longer trusts BarcodeRuleRegistry's hardcoded "18 digits =
+    // STC, 19 digits = everyone else" length split, because that split is
+    // NOT what the live catalog itself stores — production's real stcSim
+    // AND mobilySim rows both carry the IDENTICAL regex
+    // `^89966[0-9]{13,14}$`, so an 18-digit code is just as "valid STC" as
+    // it is "valid Mobily" by the data actually on file. Previously this
+    // test asserted the old length-based auto-pick (18 digits →
+    // automatically stcSim, no prompt); that was a guess this app has no
+    // real ground truth for. It now correctly asks the user instead of
+    // picking one. See the proposal section of the PR this test ships
+    // with for the data-level fix that would make this resolve
+    // automatically again (non-overlapping regex/serialLength per
+    // carrier).
+    test(
+        '18-digit STC-shaped ICCID is ambiguous between stcSim and '
+        'mobilySim — their LIVE regex is identical, so no silent pick', () {
       final result = SimCarrierResolver.resolve(
         normalizedCode: realStcIccid,
         candidates: visibleSimCandidates(),
       );
-      expect(result.isResolved, isTrue);
-      expect(result.resolved!.id, 'stcSim');
+      expect(result.isAmbiguous, isTrue);
+      final ids = result.ambiguousCandidates.map((t) => t.id).toSet();
+      expect(ids, {'stcSim', 'mobilySim'});
+      expect(result.resolved, isNull);
     });
 
+    // CHANGED BEHAVIOR, same root cause, plus a second, more important
+    // finding exposed by removing the hardcoded crutch: the CURRENT active
+    // "Zain SIM New" catalog row has NO serialPrefix/serialRegex of its own
+    // in production (confirmed by direct query). It used to only "work" by
+    // accident — its name contained "zain", which matched a hardcoded
+    // keyword lookup that force-fed it the generic 19-digit fallback rule.
+    // With that keyword crutch removed, "Zain SIM New" has no validation
+    // rule at all and can never appear as a match for ANY code, ambiguous
+    // or otherwise, until its row is given a real serialPrefix/serialRegex
+    // via the item-types admin UI. That is a real, currently-live
+    // production data gap, not a bug in this resolver — flagged prominently
+    // in this PR's proposal section as something to fix urgently.
     test(
-        '19-digit Zain/Mobily-shared ICCID with NO selected type → ambiguous, '
-        'Mobily is NEVER auto-picked just because it would sort first', () {
+        '19-digit Zain/Mobily-shared ICCID with NO selected type → ambiguous '
+        'between stcSim and mobilySim (both share the identical live regex); '
+        '"Zain SIM New" itself is NOT in the ambiguous set because it has no '
+        'serialPrefix/serialRegex configured in production at all — a real '
+        'data gap, not something this resolver can paper over', () {
       final result = SimCarrierResolver.resolve(
         normalizedCode: realZainIccid,
         candidates: visibleSimCandidates(),
       );
       expect(result.isAmbiguous, isTrue);
       final ids = result.ambiguousCandidates.map((t) => t.id).toSet();
-      expect(ids, {'mobilySim', '97956dd0-81f3-4720-a096-f18d5a979137'});
+      expect(ids, {'stcSim', 'mobilySim'});
+      expect(
+        ids,
+        isNot(contains('97956dd0-81f3-4720-a096-f18d5a979137')),
+        reason: 'Zain SIM New has no regex of its own in production — it '
+            'cannot validate ANY code right now, real or not',
+      );
       expect(result.resolved, isNull); // critical: nothing auto-chosen
     });
 
@@ -131,20 +170,34 @@ void main() {
   });
 
   group('SimCarrierResolver — selected type present (section-scoped)', () {
-    test('19-digit ICCID + selectedType = Zain SIM New → resolves directly '
-        'to Zain, no ambiguity prompt at all', () {
+    // CHANGED BEHAVIOR: "Zain SIM New" cannot validate ANYTHING right now
+    // (see the data-gap note above) — selecting it no longer short-circuits
+    // to an automatic match even for a genuine Zain ICCID. It correctly
+    // falls through to the general candidate pool, which is itself
+    // ambiguous between stcSim/mobilySim for the same live-regex-overlap
+    // reason. This is the most user-visible consequence of this PR: a
+    // technician in the "Zain" section scanning a real Zain SIM today gets
+    // an STC-vs-Mobily disambiguation prompt instead of silent acceptance,
+    // until the catalog row is fixed (see proposal).
+    test('19-digit ICCID + selectedType = Zain SIM New → Zain SIM New has no '
+        'validation rule of its own in production, so it fails to '
+        'short-circuit and falls through to the general ambiguous '
+        'stcSim/mobilySim pool instead of silently resolving to Zain', () {
       final result = SimCarrierResolver.resolve(
         normalizedCode: realZainIccid,
         candidates: visibleSimCandidates(),
         selectedType: newVisibleZainSim(),
       );
-      expect(result.isResolved, isTrue);
-      expect(result.resolved!.id, '97956dd0-81f3-4720-a096-f18d5a979137');
-      expect(result.isAmbiguous, isFalse);
+      expect(result.isResolved, isFalse);
+      expect(result.isAmbiguous, isTrue);
+      final ids = result.ambiguousCandidates.map((t) => t.id).toSet();
+      expect(ids, {'stcSim', 'mobilySim'});
     });
 
     test('19-digit ICCID + selectedType = mobilySim → resolves directly to '
-        'Mobily, no ambiguity prompt', () {
+        'Mobily, no ambiguity prompt (mobilySim DOES carry its own valid '
+        'regex, so the selected-type short-circuit still works normally '
+        'here — unaffected by this change)', () {
       final result = SimCarrierResolver.resolve(
         normalizedCode: realZainIccid,
         candidates: visibleSimCandidates(),
@@ -154,16 +207,24 @@ void main() {
       expect(result.resolved!.id, 'mobilySim');
     });
 
-    test('18-digit STC ICCID + selectedType = Zain SIM New (wrong section) → '
-        'selected type fails validation, falls through to unambiguous stcSim '
-        'match', () {
+    // CHANGED BEHAVIOR, same cause as above: selectedType (Zain SIM New)
+    // still can't validate anything, so this also now falls through to the
+    // general pool — which, for an 18-digit code, is ALSO now ambiguous
+    // between stcSim and mobilySim (their live regex is identical), not a
+    // clean fallback to stcSim alone.
+    test('18-digit STC-shaped ICCID + selectedType = Zain SIM New (wrong '
+        'section) → selected type fails validation (no rule of its own), '
+        'falls through to the general pool, which is itself ambiguous '
+        'between stcSim/mobilySim', () {
       final result = SimCarrierResolver.resolve(
         normalizedCode: realStcIccid,
         candidates: visibleSimCandidates(),
         selectedType: newVisibleZainSim(),
       );
-      expect(result.isResolved, isTrue);
-      expect(result.resolved!.id, 'stcSim');
+      expect(result.isResolved, isFalse);
+      expect(result.isAmbiguous, isTrue);
+      final ids = result.ambiguousCandidates.map((t) => t.id).toSet();
+      expect(ids, {'stcSim', 'mobilySim'});
     });
   });
 

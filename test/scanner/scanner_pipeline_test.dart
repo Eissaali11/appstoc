@@ -494,7 +494,20 @@ void main() {
       expect(result.selected, expected);
     });
 
-    test('STC carton: 18 accepted; 19/device serials ignored', () {
+    // CHANGED BEHAVIOR (intentional): `_stcSim`'s own declared serialRegex
+    // (`^89966[0-9]{13,14}$`, matching this project's real production
+    // stcSim row verbatim) accepts BOTH 18 and 19 digit bodies — this app
+    // no longer overrides that with a hardcoded "STC is always exactly 18
+    // digits" assumption the catalog itself doesn't make. With two
+    // DIFFERENT valid-looking serials in the same frame (iccid18 AND
+    // iccid19 both now validate against the stcSim context), the selector
+    // correctly refuses to silently pick one — this is the same "never
+    // guess" principle as SimCarrierResolver, applied at the in-frame
+    // candidate-selection layer.
+    test('STC context: 18 AND 19 both validate (live regex is ambiguous by '
+        'length) — two different valid serials in one frame correctly '
+        'reported ambiguous, not silently narrowed to one; device serials '
+        'still ignored', () {
       final sel = BarcodeCandidateSelector();
       const iccid19 = '8996606099020521804';
       const iccid18 = '899660609902052180';
@@ -502,8 +515,7 @@ void main() {
         ['NCD100232013', 'SAW12345678', iccid19, iccid18],
         context: _ctx(_stcSim),
       );
-      expect(result.status, CandidateStatus.singleMatch);
-      expect(result.selected, iccid18);
+      expect(result.status, CandidateStatus.ambiguous);
     });
 
     test('non-89966 prefix rejected in both SIM contexts', () {

@@ -5,7 +5,13 @@ class BarcodeRule {
   final String id;
   final String label;
   final List<String> prefixes;
-  final int fullLength;
+
+  /// Exact total length, when the type has exactly one valid length.
+  /// Null means "the regex alone is the length contract" — used when the
+  /// live catalog's own serial_regex legitimately spans more than one
+  /// length (e.g. a shared SIM ICCID pattern across several carriers) and
+  /// no single length would be correct to enforce ahead of the regex.
+  final int? fullLength;
   final RegExp regex;
   final bool requiresContext;
 
@@ -19,7 +25,7 @@ class BarcodeRule {
   });
 
   bool matches(String normalized) {
-    if (normalized.length != fullLength) return false;
+    if (fullLength != null && normalized.length != fullLength) return false;
     if (prefixes.isNotEmpty && !prefixes.any(normalized.startsWith)) return false;
     return regex.hasMatch(normalized);
   }
@@ -153,17 +159,7 @@ class BarcodeRuleRegistry {
     final length = itemType.serialLength;
     final regexRaw = itemType.serialRegex?.trim();
 
-    // Ambiguous SIM body (13,14) would accept both STC 18 and Zain 19 — reject.
-    final ambiguousSimRegex = regexRaw != null &&
-        regexRaw.contains('13,14') &&
-        prefixes.any((p) => p.startsWith('89966'));
-
-    if (prefixes.isEmpty ||
-        length == null ||
-        length <= 0 ||
-        regexRaw == null ||
-        regexRaw.isEmpty ||
-        ambiguousSimRegex) {
+    if (prefixes.isEmpty || regexRaw == null || regexRaw.isEmpty) {
       return null;
     }
 
@@ -172,6 +168,24 @@ class BarcodeRuleRegistry {
       regex = RegExp(regexRaw);
     } catch (_) {
       return null;
+    }
+
+    // No single catalog length (e.g. a SIM ICCID regex spanning more than
+    // one real length, shared verbatim across several carrier item types —
+    // STC/Mobily/Zain currently all store `^89966[0-9]{13,14}$`). Trust the
+    // regex alone rather than inventing a length split the catalog itself
+    // doesn't encode: if that leaves the same code validating against more
+    // than one candidate type, that is a real, correctly-surfaced ambiguity
+    // for the caller (SimCarrierResolver) to ask the user about — not
+    // something this layer should silently resolve or silently refuse.
+    if (length == null || length <= 0) {
+      return BarcodeRule(
+        id: itemType.id,
+        label: itemType.nameEn.isNotEmpty ? itemType.nameEn : itemType.nameAr,
+        prefixes: prefixes,
+        fullLength: null,
+        regex: regex,
+      );
     }
 
     // Normalize body-length configs (legacy serial_length=9 + alpha prefix)
@@ -225,23 +239,17 @@ class BarcodeRuleRegistry {
     if (key.contains('a960') || key.contains('pax') || key.contains('paxa960')) {
       return fallbackRules.firstWhere((r) => r.id == 'a960');
     }
-    if (key.contains('stc') || key.contains('اتصالات')) {
-      return fallbackRules.firstWhere((r) => r.id == 'sim_stc');
-    }
-    if (key.contains('zain') ||
-        key.contains('زين') ||
-        key.contains('mobily') ||
-        key.contains('موبايلي') ||
-        key.contains('موبيلي') ||
-        key.contains('repara') ||
-        key.contains('lebara') ||
-        key.contains('lebarasim') ||
-        key.contains('ليبارا') ||
-        key.contains('ريبار') ||
-        key.contains('ريبارا') ||
-        key.contains('ريباره')) {
-      return fallbackRules.firstWhere((r) => r.id == 'sim_89966_19');
-    }
+    // STC/Zain/Mobily/Lebara/Repara are deliberately NOT keyword-matched to
+    // the enterprise table here. That used to force a hardcoded 18-vs-19-
+    // digit length split onto these names regardless of what the live
+    // catalog's own serial_regex actually says — a guess this app has no
+    // real ground truth for, since production currently stores the SAME
+    // regex (`^89966[0-9]{13,14}$`) for stc/mobily/zain(old) alike. Letting
+    // `fromItemType()` fall through to each type's own live regex/prefix is
+    // the only data-honest option: a single reliable catalog match still
+    // auto-resolves normally, and a genuine multi-type match is correctly
+    // surfaced as ambiguous by SimCarrierResolver, never silently guessed
+    // here. See item_type_classification_batch_test.dart for the proof.
     return null;
   }
 }

@@ -169,21 +169,38 @@ void main() {
   });
 
   group('BarcodeRuleRegistry fallback table', () {
-    test('N950 / i9100 / i9000S / SIM lengths', () {
+    test('N950 / i9100 / i9000S device lengths — unaffected by the SIM-carrier '
+        'keyword removal below (device prefixes/lengths are genuinely '
+        'disjoint in production, no ambiguity to guard against)', () {
       expect(BarcodeRuleRegistry.resolve(itemTypeId: 'n950')!.fullLength, 12);
       expect(BarcodeRuleRegistry.resolve(itemTypeId: 'i9100')!.prefixes, ['SAW']);
       expect(BarcodeRuleRegistry.resolve(itemTypeId: 'i9000s')!.prefixes, ['SAS']);
-      expect(BarcodeRuleRegistry.resolve(hintName: 'STC')!.fullLength, 18);
-      expect(BarcodeRuleRegistry.resolve(hintName: 'Zain')!.fullLength, 19);
-      expect(BarcodeRuleRegistry.resolve(hintName: 'Mobily')!.fullLength, 19);
-      expect(BarcodeRuleRegistry.resolve(hintName: 'Repara')!.fullLength, 19);
-      expect(BarcodeRuleRegistry.resolve(hintName: 'Lebara')!.fullLength, 19);
-      expect(BarcodeRuleRegistry.resolve(hintName: 'ليبارا')!.fullLength, 19);
-      expect(BarcodeRuleRegistry.resolve(itemTypeId: 'lebara_sim')!.fullLength, 19);
       expect(BarcodeRuleRegistry.resolve(itemTypeId: 'i9100')!.regex.pattern,
           r'^SAW[0-9]{8}$');
       expect(BarcodeRuleRegistry.resolve(itemTypeId: 'i9000s')!.regex.pattern,
           r'^SAS[0-9]{8}$');
+    });
+
+    // CHANGED BEHAVIOR (intentional): resolving a bare carrier NAME/id with
+    // no real ItemType/regex behind it ("STC", "Zain", "Mobily", "Repara",
+    // "Lebara"...) used to silently hand back a hardcoded 18-or-19-digit
+    // rule — a guess this app has no real ground truth for once you know
+    // production's actual stc/mobily/zain(old) rows all share the exact
+    // same regex. `BarcodeRuleRegistry` now correctly fails closed (null)
+    // for these SIM-carrier names when there is no live ItemType with its
+    // own serialRegex to resolve against — "never guess" applies here too,
+    // not just at the multi-candidate SimCarrierResolver layer. See
+    // `sim_carrier_resolver_test.dart` / `sim_e2e_carrier_classification_test.dart`
+    // for the catalog-driven replacement behavior.
+    test('bare SIM-carrier names/ids with no backing ItemType now correctly '
+        'fail closed instead of returning a hardcoded length guess', () {
+      expect(BarcodeRuleRegistry.resolve(hintName: 'STC'), isNull);
+      expect(BarcodeRuleRegistry.resolve(hintName: 'Zain'), isNull);
+      expect(BarcodeRuleRegistry.resolve(hintName: 'Mobily'), isNull);
+      expect(BarcodeRuleRegistry.resolve(hintName: 'Repara'), isNull);
+      expect(BarcodeRuleRegistry.resolve(hintName: 'Lebara'), isNull);
+      expect(BarcodeRuleRegistry.resolve(hintName: 'ليبارا'), isNull);
+      expect(BarcodeRuleRegistry.resolve(itemTypeId: 'lebara_sim'), isNull);
     });
 
     test('enterprise rules win over loose API alphanumeric regex', () {

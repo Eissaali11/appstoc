@@ -88,24 +88,37 @@ void main() {
     });
 
     test(
-        'the CURRENT active Zain item type has no prefix/length/regex of its '
-        'OWN configured on the backend, but its real name_en/name_ar ("Zain '
-        'SIM New" / "شريحة زين الجديدة") still resolves it to the enterprise '
-        'sim_89966_19 rule by NAME match — so it correctly accepts a real '
-        '19-digit Zain ICCID despite the missing backend config', () {
+        'CHANGED BEHAVIOR (intentional): the CURRENT active Zain item type '
+        'has no prefix/length/regex of its OWN configured on the backend. '
+        'It used to validate anyway by exploiting a hardcoded NAME-keyword '
+        'match ("zain" in "Zain SIM New" → the generic enterprise 19-digit '
+        'rule) — that keyword crutch has been deliberately removed, since '
+        'it let this app silently invent carrier identity the live catalog '
+        'itself does not actually encode for this row. Today, this row '
+        'correctly FAILS validation outright until it is given its own '
+        'real serialPrefix/serialRegex via the item-types admin UI — a '
+        'genuine, currently-live production data gap (see this PR\'s '
+        'data-correction proposal), not something this app should paper '
+        'over with a name-based guess.', () {
       BarcodeRuleRegistry.clearCache();
       final error = BarcodeValidator.validate(realZainIccid, currentZainSim());
       // ignore: avoid_print
       print('currentZainSim validate(real Zain 19-digit) => error: $error');
-      expect(error, isNull);
+      expect(error, isNotNull);
     });
 
     test(
-        'FIXED: shipment_scan_page.dart now uses SimCarrierResolver instead '
-        'of "iterate by sort_order, first valid match wins" — a real Zain '
-        'ICCID with mobilySim (sort=7) and the real Zain entry (sort=9) '
-        'both validating is correctly reported as ambiguous, NOT silently '
-        'resolved to whichever sorts first', () {
+        'FIXED + CHANGED: shipment_scan_page.dart now uses SimCarrierResolver '
+        'instead of "iterate by sort_order, first valid match wins", AND no '
+        'longer trusts the hardcoded enterprise length split. A real Zain '
+        'ICCID now correctly comes back ambiguous between stcSim and '
+        'mobilySim — their live regex is identical — NOT silently resolved '
+        'to whichever sorts first, and NOT silently protected from stcSim '
+        'by a hardcoded "STC is always 18 digits" assumption the catalog '
+        'itself does not make. The real Zain entry is absent from the '
+        'ambiguous set only because it has no validation data of its own '
+        '(see the data-gap test above), not because this resolver treats '
+        'it specially.', () {
       BarcodeRuleRegistry.clearCache();
       // sort_order deliberately scrambled relative to production
       // (mobily=7 < stc=8 < zain=9) to prove order is truly not consulted.
@@ -123,8 +136,13 @@ void main() {
       expect(result.isAmbiguous, isTrue);
       expect(result.resolved, isNull); // nothing auto-chosen
       final ids = result.ambiguousCandidates.map((t) => t.id).toSet();
-      expect(ids, {'mobilySim', '97956dd0-81f3-4720-a096-f18d5a979137'});
-      expect(ids, isNot(contains('stcSim'))); // confirmed NOT the original "→STC" bug
+      expect(ids, {'mobilySim', 'stcSim'});
+      expect(
+        ids,
+        isNot(contains('97956dd0-81f3-4720-a096-f18d5a979137')),
+        reason: 'the real Zain row has no rule of its own — a data gap, '
+            'not a resolver behavior',
+      );
     });
   });
 }
