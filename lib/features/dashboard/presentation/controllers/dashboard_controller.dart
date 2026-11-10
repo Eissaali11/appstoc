@@ -11,6 +11,7 @@ import '../../../moving_inventory/data/models/warehouse_transfer.dart';
 import '../../../../shared/models/item_type.dart';
 import '../widgets/inventory_filter_bar.dart';
 import '../../../../core/storage/offline_queue_manager.dart';
+import '../../../../shared/scanner/barcode_rule_registry.dart';
 
 class MergedInventoryItem {
   final ItemType itemType;
@@ -458,8 +459,26 @@ class DashboardController extends GetxController {
 
     if (exists) return;
 
-    final isSim = clean.startsWith('89966') || clean.startsWith('89');
-    final defaultItemTypeId = isSim ? 'sim_stc' : 'n950';
+    // ITEM-TYPE CLASSIFICATION FIX: this used to hardcode ANY 89-prefixed
+    // serial straight to 'sim_stc' regardless of its actual length — a real
+    // 19-digit Zain/Mobily/Lebara/Repara ICCID was silently mislabeled as an
+    // 18-digit STC one every time. Match it against the real registry rules
+    // (which differ by exact digit count) instead of guessing from a crude
+    // prefix check; only fall back to the old generic default when nothing
+    // in the registry actually matches the code's shape.
+    BarcodeRule? matchedRule;
+    for (final rule in BarcodeRuleRegistry.fallbackRules) {
+      if (rule.matches(clean)) {
+        matchedRule = rule;
+        break;
+      }
+    }
+    final looksLikeSim = clean.startsWith('89966') || clean.startsWith('89');
+    final defaultItemTypeId =
+        matchedRule?.id ?? (looksLikeSim ? 'sim_stc' : 'n950');
+    final isSim = matchedRule != null
+        ? matchedRule.id.startsWith('sim')
+        : looksLikeSim;
 
     final newItem = {
       'id': 'custody_${DateTime.now().millisecondsSinceEpoch}',

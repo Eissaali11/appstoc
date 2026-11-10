@@ -10,6 +10,7 @@ import '../../../../shared/widgets/barcode_scanner_widget.dart';
 import '../../../../shared/widgets/rassco_app_bar.dart';
 import '../../../../shared/utils/icon_mapper.dart';
 import '../../../../shared/utils/barcode_validator.dart';
+import '../../../../shared/scanner/sim_carrier_resolver.dart';
 
 import '../../../moving_inventory/data/models/serialized_item.dart';
 import '../../../dashboard/presentation/controllers/dashboard_controller.dart';
@@ -56,6 +57,15 @@ class _ShipmentScanPageState extends State<ShipmentScanPage>
   String? _scanSuccess;
   bool _isSim = false;
   String? _carrierName;
+
+  // ITEM-TYPE CLASSIFICATION FIX: true only once the technician has
+  // deliberately picked a type (dropdown, or the scanner widget's own
+  // returned selection) — `_selectedItemTypeId` otherwise just holds
+  // whatever `_updateSelectedItemType` auto-defaulted it to on tab/category
+  // change ("whichever type sorts first"), which is NOT a real choice and
+  // must never be trusted as the authoritative "section context" that lets
+  // a scanned code skip disambiguation.
+  bool _itemTypeExplicitlySelected = false;
 
   // Custody tab state
   List<SerializedItem> _custodyItems = [];
@@ -123,6 +133,11 @@ class _ShipmentScanPageState extends State<ShipmentScanPage>
     final filtered = _itemTypes.where((t) {
       final cat = (t.category ?? '').trim().toLowerCase();
       if (cat != selected) return false;
+      // ITEM-TYPE CLASSIFICATION FIX: a hidden/deprecated type (e.g. an old
+      // superseded carrier row) must never be offered as a dropdown option
+      // or as a scan-classification candidate — only visible types are real
+      // choices a technician can see and pick.
+      if (!t.isVisible) return false;
       // Always show SIM/devices in their tab even if requiresSerial was mis-flagged
       if (selected == 'devices' || selected == 'sim') return true;
       return t.requiresSerial == true;
@@ -139,6 +154,9 @@ class _ShipmentScanPageState extends State<ShipmentScanPage>
 
   void _updateSelectedItemType() {
     final filtered = _typesForSelectedCategory();
+    // ITEM-TYPE CLASSIFICATION FIX: this is an auto-default, not a
+    // deliberate choice — never let it stand in for real section context.
+    _itemTypeExplicitlySelected = false;
     if (filtered.isNotEmpty) {
       _selectedItemTypeId = filtered.first.id;
       _isSim = _selectedCategory == 'sim';
@@ -169,6 +187,146 @@ class _ShipmentScanPageState extends State<ShipmentScanPage>
       return 'Lebara';
     }
     return defaultCarrier ?? 'STC';
+  }
+
+  // ITEM-TYPE CLASSIFICATION FIX: the "section context" [SimCarrierResolver]
+  // should trust outright is a genuine, deliberate item-type pick (dropdown,
+  // or the scanner widget's own returned selection) — never an unexamined
+  // auto-default from `_updateSelectedItemType`. Used by BOTH the camera
+  // multi-scan path and the manual-entry path so they resolve ambiguity
+  // identically.
+  ItemType? _effectiveSelectedTypeForResolution() {
+    if (_itemTypeExplicitlySelected && _selectedItemTypeId != null) {
+      return _itemTypes.firstWhereOrNull((t) => t.id == _selectedItemTypeId);
+    }
+    return null;
+  }
+
+  /// ITEM-TYPE CLASSIFICATION FIX: one-time prompt when a scanned/typed code
+  /// validates against more than one real, visible item type (e.g. a
+  /// 19-digit ICCID that fits more than one SIM catalog entry and cannot be
+  /// told apart from the digits alone). Returns the chosen type, or null if
+  /// the user dismissed the dialog without choosing.
+  Future<ItemType?> _showItemTypeDisambiguationDialog(
+      List<ItemType> candidates) async {
+    if (!mounted) return null;
+    return showDialog<ItemType>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.backgroundDark,
+        title: const Text(
+          'اختر النوع الصحيح',
+          style: TextStyle(color: Colors.white),
+        ),
+        content: const Text(
+          'هذا الرقم صالح لأكثر من نوع صنف — اختر النوع الصحيح قبل الإضافة:',
+          style: TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: candidates
+                .map((type) => Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primary),
+                        onPressed: () => Navigator.of(ctx).pop(type),
+                        child: Text(type.nameAr),
+                      ),
+                    ))
+                .toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// ITEM-TYPE CLASSIFICATION FIX: the single resolution path shared by both
+  /// manual entry and camera scan. Never guesses — tries the trusted
+  /// selected type first (wins outright, no prompt), otherwise checks ALL
+  /// candidates in the category: 0 matches → null (caller shows "unknown"),
+  /// 1 match → returned directly (unambiguous, safe to auto-accept), 2+
+  /// matches → the user is asked explicitly via
+  /// [_showItemTypeDisambiguationDialog] rather than silently taking
+  /// whichever candidate happened to be first in the list.
+  Future<ItemType?> _resolveTargetType(String normalizedCode) async {
+    final resolution = SimCarrierResolver.resolve(
+      normalizedCode: normalizedCode,
+      candidates: _typesForSelectedCategory(),
+      selectedType: _effectiveSelectedTypeForResolution(),
+    );
+
+    if (resolution.isResolved) return resolution.resolved;
+    if (resolution.isAmbiguous) {
+      return _showItemTypeDisambiguationDialog(resolution.ambiguousCandidates);
+    }
+    return null; // no match at all — caller surfaces "unrecognized" error
+  }
+
+  /// ITEM-TYPE CLASSIFICATION FIX: processes a multi-scan batch one code at
+  /// a time (never a single synchronous loop) so an ambiguous code can
+  /// `await` the disambiguation dialog mid-loop. Each code independently
+  /// goes through [_resolveTargetType] — the SAME resolution path manual
+  /// entry now uses — so no two items in one batch can silently bleed
+  /// state into each other, and the old "iterate category types, first
+  /// validation-pass wins" guess is gone entirely. Duplicate/custody
+  /// checks and [ScannedBatchItem] construction are otherwise unchanged.
+  Future<void> _processScannedCodesIntoBatch(List<String> codes) async {
+    int addedCount = 0;
+    String? firstError;
+
+    for (final code in codes) {
+      if (code.trim().isEmpty) continue;
+      final normalized = BarcodeValidator.normalizeRawBarcode(code);
+
+      final targetType = await _resolveTargetType(normalized);
+      if (targetType == null) {
+        firstError ??= 'رمز غير معروف — لا يطابق أي صنف مسجل';
+        continue;
+      }
+      if (!mounted) return;
+
+      final displaySerial =
+          BarcodeValidator.toDisplaySerial(normalized, targetType);
+
+      final isDuplicate = _scannedBatchItems.any((item) =>
+          BarcodeValidator.serialsMatch(item.serialNumber, displaySerial, targetType));
+      if (isDuplicate) continue;
+
+      final isInCustody = _custodyItems.any((item) =>
+          BarcodeValidator.serialsMatch(item.serialNumber, displaySerial, targetType));
+      if (isInCustody) continue;
+
+      final isTargetSim = targetType.category == 'sim';
+      final resolvedCarrier =
+          isTargetSim ? _resolveCarrierName(targetType, _carrierName) : null;
+
+      setState(() {
+        _scannedBatchItems.add(ScannedBatchItem(
+          serialNumber: displaySerial,
+          itemTypeId: targetType.id,
+          itemTypeName: targetType.nameAr,
+          isSim: isTargetSim,
+          carrierName: resolvedCarrier,
+        ));
+      });
+      addedCount++;
+    }
+
+    if (!mounted) return;
+    setState(() {
+      if (addedCount > 0) {
+        _scanSuccess = 'تمت إضافة $addedCount من العناصر بنجاح للقائمة المؤقتة ✓';
+        _scanError = null;
+      } else {
+        _scanError = firstError ??
+            'لم يتم إضافة أي عناصر جديدة (مكررة أو موجودة مسبقاً)';
+        _scanSuccess = null;
+      }
+    });
   }
 
   void _onCategoryChanged(String category) {
@@ -227,7 +385,7 @@ class _ShipmentScanPageState extends State<ShipmentScanPage>
     }
   }
 
-  void _addToScannedBatch() {
+  Future<void> _addToScannedBatch() async {
     final raw = (_isSim ? _iccidController.text : _serialController.text).trim();
 
     if (raw.isEmpty) {
@@ -245,17 +403,26 @@ class _ShipmentScanPageState extends State<ShipmentScanPage>
       return;
     }
 
-    final selectedType = _itemTypes.firstWhereOrNull((t) => t.id == _selectedItemTypeId);
+    // ITEM-TYPE CLASSIFICATION FIX: resolve through the SAME non-guessing
+    // path the camera scanner uses (manual entry and camera scan must
+    // classify identically). When the current `_selectedItemTypeId` is a
+    // genuine, deliberate pick it wins outright, exactly as before; when
+    // it is only an unexamined auto-default and the typed value could
+    // belong to more than one catalog type, the technician is asked to
+    // choose explicitly instead of silently trusting the default.
+    final normalized = BarcodeValidator.normalizeRawBarcode(raw);
+    final selectedType = await _resolveTargetType(normalized);
+    if (!mounted) return;
     if (selectedType == null) {
       setState(() {
-        _scanError = 'نوع الصنف المحدد غير موجود';
+        _scanError = 'رمز غير معروف — لا يطابق أي صنف مسجل';
         _scanSuccess = null;
       });
       return;
     }
 
     // Keep full uppercase form with letter prefix (e.g. NCC303042220)
-    final serial = BarcodeValidator.toDisplaySerial(raw, selectedType);
+    final serial = BarcodeValidator.toDisplaySerial(normalized, selectedType);
 
     // Check for duplicates in local list
     final isDuplicate = _scannedBatchItems.any(
@@ -295,12 +462,17 @@ class _ShipmentScanPageState extends State<ShipmentScanPage>
     }
 
     setState(() {
-      final resolvedCarrier = _isSim ? _resolveCarrierName(selectedType, _carrierName) : null;
+      // Use the RESOLVED type's own id/category — not the possibly-stale
+      // `_selectedItemTypeId`/`_isSim`, which can disagree with it after
+      // disambiguation picked a different candidate.
+      final isResolvedSim = selectedType.category == 'sim';
+      final resolvedCarrier =
+          isResolvedSim ? _resolveCarrierName(selectedType, _carrierName) : null;
       _scannedBatchItems.add(ScannedBatchItem(
         serialNumber: serial,
-        itemTypeId: _selectedItemTypeId!,
+        itemTypeId: selectedType.id,
         itemTypeName: selectedType.nameAr,
-        isSim: _isSim,
+        isSim: isResolvedSim,
         carrierName: resolvedCarrier,
       ));
       _scanSuccess = 'تمت إضافة ${_isSim ? "الشريحة" : "الجهاز"} $serial للقائمة المؤقتة ✓';
@@ -641,6 +813,9 @@ class _ShipmentScanPageState extends State<ShipmentScanPage>
             final type = _itemTypes.firstWhereOrNull((t) => t.id == val);
             setState(() {
               _selectedItemTypeId = val;
+              // ITEM-TYPE CLASSIFICATION FIX: a real, deliberate dropdown
+              // pick — this IS section context now, trusted outright.
+              _itemTypeExplicitlySelected = true;
               if (type != null) {
                 _isSim = type.category == 'sim';
               }
@@ -733,89 +908,18 @@ class _ShipmentScanPageState extends State<ShipmentScanPage>
                     if (returnedItemTypeId != null) {
                       setState(() {
                         _selectedItemTypeId = returnedItemTypeId;
+                        // ITEM-TYPE CLASSIFICATION FIX: a type chosen inside
+                        // the scanner widget's own UI is a deliberate pick.
+                        _itemTypeExplicitlySelected = true;
                         final type = _itemTypes.firstWhereOrNull((t) => t.id == returnedItemTypeId);
                         if (type != null) {
                           _isSim = type.category == 'sim';
                         }
                       });
                     }
-                    
+
                     if (codes.isNotEmpty) {
-                      setState(() {
-                        int addedCount = 0;
-                        for (var code in codes) {
-                          if (code.trim().isEmpty) continue;
-
-                          // تطبيع الكود الخام أولاً (أحرف كبيرة + إزالة فواصل)
-                          final normalized = BarcodeValidator.normalizeRawBarcode(code);
-
-                          // التحقق من نوع الصنف الأنسب لكل كود ممسوح
-                          ItemType? targetType;
-                          
-                          // 1. أولاً نجرب التحقق من الصنف المختار/المرتجع
-                          if (_selectedItemTypeId != null) {
-                            final type = _itemTypes.firstWhereOrNull((t) => t.id == _selectedItemTypeId);
-                            if (type != null && BarcodeValidator.validate(normalized, type) == null) {
-                              targetType = type;
-                            }
-                          }
-                          
-                          // 2. إذا لم يطابق، نبحث في بقية الأصناف النشطة المتاحة لهذا القسم
-                          if (targetType == null) {
-                            final categoryTypes = _typesForSelectedCategory();
-                            for (final type in categoryTypes) {
-                              if (BarcodeValidator.validate(normalized, type) == null) {
-                                targetType = type;
-                                break;
-                              }
-                            }
-                          }
-
-                          if (targetType != null) {
-                            // احتفظ بالرقم كاملاً مع البادئة (NCC303042220) وليس الأرقام فقط
-                            final displaySerial =
-                                BarcodeValidator.toDisplaySerial(normalized, targetType);
-
-                            // Check for duplicates in local list
-                            final isDuplicate = _scannedBatchItems.any(
-                              (item) => BarcodeValidator.serialsMatch(
-                                item.serialNumber,
-                                displaySerial,
-                                targetType,
-                              ),
-                            );
-                            if (isDuplicate) continue;
-
-                            // Check for duplicates in actual custody
-                            final isInCustody = _custodyItems.any(
-                              (item) => BarcodeValidator.serialsMatch(
-                                item.serialNumber,
-                                displaySerial,
-                                targetType,
-                              ),
-                            );
-                            if (isInCustody) continue;
-
-                            final isTargetSim = targetType.category == 'sim';
-                            final resolvedCarrier = isTargetSim ? _resolveCarrierName(targetType, _carrierName) : null;
-                            _scannedBatchItems.add(ScannedBatchItem(
-                              serialNumber: displaySerial,
-                              itemTypeId: targetType.id,
-                              itemTypeName: targetType.nameAr,
-                              isSim: isTargetSim,
-                              carrierName: resolvedCarrier,
-                            ));
-                            addedCount++;
-                          }
-                        }
-                        if (addedCount > 0) {
-                          _scanSuccess = 'تمت إضافة $addedCount من العناصر بنجاح للقائمة المؤقتة ✓';
-                          _scanError = null;
-                        } else {
-                          _scanError = 'لم يتم إضافة أي عناصر جديدة (مكررة أو موجودة مسبقاً)';
-                          _scanSuccess = null;
-                        }
-                      });
+                      await _processScannedCodesIntoBatch(codes);
                     }
                   }
                 },
