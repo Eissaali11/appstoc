@@ -187,4 +187,54 @@ void main() {
       expect(result.isNone, isTrue);
     });
   });
+
+  group('SimCarrierResolver — brand-new catalog type, zero code changes', () {
+    // A carrier the enterprise table has never heard of — id/name contain
+    // none of BarcodeRuleRegistry's hardcoded keywords (n950/i9100/i9000/
+    // a960/stc/zain/mobily/lebara/repara). If this app were genuinely
+    // catalog-driven end to end, adding such a row to item_types with its
+    // own serialRegex must make it classifiable with zero app code changes.
+    ItemType virginSim() => ItemType(
+          id: 'virginSim',
+          nameEn: 'Virgin Mobile SIM',
+          nameAr: 'شريحة فيرجن',
+          sortOrder: 20,
+          isActive: true,
+          isVisible: true,
+          category: 'sim',
+          requiresSerial: true,
+          serialPrefix: '89966',
+          serialLength: 20,
+          // Deliberately precise and NON-overlapping with any other
+          // candidate's pattern/length — a well-configured catalog row,
+          // unlike the legacy stc/mobily/zain rows whose live regex is
+          // itself ambiguous (see module doc).
+          serialRegex: r'^89966[0-9]{15}$',
+        );
+
+    // 89966 + 15 digits = 20 chars total, matching virginSim's regex exactly.
+    const virginIccid = '89966000000000000000';
+
+    test(
+        'a synthetic unknown-to-the-enterprise-table carrier with a precise '
+        'regex resolves via the live-catalog path alone, no hardcoded '
+        'keyword match required', () {
+      final result = SimCarrierResolver.resolve(
+        normalizedCode: virginIccid,
+        candidates: [...visibleSimCandidates(), virginSim()],
+      );
+      expect(result.isResolved, isTrue);
+      expect(result.resolved!.id, 'virginSim');
+    });
+
+    test(
+        'the same new type does not falsely trigger ambiguity against the '
+        'existing legacy candidates (lengths are disjoint)', () {
+      final result = SimCarrierResolver.resolve(
+        normalizedCode: virginIccid,
+        candidates: [...visibleSimCandidates(), virginSim()],
+      );
+      expect(result.isAmbiguous, isFalse);
+    });
+  });
 }

@@ -133,11 +133,13 @@ class _ShipmentScanPageState extends State<ShipmentScanPage>
     final filtered = _itemTypes.where((t) {
       final cat = (t.category ?? '').trim().toLowerCase();
       if (cat != selected) return false;
-      // ITEM-TYPE CLASSIFICATION FIX: a hidden/deprecated type (e.g. an old
-      // superseded carrier row) must never be offered as a dropdown option
-      // or as a scan-classification candidate — only visible types are real
-      // choices a technician can see and pick.
-      if (!t.isVisible) return false;
+      // ITEM-TYPE CLASSIFICATION FIX: a hidden/deprecated or deactivated
+      // type (e.g. an old superseded carrier row) must never be offered as
+      // a dropdown option or as a scan-classification candidate — only
+      // active AND visible types are real choices a technician can see and
+      // pick. Checked independently: the catalog allows either flag to be
+      // false without the other (they are not coupled), so both must gate.
+      if (!t.isVisible || !t.isActive) return false;
       // Always show SIM/devices in their tab even if requiresSerial was mis-flagged
       if (selected == 'devices' || selected == 'sim') return true;
       return t.requiresSerial == true;
