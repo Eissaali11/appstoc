@@ -959,7 +959,13 @@ class _ShipmentScanPageState extends State<ShipmentScanPage>
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
-          value: _carrierName ?? 'STC',
+          value: _carrierName,
+          // Display-only: with no carrier value, show «غير محدد» instead of
+          // pretending STC is selected. Nothing is sent in that state.
+          hint: Text(
+            kCarrierNotSpecifiedLabel,
+            style: TextStyle(fontFamily: 'BeIN', color: Colors.white, fontSize: 14),
+          ),
           dropdownColor: AppColors.backgroundDark,
           icon: const Icon(Icons.keyboard_arrow_down, color: Colors.white38),
           style: TextStyle(fontFamily: 'BeIN', color: Colors.white, fontSize: 14),

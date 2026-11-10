@@ -48,6 +48,11 @@ class ScanTypeResolution {
       rejectedSelectedType == null;
 }
 
+/// Text shown in the carrier dropdown when no carrier value exists. Display
+/// only — in that state nothing is sent to the server (see
+/// [carrierLabelForItemType]: unknown carrier → `null` → omitted).
+const String kCarrierNotSpecifiedLabel = 'غير محدد';
+
 /// The backend `carrierName` LABEL to send alongside a SIM item — derived
 /// only from the selected type's own catalog name, or from a carrier the
 /// technician explicitly chose ([explicitCarrier]). It has NO influence on

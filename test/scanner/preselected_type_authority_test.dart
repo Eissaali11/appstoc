@@ -204,6 +204,14 @@ void main() {
       expect(carrierLabelForItemType(zainNew, null), 'Zain');
     });
 
+    test('when no carrier value exists the dropdown shows «غير محدد» (never '
+        '"STC"), and that same state sends nothing (label is null)', () {
+      expect(kCarrierNotSpecifiedLabel, 'غير محدد');
+      expect(kCarrierNotSpecifiedLabel, isNot('STC'));
+      final unknown = sim('virginSim', 'Virgin Mobile SIM', 'شريحة فيرجن');
+      expect(carrierLabelForItemType(unknown, null), isNull);
+    });
+
     test('non-SIM items never get a carrier label', () {
       expect(carrierLabelForItemType(n950, 'STC'), isNull);
     });
