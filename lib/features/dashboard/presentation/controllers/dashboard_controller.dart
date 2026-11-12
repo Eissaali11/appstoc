@@ -11,6 +11,8 @@ import '../../../moving_inventory/data/models/warehouse_transfer.dart';
 import '../../../../shared/models/item_type.dart';
 import '../widgets/inventory_filter_bar.dart';
 import '../../../../core/storage/offline_queue_manager.dart';
+import '../../../../shared/scanner/sim_carrier_resolver.dart';
+import '../../../../shared/utils/barcode_validation_engine.dart';
 
 class MergedInventoryItem {
   final ItemType itemType;
@@ -444,8 +446,13 @@ class DashboardController extends GetxController {
   /// Adds a new serial number to technician's active serialized custody in real-time.
   /// NOTE: pre-existing method, not part of the custody-delete feature — included only
   /// because dashboard_page.dart (also pre-existing, unrelated uncommitted work) calls it.
+  ///
+  /// Classification goes through the same live-catalog [SimCarrierResolver]
+  /// every other scan path uses — never a hardcoded id, never a first-match
+  /// guess. See `item_type_invariant_test.dart` for the standing proof that
+  /// every id this method can possibly assign is a real `item_types` row.
   Future<void> addSerialToCustody(String serialNumber) async {
-    final clean = serialNumber.trim().toUpperCase();
+    final clean = BarcodeValidationEngine.normalize(serialNumber);
     if (clean.isEmpty) return;
 
     // Check if already exists in active serialized items
@@ -458,15 +465,42 @@ class DashboardController extends GetxController {
 
     if (exists) return;
 
-    final isSim = clean.startsWith('89966') || clean.startsWith('89');
-    final defaultItemTypeId = isSim ? 'sim_stc' : 'n950';
+    final looksLikeSim = clean.startsWith('89966') || clean.startsWith('89');
+    final candidates = itemTypesMap.values
+        .where((t) =>
+            t.isActive &&
+            t.isVisible &&
+            t.category == (looksLikeSim ? 'sim' : 'devices'))
+        .toList();
+
+    final resolution = SimCarrierResolver.resolve(
+      normalizedCode: clean,
+      candidates: candidates,
+    );
+
+    if (!resolution.isResolved) {
+      final message = resolution.isAmbiguous
+          ? 'لا يمكن تحديد نوع الصنف تلقائيًا — الرقم يطابق أكثر من نوع '
+              '(${resolution.ambiguousCandidates.map((t) => t.nameAr).join("، ")}). '
+              'يرجى إضافته من شاشة الصنف الصحيح مباشرة.'
+          : 'لم يتم التعرف على نوع هذا الرقم التسلسلي — تحقق منه أو أضفه '
+              'من شاشة الصنف الصحيح مباشرة.';
+      Get.snackbar(
+        'تعذّرت الإضافة',
+        message,
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return;
+    }
+
+    final itemType = resolution.resolved!;
 
     final newItem = {
       'id': 'custody_${DateTime.now().millisecondsSinceEpoch}',
       'serialNumber': clean,
       'serial_number': clean,
-      'iccid': isSim ? clean : null,
-      'itemTypeId': defaultItemTypeId,
+      'iccid': itemType.category == 'sim' ? clean : null,
+      'itemTypeId': itemType.id,
       'status': 'RECEIVED_BY_TECHNICIAN',
       'createdAt': DateTime.now().toIso8601String(),
     };

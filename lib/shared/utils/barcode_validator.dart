@@ -133,7 +133,7 @@ class BarcodeValidator {
       return 'الرمز لا يبدأ بأي من البوادئ المعتمدة: ${rule.prefixes.join(",")}';
     }
 
-    if (normalized.length != rule.fullLength) {
+    if (rule.fullLength != null && normalized.length != rule.fullLength) {
       return 'يجب أن يكون طول الرقم التسلسلي الكامل ${rule.fullLength} خانات (الحالي: ${normalized.length})';
     }
 
