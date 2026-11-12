@@ -2,20 +2,19 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:nuolipapp/shared/models/item_type.dart';
 import 'package:nuolipapp/shared/scanner/sim_carrier_resolver.dart';
 
-/// Standing proof for the rule: once the technician has explicitly picked an
-/// item type from the dropdown BEFORE scanning, that type is authoritative
-/// for the rest of the scan+save flow. The resolver may VALIDATE the scanned
-/// serial against that type's own rule — it may never RE-RESOLVE, replace, or
-/// fall back to another type, ambiguous or not.
+/// Resolver-CONTRACT tests: when a caller passes an explicit `selectedType`
+/// to [SimCarrierResolver], that type is validated against ITS OWN rule only
+/// — never re-resolved, replaced, or backed up by other candidates.
 ///
-/// Local value chain exercised (the exact one in shipment_scan_page.dart):
-///   dropdown pick (selectedType) → SimCarrierResolver.resolve → resolved
-///   type → ScannedBatchItem.itemTypeId → `_saveBatchToBackend` request
-///   body `{'serialNumber', 'itemTypeId'}`.
-/// The server half (API → DB → admin search) is outside this Flutter repo;
-/// it is covered by the apps/api branches (item-type + search fixes). What
-/// this file proves is that the id leaving the app is the id the technician
-/// picked, with nothing in between able to change it.
+/// NOTE (final decision): `shipment_scan_page.dart` no longer calls the
+/// resolver at all — its `itemTypeId` comes straight from the explicit
+/// dropdown selection via `classifyScan` (see
+/// `explicit_selection_integration_test.dart`, which owns the page-level
+/// proofs). The resolver contract below still matters for any remaining
+/// caller that has a selection, and `carrierLabelForItemType` (also tested
+/// here) is what the page uses for the carrier LABEL. The server half
+/// (API → DB → admin search) is outside this Flutter repo (apps/api
+/// branches).
 void main() {
   ItemType sim(String id, String en, String ar,
           {String? regex, String? prefix}) =>

@@ -2,20 +2,25 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:nuolipapp/shared/models/item_type.dart';
 import 'package:nuolipapp/shared/scanner/sim_carrier_resolver.dart';
 
-/// Regression tests for the item-type classification fix in
-/// `shipment_scan_page.dart` (ScannedBatchItem construction) and
-/// `dashboard_controller.dart` (`addSerialToCustody`).
+/// Resolver-level regression tests for [SimCarrierResolver].
 ///
-/// Root cause that was fixed: the camera multi-scan handler used to
-/// "iterate this category's types, first one whose validation passes
-/// wins" whenever the currently-selected type didn't match — a silent
-/// guess whenever more than one item type validated the same code. The
-/// manual-entry path trusted whatever `_selectedItemTypeId` currently held
-/// even when it was only an unexamined auto-default, not a deliberate
-/// pick. Both paths now go through the exact same [SimCarrierResolver],
-/// which is what these tests exercise directly — the page itself only
-/// wires this decision engine into `setState`/dialog plumbing, which is
-/// why testing the resolver proves the page's classification behavior.
+/// SCOPE NOTE (updated after the final "explicit selection is mandatory"
+/// decision): `shipment_scan_page.dart` NO LONGER uses this resolver — its
+/// `itemTypeId` comes only from the explicit dropdown selection, validated
+/// against that type's own rule (see `explicit_selection_scan.dart` and
+/// `explicit_selection_integration_test.dart`; no ambiguity dialog exists
+/// any more). This resolver is still used by flows that have NO dropdown —
+/// `dashboard_controller.dart`'s `addSerialToCustody` quick-add — where an
+/// ambiguous or unknown code is rejected with a snackbar rather than
+/// guessed. These tests keep proving that no-dropdown behavior (never a
+/// silent first-match pick), and the "explicit selection wins outright"
+/// case documents the resolver's own contract for any caller that does pass
+/// a selection.
+///
+/// Historic root cause (still the reason the resolver never guesses): the
+/// camera multi-scan handler used to "iterate this category's types, first
+/// one whose validation passes wins" — a silent guess whenever more than
+/// one item type validated the same code.
 void main() {
   // Two illustrative SIM catalog types, named plainly as "Z" and "SCC" to
   // match the mandatory acceptance scenario literally, sharing the exact
@@ -257,14 +262,16 @@ void main() {
     });
   });
 
-  group('Manual-entry vs camera-scan parity', () {
+  // NOTE: the page-level manual-vs-camera parity proof now lives in
+  // `explicit_selection_integration_test.dart` (scenario 5, via the shared
+  // `classifyScan`) and `shipment_scan_page_wiring_test.dart`. This group
+  // only documents that the RESOLVER itself has no "entry method" input.
+  group('Resolver has no entry-method input (manual vs camera cannot diverge)',
+      () {
     test(
-        'shipment_scan_page.dart routes BOTH manual entry and camera scan '
-        'through the identical _resolveTargetType → SimCarrierResolver.resolve '
-        'call (see source) — this test proves the resolver itself gives the '
-        'same answer regardless of how the normalized code was obtained, '
-        'which is the actual parity guarantee once both call sites share '
-        'one code path', () {
+        'the resolver gives the same answer regardless of how the normalized '
+        'code was obtained — it has no entry-method parameter at all (the '
+        'shipment page no longer calls it; the dashboard quick-add does)', () {
       // There is no "entry method" parameter on resolve() at all — by
       // construction, a manual-entry call and a camera-scan call with the
       // same normalizedCode/candidates/selectedType cannot diverge, because
